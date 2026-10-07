@@ -665,31 +665,76 @@ function renderComm() {
 }
 
 /* ---------- 원어 사전 (스트롱 번호: H430 히브리어, G26 헬라어) ---------- */
-const D = { q: '', entry: '', list: null }; // 지금 보는 항목, 찾은 목록
+// 지금 보는 항목, 찾은 목록, 전체 목록 언어(H/G), 목록으로 돌아올 스크롤 위치
+const D = { q: '', entry: '', list: null, lang: 'H', scroll: 0, shown: '' };
+const dictSubjects = {};
+const subjects = (name, lang) => dictSubjects[name + lang] ||=
+  rows(dicts[name], 'select subject from topics where subject like ? order by cast(substr(subject, 2) as int)', [lang + '%']).flat();
+// 목록 제목은 사전 전체 색인이 끝나야 나옴 → 처음 열 때 뒤에서 색인하고, 끝나면 다시 그림
+const dictTitles = {};
+function titlesOf(name) {
+  if (dictTitles[name]) return dictTitles[name];
+  if (dictText[name]) return dictTitles[name] = new Map(dictText[name].map(e => [e.s, dictTitle(e.text)]));
+  indexDict(name, () => {}).then(() => { if (S.tab === 'dict' && S.dict === name && !D.entry) renderDict(); }).catch(() => {});
+  return null;
+}
 const dictRow = subject => rows(dicts[S.dict], 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
 // 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
-const dictTitle = text => (text.match(/\(\d+,[^)]*\)[^.]{0,30}/)?.[0] || text.slice(0, 40)).trim();
+// (본문은 "(1, 아브)  아버지 father  아브(명남)는…" 처럼 큰 공백으로 나뉨 → 앞의 두 덩어리만)
+const dictTitle = text => {
+  const m = text.match(/\(\d+,[^)]*\)[\s\S]{0,60}/);
+  return (m ? m[0].split(/\s{2,}/).slice(0, 2).join(' ') : text.slice(0, 40)).trim();
+};
 // 본문 속 "(…, 433: 하나님)" 같은 같은 언어 번호 참조를 누를 수 있게
 const linkStrong = (html, lang) => html.replace(/(, )(\d{1,4})(:)/g, `$1<a href="#" data-strong="${lang}$2">$2</a>$3`);
 
-function renderDict() {
+let dictObs;
+// scrollTo: 목록을 그린 뒤 맞출 스크롤 위치 (없으면 지금 위치 유지)
+function renderDict(scrollTo) {
+  const name = S.dict, box = $('comm'), keep = scrollTo ?? box.scrollTop;
+  dictObs?.disconnect();
   const form = `<form class="dict-form" id="dictForm"><input id="dq" type="search" value="${esc(D.q)}" placeholder="H430, G26, 430 또는 한글 단어" aria-label="사전에서 찾기"><button class="btn sm primary">찾기</button></form>`;
-  let body = '';
+
   if (D.entry) {
-    const row = dictRow(D.entry);
-    body = (D.list ? '<button class="linkish" data-dict-back>‹ 찾은 목록</button>' : '') + (row
+    const row = dictRow(D.entry), same = D.shown === D.entry;
+    box.innerHTML = form + '<button class="linkish" data-dict-back>‹ 목록</button>' + (row
       ? `<article class="entry"><h3>${esc(row[0])}</h3><div>${linkStrong(toHtml(row[1]), row[0][0])}</div></article>`
       : `<p class="empty small">${esc(D.entry)} 항목이 없습니다.</p>`);
-  } else if (D.list) {
-    const re = D.q && !/^\d+$/.test(D.q) ? reEsc(D.q) : null, mk = s => re ? esc(s).replace(re, m => `<mark>${m}</mark>`) : esc(s);
-    body = `<p class="hits-sum">${D.list.length}개 항목${D.list.length > 300 ? ', 처음 300개만 표시' : ''}</p>` + D.list.slice(0, 300).map(e => {
+    box.scrollTop = same ? keep : 0; // 같은 항목을 다시 그릴 때(장 이동 등)는 읽던 위치 유지
+    D.shown = D.entry;
+    return;
+  }
+  D.shown = '';
+
+  // 찾은 목록 또는 전체 목록 (H/G)
+  const titles = titlesOf(name);
+  let items, head;
+  if (D.list) {
+    const re = D.q && !/^\d+$/.test(D.q) ? reEsc(D.q) : null;
+    items = D.list.map(e => {
       const i = re ? e.text.indexOf(D.q) : -1;
       const snip = i > 0 ? ' · ' + (i > 40 ? '…' : '') + e.text.slice(Math.max(0, i - 40), i + D.q.length + 60) + '…' : '';
-      return `<button class="hit" data-dict-go="${esc(e.s)}"><span class="ref">${esc(e.s)}</span>${esc(dictTitle(e.text))}${mk(snip)}</button>`;
-    }).join('');
-  } else body = '<p class="empty small">스트롱 번호(히브리어 H430, 헬라어 G26)나 한글 단어로 찾아보세요.</p>';
-  $('comm').innerHTML = form + body;
-  $('comm').scrollTop = 0;
+      return { s: e.s, title: dictTitle(e.text), snip: re ? esc(snip).replace(re, m => `<mark>${m}</mark>`) : esc(snip) };
+    });
+    head = `<p class="hits-sum">“${esc(D.q)}” ${items.length}개 항목 <button class="linkish" data-dict-clear>전체 목록 보기</button></p>`;
+  } else {
+    items = subjects(name, D.lang).map(s => ({ s, title: titles?.get(s) || '', snip: '' }));
+    head = `<div class="seg">${[['H', '히브리어'], ['G', '헬라어']].map(([l, t]) =>
+      `<button class="tab ${D.lang === l ? 'on' : ''}" data-dict-lang="${l}">${t} ${subjects(name, l).length}</button>`).join('')}
+      ${titles ? '' : '<span class="muted">제목 불러오는 중…</span>'}</div>`;
+  }
+  box.innerHTML = form + head + '<div id="dictList"></div><div id="dictMore"></div>';
+
+  // 14,000개를 한 번에 그리면 느려서 스크롤에 맞춰 이어 붙임
+  let n = 0;
+  const more = () => $('dictList').insertAdjacentHTML('beforeend', items.slice(n, n += 300).map(e =>
+    `<button class="hit" data-dict-go="${esc(e.s)}"><span class="ref">${esc(e.s)}</span>${esc(e.title)}${e.snip}</button>`).join(''));
+  do more(); while (n < items.length && box.scrollHeight < keep + box.clientHeight * 2);
+  box.scrollTop = keep;
+  if (n < items.length) {
+    dictObs = new IntersectionObserver(es => { if (es[0].isIntersecting) { more(); if (n >= items.length) dictObs.disconnect(); } }, { root: box, rootMargin: '800px' });
+    dictObs.observe($('dictMore'));
+  }
 }
 
 const indexDict = (name, progress) => indexDb(dictText, name, dicts[name],
@@ -699,13 +744,13 @@ const indexDict = (name, progress) => indexDb(dictText, name, dicts[name],
 async function dictSearch(q) {
   D.q = q = q.trim(); D.entry = ''; D.list = null;
   const num = q.match(/^([HhGg])?\s*(\d{1,5})$/);
-  if (num?.[1]) { D.entry = num[1].toUpperCase() + +num[2]; return renderDict(); }
+  if (num?.[1]) { D.entry = num[1].toUpperCase() + +num[2]; return renderDict(0); }
   if (num) { // 번호만: 히브리어·헬라어 둘 다
     D.list = ['H', 'G'].map(p => dictRow(p + +num[2])).filter(Boolean).map(([s, d]) => ({ s, text: htmlText(toHtml(d)) }));
     if (D.list.length === 1) { D.entry = D.list[0].s; D.list = null; }
-    return renderDict();
+    return renderDict(0);
   }
-  if (!q) return renderDict();
+  if (!q) return renderDict(0);
   const name = S.dict, want = D;
   $('comm').innerHTML = `<p class="progress">${esc(name)}에서 찾는 중…</p>`;
   const texts = await indexDict(name, p => { const el = $('comm').querySelector('.progress'); if (el) el.textContent = `${name} 색인 중 ${Math.round(p * 100)}% (처음 한 번만)`; })
@@ -713,7 +758,7 @@ async function dictSearch(q) {
   if (!texts || want.q !== q || S.tab !== 'dict') return;
   // 제목(항목 첫머리)에 있는 것을 앞에
   D.list = texts.filter(e => e.text.includes(q)).sort((a, b) => !dictTitle(a.text).includes(q) - !dictTitle(b.text).includes(q));
-  renderDict();
+  renderDict(0);
 }
 
 /* ---------- 검색 (성경 / 주석) ---------- */
@@ -941,8 +986,16 @@ $('comm').onclick = e => {
   const sc = e.target.closest('[data-scope]');
   if (sc) { hits.scope = sc.dataset.scope; return renderHits(); }
   const dg = e.target.closest('[data-dict-go], [data-strong]');
-  if (dg) { e.preventDefault(); D.entry = dg.dataset.dictGo || dg.dataset.strong; if (dg.dataset.strong) D.list = null; return renderDict(); }
-  if (e.target.closest('[data-dict-back]')) { D.entry = ''; return renderDict(); }
+  if (dg) {
+    e.preventDefault();
+    if (dg.dataset.dictGo) D.scroll = $('comm').scrollTop; // 목록으로 돌아올 위치
+    D.entry = dg.dataset.dictGo || dg.dataset.strong;
+    return renderDict(0);
+  }
+  if (e.target.closest('[data-dict-back]')) { D.entry = ''; return renderDict(D.scroll); }
+  const dl = e.target.closest('[data-dict-lang]');
+  if (dl) { D.lang = dl.dataset.dictLang; return renderDict(0); }
+  if (e.target.closest('[data-dict-clear]')) { D.q = ''; D.list = null; return renderDict(0); }
   const h = e.target.closest('.hit');
   if (h?.dataset.i) { const [b, c, v] = REF[+h.dataset.i]; return go(b, c, v, true); }
   if (h?.dataset.go) {
