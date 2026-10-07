@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>성경 뷰어</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2c4aa8">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/pretendard.css">
 <style>
   /* 강조색은 코발트 하나(하이라이트 4색은 사용자 표시용). 모서리: 컨트롤 6px, 팝오버 10px */
@@ -262,6 +266,8 @@
   <hr>
   <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
   <button id="importMarks">백업 불러오기</button>
+  <hr>
+  <button id="installBtn">앱으로 설치<small>바탕화면 아이콘, 독립 창, 인터넷 없이도 열림</small></button>
   <hr>
   <button id="manageBtn">파일 관리<small>불러온 성경·주석·사전을 골라서 지우기</small></button>
   <button id="clearAll">저장된 파일 모두 지우기<small>메모와 책갈피는 지우지 않습니다</small></button>
@@ -1149,6 +1155,21 @@ $('manageBox').addEventListener('click', async e => {
   flash(`${items.length}개 파일을 지웠습니다`);
   renderManage();
 });
+
+/* ---------- 설치형 웹앱 ---------- */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+let installPrompt = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; }); // Chrome·Edge: 설치 창을 메뉴에서 띄움
+const installed = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+$('installBtn').hidden = installed();
+addEventListener('appinstalled', () => { $('installBtn').hidden = true; flash('앱으로 설치했습니다'); });
+$('installBtn').onclick = async () => {
+  closePops();
+  if (installPrompt) { installPrompt.prompt(); installPrompt = null; return; }
+  alert(location.protocol === 'file:'
+    ? '파일로 연 상태에서는 설치할 수 없습니다. 배포된 사이트 주소로 열어서 설치해 주세요.'
+    : '이 브라우저에서는 메뉴로 설치합니다.\n\n· Chrome·Edge: 주소창 오른쪽의 설치 아이콘(⊕) 또는 메뉴 > "앱 설치"\n· Safari(맥): 파일 메뉴 > "Dock에 추가"\n· 아이폰·아이패드 Safari: 공유 버튼 > "홈 화면에 추가"');
+};
 
 $('nudgeBackup').onclick = exportMarks;
 $('nudgeLater').onclick = snoozeNudge;
