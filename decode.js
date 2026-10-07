@@ -209,4 +209,11 @@ function verseHtml(t) {
   return h + '</i>'.repeat(Math.max(0, open('i'))) + '</span>'.repeat(Math.max(0, open('span')));
 }
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml };
+// ESV API 본문("[16] For God so loved… [17] …") → 절 배열 (index = 절-1)
+function parseEsv(t) {
+  const out = [], parts = t.split(/\[(\d+)\]/);
+  for (let i = 1; i < parts.length; i += 2) out[+parts[i] - 1] = parts[i + 1].replace(/\s+/g, ' ').trim();
+  return out;
+}
+
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv };

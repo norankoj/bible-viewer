@@ -1,7 +1,11 @@
 // 실행: node test.js "<Hokma2.cmt.twm 경로>"
 const { DatabaseSync } = require('node:sqlite');
 const assert = require('node:assert');
-const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml } = require('./decode.js');
+const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv } = require('./decode.js');
+
+// ESV API 본문 → 절 배열 (시 같은 줄바꿈·들여쓰기는 공백 하나로)
+assert.deepStrictEqual(parseEsv('\n  [1] The LORD is my shepherd;\n      I shall not want.\n  [2] He makes me lie down\n'),
+  ['The LORD is my shepherd; I shall not want.', 'He makes me lie down']);
 
 // 절 구분표: 66권, 1189장, 31102절, 요 3:16 = 26136번째 줄
 assert.strictEqual(VERSES.length, 66);

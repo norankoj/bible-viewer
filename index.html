@@ -152,6 +152,18 @@
   #noteBox textarea { width: 100%; min-height: 140px; resize: vertical; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); line-height: 1.6; }
   #noteBox .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
   #noteBox .actions .btn:first-child { margin-right: auto; }
+  #esvBox { width: min(400px, calc(100vw - 32px)); }
+  #esvBox label { display: block; font-weight: 600; margin-bottom: 6px; }
+  #esvBox .help { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+  #esvBox .help a { color: var(--accent); }
+  #esvBox .err { color: var(--red); margin: 8px 0 0; }
+  #esvBox .err:empty { display: none; }
+  #esvBox input { width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-family: ui-monospace, monospace; }
+  #esvBox input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #esvBox .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  #esvBox .actions .btn:first-child { margin-right: auto; }
+  .muted { color: var(--muted); font-family: var(--sans); font-size: 13px; }
+  .esv-notice { color: var(--muted); font: 12px/1.6 var(--sans); margin: 32px 0 0; padding-top: 12px; border-top: 1px solid var(--line); max-width: 42em; }
 
   @media (max-width: 760px) {
     .bar { flex-wrap: wrap; height: auto; padding: 8px 16px; }
@@ -204,6 +216,8 @@
   <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석을 한 번에 추가</small></button>
   <button id="addFiles">파일 선택<small>.ont 성경, .cmt.twm 주석</small></button>
   <hr>
+  <button id="esvBtn">ESV 연결<small>ESV 공식 API 키로 영어 성경 보기</small></button>
+  <hr>
   <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
   <button id="importMarks">백업 불러오기</button>
   <hr>
@@ -216,6 +230,17 @@
     <button class="btn sm" id="noteDel">메모 삭제</button>
     <button class="btn sm" id="noteCancel">취소</button>
     <button class="btn sm primary" id="noteSave">저장</button>
+  </div>
+</div>
+<div class="pop" id="esvBox" role="dialog" aria-label="ESV 연결">
+  <label for="esvKeyInput">ESV API 키</label>
+  <p class="help">Crossway가 비상업적 용도로 무료 제공하는 키입니다. <a href="https://api.esv.org/" target="_blank" rel="noopener">api.esv.org</a>에서 로그인한 뒤 앱(Application)을 만들면 키가 나옵니다. 키는 이 브라우저에만 저장됩니다.</p>
+  <input id="esvKeyInput" type="text" autocomplete="off" spellcheck="false" placeholder="키를 붙여넣으세요">
+  <p class="help err" id="esvErr" role="alert"></p>
+  <div class="actions">
+    <button class="btn sm" id="esvOff">연결 해제</button>
+    <button class="btn sm" id="esvCancel">취소</button>
+    <button class="btn sm primary" id="esvSave">연결</button>
   </div>
 </div>
 <div class="pop" id="tip"></div>
@@ -299,8 +324,8 @@ async function load(files, persist) {
   }
   $('status').textContent = '';
   const cn = Object.keys(comms);
-  S.versions = S.versions.filter(n => bibles[n]);
-  if (!S.versions.length && Object.keys(bibles).length) S.versions = [Object.keys(bibles)[0]];
+  S.versions = S.versions.filter(n => bibles[n] || (n === ESV && esvKey));
+  if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
   if (!comms[S.comm]) S.comm = cn[0] || '';
   if (!comms[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
   if (!S.comm2) S.split = false;
@@ -315,6 +340,7 @@ function go(b, c, v, jump) {
   $('back').disabled = !hist.length;
   S.b = b; S.c = c; S.v = v || 0;
   sel = new Set(S.v ? [S.v] : []);
+  esvErrors.clear(); // 실패했던 ESV 장은 다시 열 때 재시도
   if (S.tab === 'search' && !hits) S.tab = 'comm';
   save();
   const recent = prefs.get('recent', []).filter(r => r.b !== b || r.c !== c);
@@ -344,27 +370,78 @@ function verseMark(v) {
   return { cls: m?.color ? ` hl-${m.color}` : '', badge: m?.note ? `<button class="note-badge" data-note="${v}" title="메모 보기">메모</button>` : '' };
 }
 
+/* ---------- ESV (공식 API, 각자 발급받은 키) ----------
+   이용 조건: 비상업적, 한 화면 500절 이하, 임시 보관 500절 이하, 저작권 문구 표시 */
+const ESV = 'ESV';
+const ESV_NOTICE = 'Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.';
+const EN = 'Genesis Exodus Leviticus Numbers Deuteronomy Joshua Judges Ruth 1_Samuel 2_Samuel 1_Kings 2_Kings 1_Chronicles 2_Chronicles Ezra Nehemiah Esther Job Psalm Proverbs Ecclesiastes Song_of_Solomon Isaiah Jeremiah Lamentations Ezekiel Daniel Hosea Joel Amos Obadiah Jonah Micah Nahum Habakkuk Zephaniah Haggai Zechariah Malachi Matthew Mark Luke John Acts Romans 1_Corinthians 2_Corinthians Galatians Ephesians Philippians Colossians 1_Thessalonians 2_Thessalonians 1_Timothy 2_Timothy Titus Philemon Hebrews James 1_Peter 2_Peter 1_John 2_John 3_John Jude Revelation'.split(' ').map(s => s.replace(/_/g, ' '));
+let esvKey = prefs.get('esvKey', '');
+const esvCache = new Map(), esvPending = new Map(), esvErrors = new Map(); // 키 "책.장"
+
+async function fetchEsv(b, c, key = esvKey) {
+  const p = new URLSearchParams({
+    q: `${EN[b - 1]} ${c}:1-${VERSES[b - 1][c - 1]}`, // 범위를 적어야 유다서처럼 한 장짜리 책도 1절이 아니라 장 전체가 옴
+    'include-passage-references': false, 'include-verse-numbers': true, 'include-first-verse-numbers': true,
+    'include-footnotes': false, 'include-headings': false, 'include-short-copyright': false, 'indent-poetry': false, 'indent-paragraphs': 0,
+  });
+  // ESV 서버는 키가 틀리면 CORS 헤더 없이 거절해서 브라우저에는 연결 실패(TypeError)로만 보임
+  const r = await fetch('https://api.esv.org/v3/passage/text/?' + p, { headers: { Authorization: 'Token ' + key } })
+    .catch(() => { throw new Error('API 키가 맞지 않거나 인터넷에 연결되어 있지 않습니다'); });
+  if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'API 키가 맞지 않습니다' : r.status === 429 ? '요청이 너무 많습니다. 잠시 후 다시 열어 주세요' : `ESV 서버 오류 (${r.status})`);
+  return parseEsv((await r.json()).passages?.[0] || '');
+}
+
+// 캐시에 있으면 절 배열, 없으면 불러오기를 시작하고 null
+function esvChapter(b, c) {
+  const k = `${b}.${c}`;
+  if (esvCache.has(k)) { const v = esvCache.get(k); esvCache.delete(k); esvCache.set(k, v); return v; }
+  if (!esvPending.has(k) && !esvErrors.has(k)) {
+    esvPending.set(k, fetchEsv(b, c).then(vs => {
+      esvCache.set(k, vs);
+      // 임시 보관은 500절까지 (오래 안 본 장부터 지움)
+      let total = [...esvCache.values()].reduce((a, x) => a + x.length, 0);
+      for (const old of esvCache.keys()) { if (total <= 500) break; total -= esvCache.get(old).length; esvCache.delete(old); }
+    }).catch(err => esvErrors.set(k, err.message))
+      .finally(() => { esvPending.delete(k); if (S.b === b && S.c === c) { refreshBible(); if (S.v) select(S.v); } }));
+  }
+  return null;
+}
+
+// 번역본 하나의 한 절 (ESV를 아직 못 받았으면 null)
+function verseText(name, b, c, v) {
+  if (name === ESV) { const ch = esvCache.get(`${b}.${c}`); return ch ? ch[v - 1] ?? '' : null; }
+  return bibles[name]?.[START[b][c - 1] + v - 1] ?? '';
+}
+const firstLocal = () => S.versions.find(n => bibles[n]);
+const allVersions = () => [...Object.keys(bibles), ...(esvKey ? [ESV] : [])];
+
+function cellHtml(name, v) {
+  if (name !== ESV) return verseHtml(verseText(name, S.b, S.c, v));
+  const ch = esvChapter(S.b, S.c), err = esvErrors.get(`${S.b}.${S.c}`);
+  return ch ? esc(ch[v - 1] ?? '') : `<span class="muted">${err && v === 1 ? `ESV를 불러오지 못했습니다: ${esc(err)}` : v === 1 ? 'ESV 불러오는 중…' : ''}</span>`;
+}
+
 function renderBible() {
-  const names = Object.keys(bibles);
+  const names = allVersions();
   $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}">${n}</button>`).join('') +
     (names.length > 1 ? `<span class="hint spacer">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '');
   const vs = S.versions;
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
-  const { b, c } = S, base = START[b][c - 1], n = VERSES[b - 1][c - 1];
+  const { b, c } = S, n = VERSES[b - 1][c - 1];
   const title = `<h1 class="chapter-title">${BOOKS[b - 1]} ${c}장</h1>`;
   const ids = Array.from({ length: n }, (_, i) => i + 1);
+  const notice = vs.includes(ESV) ? `<p class="esv-notice">${ESV_NOTICE}</p>` : '';
   if (vs.length === 1) {
-    const L = bibles[vs[0]];
     $('bible').innerHTML = title + ids.map(v => {
       const m = verseMark(v);
-      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${verseHtml(L[base + v - 1] || '')}${m.badge}</p>`;
-    }).join('');
+      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
+    }).join('') + notice;
   } else {
     $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><span class="head"></span>${vs.map(x => `<span class="head">${x}</span>`).join('')}` +
       ids.map(v => {
         const m = verseMark(v);
-        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span>${verseHtml(bibles[x][base + v - 1] || '')}${i ? '' : m.badge}</span>`).join('')}</div>`;
-      }).join('') + '</div>';
+        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
+      }).join('') + '</div>' + notice;
   }
 }
 
@@ -420,10 +497,12 @@ function renderSelbar() {
 
 /* ---------- 복사 ---------- */
 async function copySel() {
-  const vs = sorted(), { b, c } = S, base = START[b][c - 1];
+  const vs = sorted(), { b, c } = S;
   const label = `${BOOKS[b - 1]} ${c}:${rangeLabel(vs)}`;
-  const text = S.versions.map(name => `${label} (${name})\n` +
-    (vs.length === 1 ? plainVerse(bibles[name][base + vs[0] - 1]) : vs.map(v => `${v} ${plainVerse(bibles[name][base + v - 1])}`).join('\n'))).join('\n\n');
+  const t = (name, v) => plainVerse(verseText(name, b, c, v));
+  // 아직 못 받은 ESV는 빼고 복사
+  const text = S.versions.filter(name => verseText(name, b, c, vs[0]) !== null).map(name => `${label} (${name})\n` +
+    (vs.length === 1 ? t(name, vs[0]) : vs.map(v => `${v} ${t(name, v)}`).join('\n'))).join('\n\n');
   try { await navigator.clipboard.writeText(text); }
   catch { // file:// 등 클립보드 API가 막힌 환경
     const t = Object.assign(document.createElement('textarea'), { value: text });
@@ -556,7 +635,7 @@ const reEsc = q => new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
 function search(q) {
   q = q.trim();
   if (!q) { hits = null; S.tab = 'comm'; return renderComm(); }
-  const ver = S.versions[0];
+  const ver = firstLocal(); // ESV는 장 단위로만 받을 수 있어 전체 검색에서 제외
   let bible = [];
   if (ver) {
     plain[ver] ||= bibles[ver].map(plainVerse);
@@ -626,7 +705,7 @@ function renderHits() {
 
 /* ---------- 보관함 ---------- */
 function renderSaved() {
-  const all = [...marks.values()], L = bibles[S.versions[0]];
+  const all = [...marks.values()], L = bibles[firstLocal()];
   const verseOf = m => L ? esc(plainVerse(L[START[m.b][m.c - 1] + m.v - 1])) : '';
   const item = (m, label, body) => `<button class="hit" data-go="${m.b}.${m.c}.${m.v}"><span class="ref">${label}</span>${body}</button>`;
   const section = (title, list, none) => `<h4>${title}</h4>` + (list.length ? list.join('') : `<p class="none">${none}</p>`);
@@ -686,6 +765,36 @@ $('clearAll').onclick = async () => {
 };
 $('files').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
 $('folder').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
+$('esvBtn').onclick = e => {
+  e.stopPropagation();
+  $('esvKeyInput').value = esvKey; $('esvErr').textContent = ''; $('esvOff').hidden = !esvKey;
+  openPop($('esvBox'), $('menuBtn'));
+  $('esvKeyInput').focus();
+};
+$('esvBox').onclick = e => e.stopPropagation();
+$('esvCancel').onclick = closePops;
+// 저장 전에 실제로 한 장을 받아 보아 키가 맞는지 확인
+$('esvSave').onclick = async () => {
+  const key = $('esvKeyInput').value.trim();
+  if (!/^[0-9a-f]{20,64}$/i.test(key)) { $('esvErr').textContent = '키 형식이 아닙니다. api.esv.org에서 복사한 키를 그대로 붙여넣어 주세요.'; return; }
+  $('esvSave').disabled = true; $('esvErr').textContent = '';
+  try {
+    const john3 = await fetchEsv(43, 3, key);
+    esvKey = key; prefs.set('esvKey', key);
+    esvCache.clear(); esvErrors.clear();
+    esvCache.set('43.3', john3); // 확인용으로 받은 장은 다시 요청하지 않음
+    if (!S.versions.includes(ESV)) S.versions = [...S.versions, ESV];
+    save(); closePops(); refreshBible(); flash('ESV를 연결했습니다');
+  } catch (err) { $('esvErr').textContent = `연결하지 못했습니다: ${err.message}`; }
+  finally { $('esvSave').disabled = false; }
+};
+$('esvOff').onclick = () => {
+  esvKey = ''; prefs.set('esvKey', ''); esvCache.clear();
+  S.versions = S.versions.filter(n => n !== ESV);
+  if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
+  save(); closePops(); refreshBible(); flash('ESV 연결을 해제했습니다');
+};
+$('esvKeyInput').onkeydown = e => { if (e.key === 'Enter') $('esvSave').click(); };
 $('nudgeBackup').onclick = exportMarks;
 $('nudgeLater').onclick = snoozeNudge;
 $('noteBox').onclick = e => e.stopPropagation();
@@ -754,13 +863,14 @@ function linkClick(e) {
 // 주석 속 성경 참조에 마우스를 올리면 본문 미리보기
 function showTip(e) {
   const a = e.target.closest('a[data-ref]'), tip = $('tip');
-  if (!a || !S.versions[0]) return tip.classList.remove('open');
+  const ver = firstLocal(); // 미리보기는 내려받은 성경으로 (ESV는 마우스 올릴 때마다 요청하면 사용량 초과)
+  if (!a || !ver) return tip.classList.remove('open');
   const m = a.dataset.ref.match(/id=(\d+)\.(\d+)\.(\d+)(?:-(\d+)\.(\d+)\.(\d+))?/); if (!m) return;
   const from = START[+m[1]]?.[m[2] - 1] + (+m[3]) - 1;
   const to = m[4] ? START[+m[4]]?.[m[5] - 1] + (+m[6]) - 1 : from;
   if (!(from >= 0)) return;
-  const L = bibles[S.versions[0]], ids = Array.from({ length: Math.min(to - from + 1, 6) }, (_, i) => from + i);
-  tip.innerHTML = `<b>${refName(...REF[from])}${to > from ? '-' + REF[to][2] : ''} · ${S.versions[0]}</b>` +
+  const L = bibles[ver], ids = Array.from({ length: Math.min(to - from + 1, 6) }, (_, i) => from + i);
+  tip.innerHTML = `<b>${refName(...REF[from])}${to > from ? '-' + REF[to][2] : ''} · ${ver}</b>` +
     ids.map(i => (ids.length > 1 ? `<span class="vn">${REF[i][2]}</span>` : '') + verseHtml(L[i] || '')).join(' ') + (to - from >= 6 ? ' …' : '');
   tip.classList.add('open');
   const r = a.getBoundingClientRect();
