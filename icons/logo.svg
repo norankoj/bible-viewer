@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 펼친 성경책: 가운데 접힌 틈(세로)과 가로 틈이 여백으로 십자가를 이룸. 아래 "HOLY BIBLE" -->
+  <defs>
+    <mask id="cross">
+      <rect width="512" height="512" fill="#fff"/>
+      <rect x="248" y="110" width="16" height="300" fill="#000"/>
+      <rect x="172" y="204" width="168" height="16" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#16213f"/>
+  <g transform="translate(0 -52)">
+    <g mask="url(#cross)" fill="#f3f4f8">
+      <path d="M256 166 C214 144 166 138 112 146 L112 362 C166 354 214 360 256 382 Z"/>
+      <path d="M256 166 C298 144 346 138 400 146 L400 362 C346 354 298 360 256 382 Z"/>
+    </g>
+  </g>
+  <text x="256" y="414" text-anchor="middle" fill="#f3f4f8" font-family="Georgia, 'Times New Roman', serif" font-size="44" font-weight="700" letter-spacing="6">HOLY BIBLE</text>
+</svg>
