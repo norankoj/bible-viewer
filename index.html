@@ -356,20 +356,46 @@ const MODULE = /\.(ont|ot|nt|twm)$/i;
 const fileInfo = {};
 async function addFile(f) {
   const name = f.name.replace(/(\.(cmt|gbk|dct))?\.(twm|ont|ot|nt)$/i, '');
-  const u8 = new Uint8Array(await f.arrayBuffer());
   fileInfo[name] = { key: f.name, size: f.size };
   const kind = f.name.match(/\.(ont|ot|nt)$/i)?.[1].toLowerCase();
-  if (kind) { bibles[name] = parseOnt(u8, kind); delete plain[name]; return; }
-  SQL ||= await initSqlJs({ wasmBinary: Uint8Array.from(atob(window.SQL_WASM_B64), c => c.charCodeAt(0)) });
-  const db = new SQL.Database(u8);
-  const tables = rows(db, "select name from sqlite_master where type='table'", []).flat();
-  // 주석은 성경 구절표(bible_refs), 사전·일반 도서는 항목표(topics)가 있음
-  if (tables.includes('bible_refs')) { comms[name]?.close(); comms[name] = db; delete commText[name]; }
-  else if (tables.includes('topics')) {
-    dicts[name]?.close(); dicts[name] = db; dictSize[name] = u8.length; // 크기가 바뀌면(다른 파일) 저장된 요약을 새로 만듦
-    for (const c of [dictText, dictLite, dictTitles, dictById, finders]) delete c[name];
+  if (kind) { bibles[name] = parseOnt(new Uint8Array(await f.arrayBuffer()), kind); delete plain[name]; return; }
+  // 주석·사전은 여기서 열지 않음 (필요할 때 openComm/openDict). 종류는 이름으로, 모르면 열어서 표를 봄
+  let type = /\.cmt\.twm$/i.test(f.name) ? 'comm' : /\.(gbk|dct)\.twm$/i.test(f.name) ? 'dict' : '';
+  if (!type) {
+    const db = await sqlOpen(f), tables = rows(db, "select name from sqlite_master where type='table'", []).flat();
+    db.close();
+    // 주석은 성경 구절표(bible_refs), 사전·일반 도서는 항목표(topics)가 있음
+    type = tables.includes('bible_refs') ? 'comm' : tables.includes('topics') ? 'dict' : '';
+    if (!type) throw new Error('주석이나 사전 형식이 아닙니다');
   }
-  else { db.close(); throw new Error('주석이나 사전 형식이 아닙니다'); }
+  if (type === 'comm') { comms[name]?.close(); delete comms[name]; commFiles[name] = f; delete commText[name]; }
+  else {
+    dicts[name]?.close(); delete dicts[name]; dictFiles[name] = f;
+    for (const l of 'HG') delete dictSubjects[name + l];
+    dictSize[name] = f.size; // 크기가 바뀌면(다른 파일) 저장된 요약을 새로 만듦
+    for (const c of [dictText, dictLite, dictById, finders]) delete c[name];
+  }
+}
+
+/* ---------- 주석·사전은 필요할 때만 열기 ----------
+   호크마(155MB)처럼 큰 파일을 시작할 때마다 메모리에 올리지 않도록 */
+const commFiles = {}, dictFiles = {}, opening = {};
+async function sqlOpen(file) {
+  SQL ||= await initSqlJs({ wasmBinary: Uint8Array.from(atob(window.SQL_WASM_B64), c => c.charCodeAt(0)) });
+  return new SQL.Database(new Uint8Array(await file.arrayBuffer()));
+}
+function openDb(name, files, dbs) {
+  if (dbs[name]) return Promise.resolve(dbs[name]);
+  if (!files[name]) return Promise.reject(new Error('파일이 없습니다'));
+  return opening[name] ||= sqlOpen(files[name]).then(db => dbs[name] = db).finally(() => delete opening[name]);
+}
+const openComm = name => openDb(name, commFiles, comms);
+const openDict = name => openDb(name, dictFiles, dicts);
+// 열어 둔 주석은 지금 보는 것(2단 보기면 2개)만 남기고 닫아 메모리를 비움 (검색 색인 중인 것은 그대로)
+function closeUnusedComms() {
+  const busy = Object.keys(indexing).join('\n');
+  for (const n of Object.keys(comms))
+    if (n !== S.comm && !(S.split && n === S.comm2) && !busy.endsWith(n) && !busy.includes(n + '\n')) { comms[n].close(); delete comms[n]; }
 }
 
 async function load(files, persist) {
@@ -391,11 +417,11 @@ async function load(files, persist) {
   S.versions = S.versions.filter(n => bibles[n] || (n === ESV && (esvKey || esvProxy)));
   if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
   sortVersions();
-  if (!comms[S.comm]) S.comm = cn[0] || '';
-  if (!dicts[S.dict]) S.dict = dictNames()[0] || '';
+  if (!commFiles[S.comm]) S.comm = cn[0] || '';
+  if (!dictFiles[S.dict]) S.dict = dictNames()[0] || '';
   if (S.tab === 'dict' && !S.dict) S.tab = 'comm';
-  if (S.dict) titlesOf(S.dict); // 사전 색인을 미리 뒤에서 (목록 제목·원어, 단어 팝업에 씀)
-  if (!comms[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
+  if (S.dict) liteOf(S.dict).catch(() => {}); // 사전 요약을 미리 뒤에서 (목록, 단어 팝업에 씀. 보관본이 있으면 바로)
+  if (!commFiles[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
   if (!S.comm2) S.split = false;
   go(S.b, S.c, S.v);
 }
@@ -498,8 +524,8 @@ const ordered = (kind, names) => {
   return [...names].sort((a, b) => at(a) - at(b));
 };
 const allVersions = () => ordered('bible', [...Object.keys(bibles), ...(esvKey || esvProxy ? [ESV] : [])]);
-const commNames = () => ordered('comm', Object.keys(comms));
-const dictNames = () => ordered('dict', Object.keys(dicts));
+const commNames = () => ordered('comm', Object.keys(commFiles));
+const dictNames = () => ordered('dict', Object.keys(dictFiles));
 // 대조 보기 칸·복사 순서도 탭 순서를 따름
 const sortVersions = () => { S.versions = allVersions().filter(n => S.versions.includes(n)); };
 
@@ -696,8 +722,13 @@ async function importMarks(file) {
 const rows = (db, sql, params) => { const st = db.prepare(sql); st.bind(params); const r = []; while (st.step()) r.push(st.get()); st.free(); return r; };
 
 function commHtml(name) {
+  if (!commFiles[name]) return `<p class="empty small">${Object.keys(bibles).length ? '주석 파일(.cmt.twm)을 추가하면 여기에 나옵니다.' : ''}</p>`;
   const db = comms[name];
-  if (!db) return `<p class="empty small">${Object.keys(bibles).length ? '주석 파일(.cmt.twm)을 추가하면 여기에 나옵니다.' : ''}</p>`;
+  if (!db) { // 처음 볼 때 열고 다시 그림
+    openComm(name).then(() => { closeUnusedComms(); renderComm(); if (S.v) syncComm(S.v); })
+      .catch(err => flash(`${name}을(를) 열지 못했습니다: ${err.message}`));
+    return `<p class="progress empty small">${esc(name)} 여는 중…</p>`;
+  }
   const { b, c } = S;
   // TEXT로 받으면 UTF-8 디코딩에서 RVF 바이트가 깨지므로 blob으로 받음
   const list = rows(db, 'select r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) where r.bi=? and r.ci=? order by r.fvi, r.topic_id', [b, c]);
@@ -707,6 +738,7 @@ function commHtml(name) {
 }
 
 function renderComm() {
+  closeUnusedComms(); // 2단 보기를 끄거나 주석을 바꾸면 안 보는 주석은 닫음
   const names = commNames();
   const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
   const drag = (kind, n) => `draggable="true" data-drag="${kind}:${n}" title="끌어서 순서 바꾸기"`;
@@ -720,7 +752,7 @@ function renderComm() {
   $('main').classList.toggle('no-comm', !!S.hideComm);
   if (S.tab === 'search' && hits) renderHits();
   else if (S.tab === 'saved') renderSaved();
-  else if (S.tab === 'dict' && dicts[S.dict]) renderDict();
+  else if (S.tab === 'dict' && dictFiles[S.dict]) renderDict();
   else $('comm').innerHTML = commHtml(S.comm);
   if (S.split) {
     $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${n}"`, n)).join('');
@@ -731,17 +763,10 @@ function renderComm() {
 /* ---------- 원어 사전 (스트롱 번호: H430 히브리어, G26 헬라어) ---------- */
 // 지금 보는 항목, 찾은 목록, 전체 목록 언어(H/G), 목록으로 돌아올 스크롤 위치
 const D = { q: '', entry: '', list: null, lang: 'H', scroll: 0, shown: '' };
+// 전체 목록(H 또는 G)은 요약에서 바로 (사전 파일을 열지 않음)
 const dictSubjects = {};
 const subjects = (name, lang) => dictSubjects[name + lang] ||=
-  rows(dicts[name], 'select subject from topics where subject like ? order by cast(substr(subject, 2) as int)', [lang + '%']).flat();
-// 목록 제목은 사전 전체 색인이 끝나야 나옴 → 처음 열 때 뒤에서 색인하고, 끝나면 다시 그림
-const dictTitles = {};
-function titlesOf(name) {
-  if (dictTitles[name]) return dictTitles[name];
-  if (dictLite[name]) return dictTitles[name] = new Map(dictLite[name].map(e => [e.s, { h: e.h, t: e.title }]));
-  liteOf(name).then(() => { if (S.tab === 'dict' && S.dict === name && !D.entry) renderDict(); }).catch(() => {});
-  return null;
-}
+  dictLite[name].filter(e => e.s[0] === lang).sort((a, b) => a.s.slice(1) - b.s.slice(1));
 
 // 사전 요약 [{s, h 원어, title, body 풀이 앞부분}]: 목록·단어 팝업에 씀.
 // 처음 한 번만 사전 전체를 풀어 만들고(약 6초) 브라우저에 보관 → 다음부터는 바로 읽음
@@ -752,8 +777,12 @@ function liteOf(name) {
     const key = `dict:${name}:${dictSize[name]}`;
     let lite = await idb('cache', 'readonly', s => s.get(key)).catch(() => null);
     if (!Array.isArray(lite)) {
+      const wasOpen = !!dicts[name];
+      await openDict(name);
       lite = (await indexDict(name, () => {})).map(e => { const { title, body } = dictParts(e.text); return { s: e.s, h: e.h, title, body: body.slice(0, 300) }; });
       idb('cache', 'readwrite', s => s.put(lite, key)).catch(() => {});
+      delete dictText[name]; // 전체 글자 색인은 한글 검색 때 다시 만듦 (메모리 절약)
+      if (!wasOpen && !(S.tab === 'dict' && D.entry)) { dicts[name]?.close(); delete dicts[name]; } // 요약만 만들려고 연 거면 닫음
     }
     return dictLite[name] = lite;
   })().finally(() => delete liteLoading[name]);
@@ -779,6 +808,14 @@ function renderDict(scrollTo) {
   dictObs?.disconnect();
   const form = `<form class="dict-form" id="dictForm"><input id="dq" type="search" value="${esc(D.q)}" placeholder="H430, G26, 430 또는 한글 단어" aria-label="사전에서 찾기"><button class="btn sm primary">찾기</button></form>`;
 
+  // 전체 풀이는 사전 파일을, 목록은 요약을 씀. 아직 없으면 준비한 뒤 다시 그림
+  const need = D.entry ? !dicts[name] && openDict(name) : !dictLite[name] && liteOf(name);
+  if (need) {
+    box.innerHTML = form + `<p class="progress">${D.entry ? '사전 여는 중…' : '사전 준비 중… (처음 한 번만, 몇 초 걸립니다)'}</p>`;
+    need.then(() => { if (S.tab === 'dict' && S.dict === name) renderDict(keep); }).catch(err => flash(`사전을 열지 못했습니다: ${err.message}`));
+    return;
+  }
+
   if (D.entry) {
     const row = dictRow(D.entry), same = D.shown === D.entry;
     box.innerHTML = form + '<button class="linkish" data-dict-back>‹ 목록</button>' + (row
@@ -791,7 +828,6 @@ function renderDict(scrollTo) {
   D.shown = '';
 
   // 찾은 목록 또는 전체 목록 (H/G)
-  const titles = titlesOf(name);
   let items, head;
   if (D.list) {
     const re = D.q && !/^\d+$/.test(D.q) ? reEsc(D.q) : null;
@@ -802,10 +838,9 @@ function renderDict(scrollTo) {
     });
     head = `<p class="hits-sum">“${esc(D.q)}” ${items.length}개 항목 <button class="linkish" data-dict-clear>전체 목록 보기</button></p>`;
   } else {
-    items = subjects(name, D.lang).map(s => ({ s, h: titles?.get(s)?.h, title: titles?.get(s)?.t || '', snip: '' }));
+    items = subjects(name, D.lang).map(e => ({ s: e.s, h: e.h, title: e.title, snip: '' }));
     head = `<div class="seg">${[['H', '히브리어'], ['G', '헬라어']].map(([l, t]) =>
-      `<button class="tab ${D.lang === l ? 'on' : ''}" data-dict-lang="${l}">${t} ${subjects(name, l).length}</button>`).join('')}
-      ${titles ? '' : '<span class="muted">제목 불러오는 중…</span>'}</div>`;
+      `<button class="tab ${D.lang === l ? 'on' : ''}" data-dict-lang="${l}">${t} ${subjects(name, l).length}</button>`).join('')}</div>`;
   }
   box.innerHTML = form + head + '<div id="dictList"></div><div id="dictMore"></div>';
 
@@ -836,15 +871,17 @@ async function dictSearch(q) {
   D.q = q = q.trim(); D.entry = ''; D.list = null;
   const num = q.match(/^([HhGg])?\s*(\d{1,5})$/);
   if (num?.[1]) { D.entry = num[1].toUpperCase() + +num[2]; return renderDict(0); }
-  if (num) { // 번호만: 히브리어·헬라어 둘 다
-    D.list = ['H', 'G'].map(p => dictRow(p + +num[2])).filter(Boolean).map(([s, d]) => { const h = toHtml(d); return { s, text: htmlText(h), h: headword(h) }; });
+  const name = S.dict, want = D;
+  if (num) { // 번호만: 히브리어·헬라어 둘 다 (요약에서)
+    await liteOf(name);
+    const info = byIdOf(name);
+    D.list = ['H', 'G'].map(p => info.get(p + +num[2])).filter(Boolean).map(e => ({ s: e.s, h: e.h, text: e.title }));
     if (D.list.length === 1) { D.entry = D.list[0].s; D.list = null; }
     return renderDict(0);
   }
   if (!q) return renderDict(0);
-  const name = S.dict, want = D;
   $('comm').innerHTML = `<p class="progress">${esc(name)}에서 찾는 중…</p>`;
-  const texts = await indexDict(name, p => { const el = $('comm').querySelector('.progress'); if (el) el.textContent = `${name} 색인 중 ${Math.round(p * 100)}% (처음 한 번만)`; })
+  const texts = await openDict(name).then(() => indexDict(name, p => { const el = $('comm').querySelector('.progress'); if (el) el.textContent = `${name} 색인 중 ${Math.round(p * 100)}% (처음 한 번만)`; }))
     .catch(err => { $('comm').innerHTML = `<p class="empty small">찾지 못했습니다: ${esc(err.message)}</p>`; });
   if (!texts || want.q !== q || S.tab !== 'dict') return;
   // 제목(항목 첫머리)에 있는 것을 앞에
@@ -954,10 +991,10 @@ const indexComm = (name, progress) => indexDb(commText, name, comms[name],
 async function searchComm() {
   const name = S.comm, h = hits;
   if (!name) return;
-  const texts = await indexComm(name, p => {
+  const texts = await openComm(name).then(() => indexComm(name, p => {
     const el = hits === h && S.tab === 'search' && $('comm').querySelector('.progress');
     if (el) el.textContent = `${name} 주석 색인 중 ${Math.round(p * 100)}% (처음 한 번만)`;
-  }).catch(err => { if (hits === h) $('comm').querySelector('.progress')?.replaceChildren(`주석 검색에 실패했습니다: ${err.message}`); });
+  })).catch(err => { if (hits === h) $('comm').querySelector('.progress')?.replaceChildren(`주석 검색에 실패했습니다: ${err.message}`); });
   if (!texts) return;
   if (hits !== h) return;
   h.comm = { name, list: texts.filter(e => e.text.includes(h.q)) };
@@ -1132,11 +1169,12 @@ async function removeModules(items) {
   for (const it of items) {
     const kind = kindOf(it), name = nameOf(it);
     if (kind === 'bible') { delete bibles[name]; delete plain[name]; }
-    if (kind === 'comm') { comms[name]?.close(); delete comms[name]; delete commText[name]; }
+    if (kind === 'comm') { comms[name]?.close(); delete comms[name]; delete commText[name]; delete commFiles[name]; }
     if (kind === 'dict') {
       dicts[name]?.close(); delete dicts[name];
       await idb('cache', 'readwrite', s => s.delete(`dict:${name}:${dictSize[name]}`)).catch(() => {});
-      for (const c of [dictText, dictLite, dictTitles, dictById, finders, dictSize]) delete c[name];
+      for (const c of [dictText, dictLite, dictById, finders, dictSize, dictFiles]) delete c[name];
+      for (const l of 'HG') delete dictSubjects[name + l];
     }
     if (fileInfo[name]) await idb('files', 'readwrite', s => s.delete(fileInfo[name].key)).catch(() => {});
     delete fileInfo[name];
