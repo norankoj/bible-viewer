@@ -53,11 +53,16 @@
   .nudge span { margin-right: auto; }
 
   /* 본문 영역: 성경 | 주석 (| 주석 2) */
-  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); min-height: 0; }
-  main.split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); }
+  /* 칸 너비는 끌어서 조절 (--c1… 은 JS가 설정) */
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, var(--c1, 1.15fr)) minmax(0, var(--c2, 1fr)); min-height: 0; }
+  main.split { grid-template-columns: minmax(0, var(--s1, 1.1fr)) minmax(0, var(--s2, 1fr)) minmax(0, var(--s3, 1fr)); }
   #pane2 { display: none; }
   main.split #pane2 { display: flex; }
-  .pane { display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
+  .pane { position: relative; display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
+  .resizer { position: absolute; top: 0; bottom: 0; left: -5px; width: 10px; cursor: col-resize; z-index: 5; touch-action: none; }
+  .resizer::after { content: ""; position: absolute; top: 0; bottom: 0; left: 4px; width: 2px; background: transparent; transition: background .15s; }
+  .resizer:hover::after, .resizer.drag::after { background: var(--accent); }
+  body.resizing { cursor: col-resize; user-select: none; }
   .pane + .pane { border-left: 1px solid var(--line); background: var(--bg); }
   .tabs { flex: none; display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
   .tab { height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); white-space: nowrap; }
@@ -152,7 +157,7 @@
     .bar { flex-wrap: wrap; height: auto; padding: 8px 16px; }
     .search { flex: 1 1 100%; order: 9; margin: 0; }
     main, main.split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 55% 45%; }
-    main.split #pane2, [data-split] { display: none !important; }
+    main.split #pane2, [data-split], .resizer { display: none !important; }
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
     .scroll { padding: 16px 16px 48px; }
   }
@@ -183,10 +188,12 @@
     <div class="selbar" id="selbar" hidden></div>
   </section>
   <section class="pane">
+    <div class="resizer" data-r="a" title="끌어서 너비 조절 · 두 번 누르면 원래대로" aria-hidden="true"></div>
     <div class="tabs" id="comTabs"></div>
     <div class="scroll" id="comm"></div>
   </section>
   <section class="pane" id="pane2">
+    <div class="resizer" data-r="b" title="끌어서 너비 조절 · 두 번 누르면 원래대로" aria-hidden="true"></div>
     <div class="tabs" id="comTabs2"></div>
     <div class="scroll" id="comm2"></div>
   </section>
@@ -790,6 +797,38 @@ $('bigger').onclick = () => { fs = Math.min(26, fs + 1); applyFont(); };
 $('fontBtn').onclick = () => { serif = !serif; applyFont(); };
 applyFont();
 checkNudge();
+
+// 칸 너비: a = 성경 칸 비율(2칸), sa = 성경 칸 비율(3칸), b = 3칸일 때 남은 폭 중 첫 주석 비율
+const COLS = { a: 0.535, sa: 0.355, b: 0.5 };
+let cols = { ...COLS, ...prefs.get('cols', {}) };
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+function applyCols() {
+  const st = $('main').style;
+  st.setProperty('--c1', cols.a + 'fr'); st.setProperty('--c2', (1 - cols.a) + 'fr');
+  st.setProperty('--s1', cols.sa + 'fr'); st.setProperty('--s2', (1 - cols.sa) * cols.b + 'fr'); st.setProperty('--s3', (1 - cols.sa) * (1 - cols.b) + 'fr');
+}
+document.querySelectorAll('.resizer').forEach(r => {
+  r.onpointerdown = e => {
+    e.preventDefault();
+    r.setPointerCapture(e.pointerId);
+    r.classList.add('drag'); document.body.classList.add('resizing');
+    const box = $('main').getBoundingClientRect();
+    r.onpointermove = ev => {
+      const x = (ev.clientX - box.left) / box.width;
+      if (r.dataset.r === 'b') cols.b = clamp((x - cols.sa) / (1 - cols.sa), 0.2, 0.8);
+      else if (S.split) cols.sa = clamp(x, 0.2, 0.6);
+      else cols.a = clamp(x, 0.2, 0.8);
+      applyCols();
+    };
+    r.onpointerup = r.onpointercancel = () => {
+      r.onpointermove = null;
+      r.classList.remove('drag'); document.body.classList.remove('resizing');
+      prefs.set('cols', cols);
+    };
+  };
+  r.ondblclick = () => { cols = { ...COLS }; applyCols(); prefs.set('cols', cols); };
+});
+applyCols();
 
 Promise.all([
   idb('marks', 'readonly', s => s.getAll()).then(list => list.forEach(m => marks.set(m.id, m))).catch(() => {}),
