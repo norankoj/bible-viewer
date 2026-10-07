@@ -172,6 +172,8 @@
   .saved .none { color: var(--muted); margin: 0; font-size: 13px; }
   mark { background: var(--accent-soft); color: inherit; border-radius: 2px; }
   .progress { color: var(--muted); }
+  .credit { color: var(--muted); font-size: 12px; margin: 20px 0 0; }
+  .credit a { color: inherit; }
 
   /* 빈 화면 */
   .empty { max-width: 28em; margin: 12vh auto 0; color: var(--muted); }
@@ -595,6 +597,7 @@ function select(v, mode) {
   if (p) (p.classList.contains('row') ? p.firstElementChild : p).scrollIntoView({ block: 'nearest' });
   renderSelbar();
   syncComm(v);
+  if (S.tab === 'xref' && mode !== 'range') renderXref(); // 고른 절의 관련 구절로
 }
 
 function syncComm(v) {
@@ -752,6 +755,7 @@ function renderComm() {
   $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}" ${drag('comm', n)}`, n)).join('') +
     dictNames().map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}" ${drag('dict', n)}`, n)).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
+    tab(S.tab === 'xref', 'data-xref', '교차 참조') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
     (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '') +
     `<button class="tab ${names.length > 1 ? '' : 'spacer'}" data-hide-comm title="주석 칸 숨기기 (성경 칸 위 '주석 보기'로 다시 열기)" aria-label="주석 칸 숨기기">숨기기 ›</button>`;
@@ -759,6 +763,7 @@ function renderComm() {
   $('main').classList.toggle('no-comm', !!S.hideComm);
   if (S.tab === 'search' && hits) renderHits();
   else if (S.tab === 'saved') renderSaved();
+  else if (S.tab === 'xref') renderXref();
   else if (S.tab === 'dict' && dictFiles[S.dict]) renderDict();
   else $('comm').innerHTML = commHtml(S.comm);
   if (S.split) {
@@ -894,6 +899,35 @@ async function dictSearch(q) {
   // 제목(항목 첫머리)에 있는 것을 앞에
   D.list = texts.filter(e => e.text.includes(q)).sort((a, b) => !dictTitle(a.text).includes(q) - !dictTitle(b.text).includes(q));
   renderDict(0);
+}
+
+/* ---------- 교차 참조 (OpenBible.info, CC BY 4.0) ----------
+   data/xrefs.js 를 처음 열 때만 불러옴 (스크립트 형태라 파일로 연 index.html에서도 됨) */
+let xrefLines = null, xrefLoading = null;
+function loadXrefs() {
+  if (xrefLines) return Promise.resolve(xrefLines);
+  return xrefLoading ||= new Promise((ok, no) => {
+    const s = Object.assign(document.createElement('script'), { src: 'data/xrefs.js' });
+    s.onload = () => { xrefLines = window.XREFS.split('\n'); delete window.XREFS; ok(xrefLines); };
+    s.onerror = () => { xrefLoading = null; no(new Error('교차 참조 파일을 불러오지 못했습니다')); };
+    document.head.append(s);
+  });
+}
+function renderXref() {
+  const box = $('comm');
+  if (!xrefLines) {
+    box.innerHTML = '<p class="progress empty small">교차 참조 불러오는 중…</p>';
+    loadXrefs().then(() => S.tab === 'xref' && renderXref()).catch(err => { box.innerHTML = `<p class="empty small">${esc(err.message)}</p>`; });
+    return;
+  }
+  const credit = '<p class="credit">교차 참조: <a href="https://www.openbible.info/labs/cross-references/" target="_blank" rel="noopener">OpenBible.info</a> (CC BY 4.0), 사용자 투표 순</p>';
+  if (!S.v) { box.innerHTML = '<p class="empty small">절을 고르면 관련 구절이 나옵니다.</p>' + credit; return; }
+  const list = parseXrefs(xrefLines[START[S.b][S.c - 1] + S.v - 1]), ver = firstLocal();
+  const label = (s, n) => refName(...REF[s]) + (n ? '-' + (REF[s + n][1] === REF[s][1] ? REF[s + n][2] : `${REF[s + n][1]}:${REF[s + n][2]}`) : '');
+  box.innerHTML = `<p class="hits-sum">${BOOKS[S.b - 1]} ${S.c}:${S.v} 관련 구절 ${list.length}개</p>` +
+    (list.length ? list.map(([s, n]) => `<button class="hit" data-go="${REF[s].join('.')}"><span class="ref">${label(s, n)}</span>` +
+      (ver ? esc(plainVerse(bibles[ver][s])) + (n ? ' …' : '') : '') + '</button>').join('') : '<p class="empty small">이 절에는 교차 참조가 없습니다.</p>') + credit;
+  box.scrollTop = 0;
 }
 
 /* ---------- 원어 단어 → 사전 팝업 ----------
@@ -1271,6 +1305,7 @@ $('comTabs').onclick = e => {
   const t = e.target.closest('.tab'); if (!t) return;
   if (t.dataset.comm) { S.comm = t.dataset.comm; S.tab = 'comm'; if (S.comm2 === S.comm) S.comm2 = Object.keys(comms).find(n => n !== S.comm) || ''; }
   else if (t.dataset.dict) { S.dict = t.dataset.dict; S.tab = 'dict'; }
+  else if (t.dataset.xref !== undefined) S.tab = 'xref';
   else if (t.dataset.search !== undefined) S.tab = 'search';
   else if (t.dataset.saved !== undefined) S.tab = 'saved';
   else if (t.dataset.split !== undefined) S.split = !S.split;

@@ -1,6 +1,6 @@
 // 설치형 웹앱: 인터넷이 없어도 뷰어 화면이 열리도록 화면 파일만 보관.
 // (성경·주석·사전 데이터는 브라우저 저장소(IndexedDB)에 따로 있음)
-const CACHE = 'viewer-v1';
+const CACHE = 'viewer-v2';
 const SHELL = ['./', 'index.html', 'decode.js', 'manifest.webmanifest', 'vendor/sql-wasm.js', 'vendor/sql-wasm-bin.js', 'vendor/pretendard.css', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {

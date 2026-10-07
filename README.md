@@ -42,3 +42,4 @@ node test.js "<주석.cmt.twm 경로>" "<성경.ont 경로>"
 
 - [sql.js](https://github.com/sql-js/sql.js) (MIT, `vendor/sql.js-LICENSE.txt`)
 - [Pretendard](https://github.com/orioncactus/pretendard) (SIL Open Font License 1.1, `vendor/Pretendard-LICENSE.txt`)
+- 교차 참조: [OpenBible.info](https://www.openbible.info/labs/cross-references/) (CC BY 4.0). `node tools/build-xrefs.js cross_references.txt`로 `data/xrefs.js`를 다시 만들 수 있습니다.
