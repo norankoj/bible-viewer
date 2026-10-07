@@ -470,7 +470,8 @@ function cellHtml(name, v) {
 function renderBible() {
   const names = allVersions();
   $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}">${n}</button>`).join('') +
-    (S.versions.some(n => bibles[n]?.rtl) ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
+    (S.versions.some(n => bibles[n]?.rtl) ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` +
+      `<button class="tab" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
     (names.length > 1 ? `<span class="hint ${S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '');
   const vs = S.versions;
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
@@ -809,6 +810,13 @@ async function showWord(w) {
   const ids = w.dataset.strong ? w.dataset.strong.split(',')
     : rankCandidates(finderOf(name, /[֐-׿]/.test(lemma) ? 'H' : 'G')(lemma), w.dataset.gloss, name);
   pop.dataset.ids = ids.join(',');
+  // 옆 사전 모드: 첫 후보를 사전 탭에 열고, 다른 후보는 "‹ 목록"에
+  if (wordSide && ids.length) {
+    closePops();
+    const info = byIdOf(name);
+    D.q = lemma; D.entry = ids[0]; D.list = ids.length > 1 ? ids.map(s => info.get(s)).filter(Boolean) : null; D.scroll = 0;
+    S.tab = 'dict'; return renderComm();
+  }
   wordPopAt(0, lemma);
 }
 
@@ -1020,9 +1028,10 @@ document.addEventListener('click', closePops);
 $('back').onclick = back;
 $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
-let gloss = prefs.get('gloss', true);
+let gloss = prefs.get('gloss', true), wordSide = prefs.get('wordSide', false);
 document.body.classList.toggle('no-gloss', !gloss);
 $('verTabs').onclick = e => {
+  if (e.target.closest('[data-word-side]')) { wordSide = !wordSide; prefs.set('wordSide', wordSide); return renderBible(); }
   if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
   const t = e.target.closest('[data-ver]'); if (!t) return;
   const n = t.dataset.ver;
