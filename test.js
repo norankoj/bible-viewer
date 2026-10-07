@@ -1,7 +1,19 @@
 // 실행: node test.js "<Hokma2.cmt.twm 경로>"
 const { DatabaseSync } = require('node:sqlite');
 const assert = require('node:assert');
-const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv } = require('./decode.js');
+const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, plainVerse } = require('./decode.js');
+
+// BHS 같은 원어 본문 태그: 음역·기본형 풀이는 작게, 복사할 땐 빼고
+const bhs = "בְּ <TRANS>bᵊ<trans> <sub><font color='gray'>בְּ in</font></sub> רֵאשִׁ֖ית";
+assert.strictEqual(verseHtml(bhs), 'בְּ <span class="tr">bᵊ</span> <span class="gl">בְּ in</span> רֵאשִׁ֖ית');
+assert.strictEqual(plainVerse(bhs), 'בְּ רֵאשִׁ֖ית');
+assert.strictEqual(verseHtml('<K>קטיב<k> <R>קרי<r>'), '<span class="kt">[קטיב]</span> <span class="qr">קרי</span>');
+// .ot(구약만) / .nt(신약만): 제자리에 들어가고, 나머지는 빈 절
+const enc = s => new TextEncoder().encode(s);
+const ot = parseOnt(enc(Array.from({ length: 23145 }, (_, i) => 'o' + i).join('\n') + '\n\nr2l=1\n'), 'ot');
+assert.strictEqual(ot.length, 31102); assert.strictEqual(ot[0], 'o0'); assert.strictEqual(ot[23144], 'o23144'); assert.strictEqual(ot[23145], ''); assert.strictEqual(ot.rtl, true);
+const nt = parseOnt(enc(Array.from({ length: 7957 }, (_, i) => 'n' + i).join('\n')), 'nt');
+assert.strictEqual(nt[23145], 'n0'); assert.strictEqual(nt[31101], 'n7956'); assert.strictEqual(nt[0], ''); assert.strictEqual(nt.rtl, false);
 
 // ESV API 본문 → 절 배열 (시 같은 줄바꿈·들여쓰기는 공백 하나로)
 assert.deepStrictEqual(parseEsv('\n  [1] The LORD is my shepherd;\n      I shall not want.\n  [2] He makes me lie down\n'),

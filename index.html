@@ -91,6 +91,19 @@
   .hl-green, .verse.hl-green, .par .row.hl-green > * { background: var(--hl-green); }
   .hl-blue, .verse.hl-blue, .par .row.hl-blue > * { background: var(--hl-blue); }
   .hl-pink, .verse.hl-pink, .par .row.hl-pink > * { background: var(--hl-pink); }
+  /* 히브리어 원문(BHS 등): 오른쪽→왼쪽, 음역·기본형 뜻은 작게 */
+  .heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", "Arial Hebrew", serif; }
+  .verse.heb, .par .row > .heb { font-size: calc(var(--fs) * 1.25); line-height: 2.1; }
+  .verse.heb.on { box-shadow: inset -3px 0 0 var(--accent); }
+  .tr, .gl { font: .58em var(--sans); unicode-bidi: isolate; direction: ltr; margin: 0 3px; }
+  .tr { color: var(--accent); font-style: italic; }
+  .gl { color: var(--muted); }
+  .kt { color: var(--muted); } .qr { color: var(--accent); }
+  body.no-gloss .tr, body.no-gloss .gl { display: none; }
+  .dict-form { display: flex; gap: 8px; margin: 0 0 16px; }
+  .dict-form input { flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  .dict-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .linkish { border: 0; background: none; color: var(--accent); padding: 0; margin: 0 0 12px; font-weight: 600; }
   .note-badge { font: 600 11px var(--sans); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
 
   /* 선택 작업 막대 */
@@ -213,8 +226,8 @@
 
 <div class="pop" id="picker" role="dialog" aria-label="성경 책과 장 선택"></div>
 <div class="pop" id="menu" role="menu">
-  <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석을 한 번에 추가</small></button>
-  <button id="addFiles">파일 선택<small>.ont 성경, .cmt.twm 주석</small></button>
+  <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석·사전을 한 번에 추가</small></button>
+  <button id="addFiles">파일 선택<small>.ont·.ot·.nt 성경, .cmt.twm 주석, .gbk.twm 사전</small></button>
   <hr>
   <button id="esvBtn">ESV 연결<small>ESV 공식 API 키로 영어 성경 보기</small></button>
   <hr>
@@ -245,7 +258,7 @@
   </div>
 </div>
 <div class="pop" id="tip"></div>
-<input type="file" id="files" accept=".ont,.twm" multiple>
+<input type="file" id="files" accept=".ont,.ot,.nt,.twm,.ontx,.otx,.ntx" multiple>
 <input type="file" id="folder" webkitdirectory multiple>
 <input type="file" id="importFile" accept=".json,application/json">
 
@@ -257,7 +270,7 @@ const BOOKS = '창세기 출애굽기 레위기 민수기 신명기 여호수아
 const SHORT = '창 출 레 민 신 수 삿 룻 삼상 삼하 왕상 왕하 대상 대하 스 느 에 욥 시 잠 전 아 사 렘 애 겔 단 호 욜 암 옵 욘 미 나 합 습 학 슥 말 마 막 눅 요 행 롬 고전 고후 갈 엡 빌 골 살전 살후 딤전 딤후 딛 몬 히 약 벧전 벧후 요일 요이 요삼 유 계'.split(' ');
 const COLORS = { yellow: '노랑', green: '초록', blue: '파랑', pink: '분홍' };
 const $ = id => document.getElementById(id);
-const bibles = {}, comms = {}, plain = {}, commText = {}, indexing = {};
+const bibles = {}, comms = {}, dicts = {}, plain = {}, commText = {}, dictText = {}, indexing = {};
 const marks = new Map(); // 하이라이트·메모: "책.장.절", 책갈피: "bm:책.장.절-절"
 let SQL, hits = null, sel = new Set(), hist = [], noteV = 0;
 
@@ -265,15 +278,14 @@ const prefs = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const S = { b: 43, c: 3, v: 0, versions: [], comm: '', comm2: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
-const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, split: S.split });
+const S = { b: 43, c: 3, v: 0, versions: [], comm: '', comm2: '', dict: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
+const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, dict: S.dict, split: S.split });
 
 // 줄 번호 → [책, 장, 절]
 const REF = [];
 VERSES.forEach((cs, bi) => cs.forEach((n, ci) => { for (let v = 1; v <= n; v++) REF.push([bi + 1, ci + 1, v]); }));
 const refName = (b, c, v) => `${SHORT[b - 1]} ${c}:${v}`;
 const order = m => m.b * 1e6 + m.c * 1e3 + m.v;
-const plainVerse = s => (s || '').replace(/<[^>]*>/g, '').replace(/¶\s*/g, '').replace(/\s+/g, ' ').trim();
 const sorted = () => [...sel].sort((a, b) => a - b);
 // [16,17,18,20] → "16-18, 20"
 const rangeLabel = vs => vs.reduce((a, v) => {
@@ -300,20 +312,26 @@ function idb(store, mode, fn) {
   });
 }
 
+const MODULE = /\.(ont|ot|nt|twm)$/i;
 async function addFile(f) {
-  const name = f.name.replace(/(\.cmt)?\.(twm|ont)$/i, '');
+  const name = f.name.replace(/(\.(cmt|gbk|dct))?\.(twm|ont|ot|nt)$/i, '');
   const u8 = new Uint8Array(await f.arrayBuffer());
-  if (/\.ont$/i.test(f.name)) { bibles[name] = parseOnt(u8); delete plain[name]; }
-  else {
-    SQL ||= await initSqlJs({ wasmBinary: Uint8Array.from(atob(window.SQL_WASM_B64), c => c.charCodeAt(0)) });
-    comms[name]?.close();
-    comms[name] = new SQL.Database(u8);
-    delete commText[name];
-  }
+  const kind = f.name.match(/\.(ont|ot|nt)$/i)?.[1].toLowerCase();
+  if (kind) { bibles[name] = parseOnt(u8, kind); delete plain[name]; return; }
+  SQL ||= await initSqlJs({ wasmBinary: Uint8Array.from(atob(window.SQL_WASM_B64), c => c.charCodeAt(0)) });
+  const db = new SQL.Database(u8);
+  const tables = rows(db, "select name from sqlite_master where type='table'", []).flat();
+  // 주석은 성경 구절표(bible_refs), 사전·일반 도서는 항목표(topics)가 있음
+  if (tables.includes('bible_refs')) { comms[name]?.close(); comms[name] = db; delete commText[name]; }
+  else if (tables.includes('topics')) { dicts[name]?.close(); dicts[name] = db; delete dictText[name]; }
+  else { db.close(); throw new Error('주석이나 사전 형식이 아닙니다'); }
 }
 
 async function load(files, persist) {
-  files = files.filter(f => /\.(ont|twm)$/i.test(f.name));
+  // theWord가 암호화한 유료 모듈(.ontx, .ntx 등)은 열 수 없음
+  const locked = files.filter(f => /\.(ont|ot|nt|twm)x$/i.test(f.name)).map(f => f.name);
+  if (locked.length) alert(`${locked.join(', ')}\n\n암호화된 theWord 모듈이라 열 수 없습니다. theWord 프로그램에서만 볼 수 있는 파일입니다.`);
+  files = files.filter(f => MODULE.test(f.name));
   // 저장 공간이 부족할 때 브라우저가 임의로 지우지 않도록 영구 저장 요청 (지원 안 하면 무시)
   if (persist && files.length) navigator.storage?.persist?.().catch(() => {});
   for (const [i, f] of files.entries()) {
@@ -328,6 +346,7 @@ async function load(files, persist) {
   S.versions = S.versions.filter(n => bibles[n] || (n === ESV && (esvKey || esvProxy)));
   if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
   if (!comms[S.comm]) S.comm = cn[0] || '';
+  if (!dicts[S.dict]) S.dict = Object.keys(dicts)[0] || '';
   if (!comms[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
   if (!S.comm2) S.split = false;
   go(S.b, S.c, S.v);
@@ -425,6 +444,9 @@ function verseText(name, b, c, v) {
 const firstLocal = () => S.versions.find(n => bibles[n]);
 const allVersions = () => [...Object.keys(bibles), ...(esvKey || esvProxy ? [ESV] : [])];
 
+// 히브리어처럼 오른쪽에서 왼쪽으로 쓰는 본문
+const rtlAttr = name => bibles[name]?.rtl ? ' dir="rtl" class="heb"' : '';
+
 function cellHtml(name, v) {
   if (name !== ESV) return verseHtml(verseText(name, S.b, S.c, v));
   const ch = esvChapter(S.b, S.c), err = esvErrors.get(`${S.b}.${S.c}`);
@@ -434,7 +456,8 @@ function cellHtml(name, v) {
 function renderBible() {
   const names = allVersions();
   $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}">${n}</button>`).join('') +
-    (names.length > 1 ? `<span class="hint spacer">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '');
+    (S.versions.some(n => bibles[n]?.rtl) ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
+    (names.length > 1 ? `<span class="hint ${S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '');
   const vs = S.versions;
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
   const { b, c } = S, n = VERSES[b - 1][c - 1];
@@ -444,13 +467,13 @@ function renderBible() {
   if (vs.length === 1) {
     $('bible').innerHTML = title + ids.map(v => {
       const m = verseMark(v);
-      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
+      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${bibles[vs[0]]?.rtl ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
     }).join('') + notice;
   } else {
     $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><span class="head"></span>${vs.map(x => `<span class="head">${x}</span>`).join('')}` +
       ids.map(v => {
         const m = verseMark(v);
-        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
+        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x)}>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
       }).join('') + '</div>' + notice;
   }
 }
@@ -626,17 +649,71 @@ function renderComm() {
   const names = Object.keys(comms);
   const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
   $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}"`, n)).join('') +
+    Object.keys(dicts).map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}"`, n)).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
     (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
   $('main').classList.toggle('split', S.split);
   if (S.tab === 'search' && hits) renderHits();
   else if (S.tab === 'saved') renderSaved();
+  else if (S.tab === 'dict' && dicts[S.dict]) renderDict();
   else $('comm').innerHTML = commHtml(S.comm);
   if (S.split) {
     $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${n}"`, n)).join('');
     $('comm2').innerHTML = commHtml(S.comm2);
   }
+}
+
+/* ---------- 원어 사전 (스트롱 번호: H430 히브리어, G26 헬라어) ---------- */
+const D = { q: '', entry: '', list: null }; // 지금 보는 항목, 찾은 목록
+const dictRow = subject => rows(dicts[S.dict], 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
+// 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
+const dictTitle = text => (text.match(/\(\d+,[^)]*\)[^.]{0,30}/)?.[0] || text.slice(0, 40)).trim();
+// 본문 속 "(…, 433: 하나님)" 같은 같은 언어 번호 참조를 누를 수 있게
+const linkStrong = (html, lang) => html.replace(/(, )(\d{1,4})(:)/g, `$1<a href="#" data-strong="${lang}$2">$2</a>$3`);
+
+function renderDict() {
+  const form = `<form class="dict-form" id="dictForm"><input id="dq" type="search" value="${esc(D.q)}" placeholder="H430, G26, 430 또는 한글 단어" aria-label="사전에서 찾기"><button class="btn sm primary">찾기</button></form>`;
+  let body = '';
+  if (D.entry) {
+    const row = dictRow(D.entry);
+    body = (D.list ? '<button class="linkish" data-dict-back>‹ 찾은 목록</button>' : '') + (row
+      ? `<article class="entry"><h3>${esc(row[0])}</h3><div>${linkStrong(toHtml(row[1]), row[0][0])}</div></article>`
+      : `<p class="empty small">${esc(D.entry)} 항목이 없습니다.</p>`);
+  } else if (D.list) {
+    const re = D.q && !/^\d+$/.test(D.q) ? reEsc(D.q) : null, mk = s => re ? esc(s).replace(re, m => `<mark>${m}</mark>`) : esc(s);
+    body = `<p class="hits-sum">${D.list.length}개 항목${D.list.length > 300 ? ', 처음 300개만 표시' : ''}</p>` + D.list.slice(0, 300).map(e => {
+      const i = re ? e.text.indexOf(D.q) : -1;
+      const snip = i > 0 ? ' · ' + (i > 40 ? '…' : '') + e.text.slice(Math.max(0, i - 40), i + D.q.length + 60) + '…' : '';
+      return `<button class="hit" data-dict-go="${esc(e.s)}"><span class="ref">${esc(e.s)}</span>${esc(dictTitle(e.text))}${mk(snip)}</button>`;
+    }).join('');
+  } else body = '<p class="empty small">스트롱 번호(히브리어 H430, 헬라어 G26)나 한글 단어로 찾아보세요.</p>';
+  $('comm').innerHTML = form + body;
+  $('comm').scrollTop = 0;
+}
+
+const indexDict = (name, progress) => indexDb(dictText, name, dicts[name],
+  'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id order by t.rel_order',
+  progress, ([s], text) => ({ s, text }));
+
+async function dictSearch(q) {
+  D.q = q = q.trim(); D.entry = ''; D.list = null;
+  const num = q.match(/^([HhGg])?\s*(\d{1,5})$/);
+  if (num?.[1]) { D.entry = num[1].toUpperCase() + +num[2]; return renderDict(); }
+  if (num) { // 번호만: 히브리어·헬라어 둘 다
+    D.list = ['H', 'G'].map(p => dictRow(p + +num[2])).filter(Boolean).map(([s, d]) => ({ s, text: htmlText(toHtml(d)) }));
+    if (D.list.length === 1) { D.entry = D.list[0].s; D.list = null; }
+    return renderDict();
+  }
+  if (!q) return renderDict();
+  const name = S.dict, want = D;
+  $('comm').innerHTML = `<p class="progress">${esc(name)}에서 찾는 중…</p>`;
+  const texts = await indexDict(name, p => { const el = $('comm').querySelector('.progress'); if (el) el.textContent = `${name} 색인 중 ${Math.round(p * 100)}% (처음 한 번만)`; })
+    .catch(err => { $('comm').innerHTML = `<p class="empty small">찾지 못했습니다: ${esc(err.message)}</p>`; });
+  if (!texts || want.q !== q || S.tab !== 'dict') return;
+  // 제목(항목 첫머리)에 있는 것을 앞에
+  D.list = texts.filter(e => e.text.includes(q)).sort((a, b) => !dictTitle(a.text).includes(q) - !dictTitle(b.text).includes(q));
+  renderDict();
 }
 
 /* ---------- 검색 (성경 / 주석) ---------- */
@@ -656,24 +733,28 @@ function search(q) {
 }
 
 // 주석 전체를 글자로 풀어 둠 (처음 한 번만, 수 초 걸림)
-async function indexComm(name, progress) {
-  if (commText[name]) return commText[name];
-  return indexing[name] ||= (async () => {
-    const db = comms[name], total = rows(db, 'select count(*) from bible_refs', [])[0][0];
-    const st = db.prepare('select r.bi, r.ci, r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) order by r.bi, r.ci, r.fvi');
-    const out = [];
+const htmlText = h => h.replace(/<br>/g, ' ').replace(/<[^>]+>/g, '')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+
+// 주석·사전 전체를 글자로 풀어 둠 (처음 한 번만, 수 초 걸림). sql의 마지막 열이 본문
+async function indexDb(cache, name, db, sql, progress, entry) {
+  if (cache[name]) return cache[name];
+  const key = sql + name;
+  return indexing[key] ||= (async () => {
+    const total = rows(db, `select count(*) from (${sql})`, [])[0][0], st = db.prepare(sql), out = [];
     try {
       while (st.step()) {
-        const [b, c, f, t, d] = st.get();
-        const text = toHtml(d).replace(/<br>/g, ' ').replace(/<[^>]+>/g, '')
-          .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-        out.push({ b, c, f, t, text });
+        const row = st.get();
+        out.push(entry(row, htmlText(toHtml(row.at(-1)))));
         if (out.length % 400 === 0) { progress(out.length / total); await new Promise(r => setTimeout(r)); }
       }
-      return commText[name] = out;
-    } finally { st.free(); delete indexing[name]; } // 실패해도 다음 검색에서 다시 시도
+      return cache[name] = out;
+    } finally { st.free(); delete indexing[key]; } // 실패해도 다음 검색에서 다시 시도
   })();
 }
+const indexComm = (name, progress) => indexDb(commText, name, comms[name],
+  'select r.bi, r.ci, r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) order by r.bi, r.ci, r.fvi',
+  progress, ([b, c, f, t], text) => ({ b, c, f, t, text }));
 
 async function searchComm() {
   const name = S.comm, h = hits;
@@ -818,7 +899,10 @@ document.addEventListener('click', closePops);
 $('back').onclick = back;
 $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
+let gloss = prefs.get('gloss', true);
+document.body.classList.toggle('no-gloss', !gloss);
 $('verTabs').onclick = e => {
+  if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
   const t = e.target.closest('[data-ver]'); if (!t) return;
   const n = t.dataset.ver;
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
@@ -842,6 +926,7 @@ $('selbar').onclick = e => {
 $('comTabs').onclick = e => {
   const t = e.target.closest('.tab'); if (!t) return;
   if (t.dataset.comm) { S.comm = t.dataset.comm; S.tab = 'comm'; if (S.comm2 === S.comm) S.comm2 = Object.keys(comms).find(n => n !== S.comm) || ''; }
+  else if (t.dataset.dict) { S.dict = t.dataset.dict; S.tab = 'dict'; }
   else if (t.dataset.search !== undefined) S.tab = 'search';
   else if (t.dataset.saved !== undefined) S.tab = 'saved';
   else if (t.dataset.split !== undefined) S.split = !S.split;
@@ -851,9 +936,13 @@ $('comTabs2').onclick = e => {
   const t = e.target.closest('[data-comm2]'); if (!t) return;
   S.comm2 = t.dataset.comm2; save(); renderComm(); if (S.v) syncComm(S.v);
 };
+$('comm').onsubmit = e => { if (e.target.id === 'dictForm') { e.preventDefault(); dictSearch($('dq').value); } };
 $('comm').onclick = e => {
   const sc = e.target.closest('[data-scope]');
   if (sc) { hits.scope = sc.dataset.scope; return renderHits(); }
+  const dg = e.target.closest('[data-dict-go], [data-strong]');
+  if (dg) { e.preventDefault(); D.entry = dg.dataset.dictGo || dg.dataset.strong; if (dg.dataset.strong) D.list = null; return renderDict(); }
+  if (e.target.closest('[data-dict-back]')) { D.entry = ''; return renderDict(); }
   const h = e.target.closest('.hit');
   if (h?.dataset.i) { const [b, c, v] = REF[+h.dataset.i]; return go(b, c, v, true); }
   if (h?.dataset.go) {

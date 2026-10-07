@@ -191,23 +191,40 @@ const VERSES = `31 25 24 26 32 22 24 22 29 32 32 20 18 24 21 16 27 33 38 18 34 2
 const START = [];
 VERSES.reduce((n, cs, b) => { START[b + 1] = cs.map(v => (n += v) - v); return n; }, 0);
 
-// .ont 파일 → 절 배열 (UTF-8이 아니면 EUC-KR로 읽음)
-function parseOnt(u8) {
+// .ont(신구약) / .ot(구약만) / .nt(신약만) 파일 → 31102절 배열 (UTF-8이 아니면 EUC-KR로 읽음)
+// 오른쪽에서 왼쪽으로 쓰는 본문(히브리어 등)이면 배열에 rtl = true
+const OT_VERSES = 23145;
+function parseOnt(u8, kind = 'ont') {
   let t;
   try { t = new TextDecoder('utf-8', { fatal: true }).decode(u8); } catch { t = new TextDecoder('euc-kr').decode(u8); }
-  return t.replace(/^﻿/, '').split(/\r?\n/).slice(0, 31102);
+  const lines = t.replace(/^﻿/, '').split(/\r?\n/);
+  const n = kind === 'ot' ? OT_VERSES : kind === 'nt' ? 31102 - OT_VERSES : 31102;
+  const out = new Array(31102).fill('');
+  out.splice(kind === 'nt' ? OT_VERSES : 0, n, ...lines.slice(0, n));
+  out.rtl = lines.slice(n).some(l => /^r2l\s*=\s*1/.test(l.trim()));
+  return out;
 }
 
 // theWord 절 태그 → HTML. 모르는 태그는 지우고, <한글 소제목>은 소제목으로 표시
-const TAGS = { FR: '<span class="red">', Fr: '</span>', FI: '<i>', Fi: '</i>', FO: '<span class="ot">', Fo: '</span>', TS: '<b class="ts">', Ts: '</b>' };
+// 대문자로 열고 소문자로 닫는 theWord 태그 + 일부 HTML 태그(<sub>, <font>)
+const TAGS = {
+  FR: '<span class="red">', Fr: '</span>', FI: '<i>', Fi: '</i>', FO: '<span class="ot">', Fo: '</span>', TS: '<b class="ts">', Ts: '</b>',
+  TRANS: '<span class="tr">', trans: '</span>', K: '<span class="kt">[', k: ']</span>', R: '<span class="qr">', r: '</span>', // 음역, 케티브/케레
+  sub: '<span class="gl">', '/sub': '</span>', font: '', '/font': '', // 기본형·뜻
+};
 // theWord는 <FR> 등을 절 끝에서 안 닫는 경우가 많음 → 절 단위로 닫아줌
 function verseHtml(t) {
   const h = esc(t)
-    .replace(/&lt;([A-Za-z]+)[^&]*&gt;/g, (_, k) => TAGS[k] || '')
+    .replace(/&lt;(\/?[A-Za-z]+)(?:(?!&gt;).)*&gt;/g, (_, k) => TAGS[k] || '')
     .replace(/&lt;([^&]+)&gt;/g, '<b class="ts">$1</b>');
   const open = tag => (h.match(new RegExp(`<${tag}[ >]`, 'g')) || []).length - (h.match(new RegExp(`</${tag}>`, 'g')) || []).length;
   return h + '</i>'.repeat(Math.max(0, open('i'))) + '</span>'.repeat(Math.max(0, open('span')));
 }
+
+// 복사·검색용 글자만 (음역·기본형 풀이는 빼고, 태그 제거)
+const plainVerse = s => (s || '')
+  .replace(/<TRANS>[\s\S]*?<trans>/g, '').replace(/<sub>[\s\S]*?<\/sub>/g, '')
+  .replace(/<[^>]*>/g, '').replace(/¶\s*/g, '').replace(/\s+/g, ' ').trim();
 
 // ESV API 요청 (브라우저와 Vercel 서버 함수가 함께 씀)
 const EN = 'Genesis Exodus Leviticus Numbers Deuteronomy Joshua Judges Ruth 1_Samuel 2_Samuel 1_Kings 2_Kings 1_Chronicles 2_Chronicles Ezra Nehemiah Esther Job Psalm Proverbs Ecclesiastes Song_of_Solomon Isaiah Jeremiah Lamentations Ezekiel Daniel Hosea Joel Amos Obadiah Jonah Micah Nahum Habakkuk Zephaniah Haggai Zechariah Malachi Matthew Mark Luke John Acts Romans 1_Corinthians 2_Corinthians Galatians Ephesians Philippians Colossians 1_Thessalonians 2_Thessalonians 1_Timothy 2_Timothy Titus Philemon Hebrews James 1_Peter 2_Peter 1_John 2_John 3_John Jude Revelation'.split(' ').map(s => s.replace(/_/g, ' '));
@@ -224,4 +241,4 @@ function parseEsv(t) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery };
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse };
