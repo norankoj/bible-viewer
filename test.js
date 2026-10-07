@@ -30,6 +30,30 @@ assert.doesNotMatch(rvf, /<a [^>]*>\) 상품들/); // 일반 텍스트에 붙은
 
 assert.deepStrictEqual(parseRef('tw://bible.*?id=11.4.29-11.4.31|_AUTODETECT_|'), [11, 4, 29]);
 
+// Vercel 서버 함수 /api/esv: 키 숨김, 한 장 요청만 허용
+(async () => {
+  const handler = require('./api/esv.js');
+  const call = async query => {
+    const res = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(s) { this.code = s; return this; }, json(j) { this.body = j; return this; } };
+    await handler({ query }, res);
+    return res;
+  };
+  let sent;
+  global.fetch = async (url, opt) => { sent = { url, auth: opt.headers.Authorization }; return { ok: true, json: async () => ({ passages: ['[1] In the beginning [2] The earth'] }) }; };
+  delete process.env.ESV_API_KEY;
+  assert.strictEqual((await call({ b: '43', c: '3' })).code, 503); // 키 설정 전
+  process.env.ESV_API_KEY = 'secret';
+  for (const q of [{ b: '67', c: '1' }, { b: '43', c: '22' }, { b: 'x', c: '1' }, {}]) assert.strictEqual((await call(q)).code, 400);
+  const ok = await call({ b: '65', c: '1' });
+  assert.strictEqual(ok.code, 200);
+  assert.deepStrictEqual(ok.body.verses, ['In the beginning', 'The earth']);
+  assert.strictEqual(ok.headers['Cache-Control'], 'no-store');
+  assert.match(decodeURIComponent(sent.url), /q=Jude\+1:1-25/);
+  assert.strictEqual(sent.auth, 'Token secret');
+  assert(!JSON.stringify(ok.body).includes('secret')); // 키가 응답에 새지 않음
+  console.log('api/esv ok');
+})();
+
 // 주석이 가리키는 절이 절 구분표 범위 안에 있는지 (호크마 자체 오류 6곳: 왕하12, 대상28, 대하34, 시8, 시87, 아6)
 const out = db.prepare('select bi, ci, max(tvi) v from bible_refs group by bi, ci').all().filter(r => !(VERSES[r.bi - 1][r.ci - 1] >= r.v));
 assert(out.length <= 6, JSON.stringify(out));
