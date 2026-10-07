@@ -115,6 +115,20 @@
   #wordPop .alts { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 8px; }
   #wordPop .alts button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 4px 6px; border-radius: 6px; font-size: 13px; }
   #wordPop .alts button:hover { background: var(--bg); }
+  /* 탭 끌어서 순서 바꾸기 */
+  .tab[draggable="true"] { cursor: grab; }
+  .tab.dragging { opacity: .4; }
+  .tab.drop-before { box-shadow: inset 3px 0 0 var(--accent); }
+  .tab.drop-after { box-shadow: inset -3px 0 0 var(--accent); }
+  /* 파일 관리 */
+  #manageBox { width: min(400px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+  #manageBox h4 { font: 600 12px var(--sans); color: var(--muted); margin: 14px 0 4px; }
+  #manageBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+  #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: 6px; cursor: pointer; }
+  #manageBox label:hover { background: var(--bg); }
+  #manageBox label small { margin-left: auto; color: var(--muted); }
+  #manageBox input { width: 16px; height: 16px; accent-color: var(--accent); }
+  #manageBox .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
   .dict-form { display: flex; gap: 8px; margin: 0 0 16px; }
   .dict-form input { flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
   .dict-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -249,7 +263,8 @@
   <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
   <button id="importMarks">백업 불러오기</button>
   <hr>
-  <button id="clearAll">저장된 성경·주석 파일 지우기<small>메모와 책갈피는 지우지 않습니다</small></button>
+  <button id="manageBtn">파일 관리<small>불러온 성경·주석·사전을 골라서 지우기</small></button>
+  <button id="clearAll">저장된 파일 모두 지우기<small>메모와 책갈피는 지우지 않습니다</small></button>
 </div>
 <div class="pop" id="noteBox" role="dialog" aria-label="메모">
   <label for="noteText" id="noteRef"></label>
@@ -273,6 +288,7 @@
   </div>
 </div>
 <div class="pop" id="wordPop" role="dialog" aria-label="단어 뜻"></div>
+<div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
 <div class="pop" id="tip"></div>
 <input type="file" id="files" accept=".ont,.ot,.nt,.twm,.ontx,.otx,.ntx" multiple>
 <input type="file" id="folder" webkitdirectory multiple>
@@ -330,9 +346,12 @@ function idb(store, mode, fn) {
 }
 
 const MODULE = /\.(ont|ot|nt|twm)$/i;
+// 불러온 파일: 이름 → { key: 저장소 열쇠(원래 파일 이름), size }  (낱개 지우기에 씀)
+const fileInfo = {};
 async function addFile(f) {
   const name = f.name.replace(/(\.(cmt|gbk|dct))?\.(twm|ont|ot|nt)$/i, '');
   const u8 = new Uint8Array(await f.arrayBuffer());
+  fileInfo[name] = { key: f.name, size: f.size };
   const kind = f.name.match(/\.(ont|ot|nt)$/i)?.[1].toLowerCase();
   if (kind) { bibles[name] = parseOnt(u8, kind); delete plain[name]; return; }
   SQL ||= await initSqlJs({ wasmBinary: Uint8Array.from(atob(window.SQL_WASM_B64), c => c.charCodeAt(0)) });
@@ -362,11 +381,13 @@ async function load(files, persist) {
     } catch (err) { alert(`${f.name}: 읽을 수 없습니다 (${err.message})`); }
   }
   $('status').textContent = '';
-  const cn = Object.keys(comms);
+  const cn = commNames();
   S.versions = S.versions.filter(n => bibles[n] || (n === ESV && (esvKey || esvProxy)));
   if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
+  sortVersions();
   if (!comms[S.comm]) S.comm = cn[0] || '';
-  if (!dicts[S.dict]) S.dict = Object.keys(dicts)[0] || '';
+  if (!dicts[S.dict]) S.dict = dictNames()[0] || '';
+  if (S.tab === 'dict' && !S.dict) S.tab = 'comm';
   if (S.dict) titlesOf(S.dict); // 사전 색인을 미리 뒤에서 (목록 제목·원어, 단어 팝업에 씀)
   if (!comms[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
   if (!S.comm2) S.split = false;
@@ -463,7 +484,18 @@ function verseText(name, b, c, v) {
   return bibles[name]?.[START[b][c - 1] + v - 1] ?? '';
 }
 const firstLocal = () => S.versions.find(n => bibles[n]);
-const allVersions = () => [...Object.keys(bibles), ...(esvKey || esvProxy ? [ESV] : [])];
+
+/* ---------- 탭 순서 (탭을 끌어서 바꿈, 브라우저에 기억) ---------- */
+let tabOrder = prefs.get('order', {}); // { bible: [...], comm: [...], dict: [...] }
+const ordered = (kind, names) => {
+  const o = tabOrder[kind] || [], at = n => { const i = o.indexOf(n); return i < 0 ? 1e6 : i; }; // 처음 보는 건 뒤에
+  return [...names].sort((a, b) => at(a) - at(b));
+};
+const allVersions = () => ordered('bible', [...Object.keys(bibles), ...(esvKey || esvProxy ? [ESV] : [])]);
+const commNames = () => ordered('comm', Object.keys(comms));
+const dictNames = () => ordered('dict', Object.keys(dicts));
+// 대조 보기 칸·복사 순서도 탭 순서를 따름
+const sortVersions = () => { S.versions = allVersions().filter(n => S.versions.includes(n)); };
 
 // 히브리어처럼 오른쪽에서 왼쪽으로 쓰는 본문
 const rtlAttr = name => bibles[name]?.rtl ? ' dir="rtl" class="heb"' : '';
@@ -476,7 +508,7 @@ function cellHtml(name, v) {
 
 function renderBible() {
   const names = allVersions();
-  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}">${n}</button>`).join('') +
+  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${n}" title="누르면 보기/끄기 · 끌어서 순서 바꾸기">${n}</button>`).join('') +
     (S.versions.some(n => bibles[n]?.rtl) ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` +
       `<button class="tab" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
     (names.length > 1 ? `<span class="hint ${S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
@@ -669,10 +701,11 @@ function commHtml(name) {
 }
 
 function renderComm() {
-  const names = Object.keys(comms);
+  const names = commNames();
   const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
-  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}"`, n)).join('') +
-    Object.keys(dicts).map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}"`, n)).join('') +
+  const drag = (kind, n) => `draggable="true" data-drag="${kind}:${n}" title="끌어서 순서 바꾸기"`;
+  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}" ${drag('comm', n)}`, n)).join('') +
+    dictNames().map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}" ${drag('dict', n)}`, n)).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
     (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '') +
@@ -1044,6 +1077,79 @@ $('esvOff').onclick = async () => {
   save(); closePops(); refreshBible(); flash('ESV 연결을 해제했습니다');
 };
 $('esvKeyInput').onkeydown = e => { if (e.key === 'Enter') $('esvSave').click(); };
+/* ---------- 탭 끌어서 순서 바꾸기 ---------- */
+let dragging = null; // "bible:개역개정" 처럼 종류:이름
+const clearDrop = box => box.querySelectorAll('.dragging, .drop-before, .drop-after').forEach(x => x.classList.remove('dragging', 'drop-before', 'drop-after'));
+const kindOf = d => d.slice(0, d.indexOf(':')), nameOf = d => d.slice(d.indexOf(':') + 1);
+for (const box of [$('verTabs'), $('comTabs')]) {
+  box.addEventListener('dragstart', e => {
+    const t = e.target.closest('[data-drag]'); if (!t) return;
+    dragging = t.dataset.drag;
+    e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragging);
+    t.classList.add('dragging');
+  });
+  box.addEventListener('dragover', e => {
+    const t = e.target.closest('[data-drag]');
+    if (!t || !dragging || kindOf(t.dataset.drag) !== kindOf(dragging)) return; // 같은 종류끼리만
+    e.preventDefault();
+    box.querySelectorAll('.drop-before, .drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+    const r = t.getBoundingClientRect();
+    t.classList.add(e.clientX < r.left + r.width / 2 ? 'drop-before' : 'drop-after');
+  });
+  box.addEventListener('drop', e => {
+    const t = e.target.closest('[data-drag]'); if (!t || !dragging) return;
+    e.preventDefault();
+    moveTab(dragging, t.dataset.drag, t.classList.contains('drop-after'));
+  });
+  box.addEventListener('dragend', () => { dragging = null; clearDrop(box); });
+}
+function moveTab(from, to, after) {
+  const kind = kindOf(from), a = nameOf(from), b = nameOf(to);
+  if (kind !== kindOf(to) || a === b) return;
+  const list = (kind === 'bible' ? allVersions() : kind === 'comm' ? commNames() : dictNames()).filter(n => n !== a);
+  list.splice(list.indexOf(b) + (after ? 1 : 0), 0, a);
+  tabOrder[kind] = list; prefs.set('order', tabOrder);
+  sortVersions(); save(); refreshBible(); renderComm(); if (S.v) syncComm(S.v);
+}
+
+/* ---------- 파일 관리: 골라서 지우기 ---------- */
+const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + 'MB';
+function renderManage() {
+  const groups = [['bible', '성경', allVersions().filter(n => bibles[n])], ['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length);
+  $('manageBox').innerHTML = '<b>불러온 파일</b><p class="help">지울 파일을 고르세요. 컴퓨터에 있는 원본 파일은 그대로 남고, 메모·책갈피도 지워지지 않습니다. 순서는 탭을 끌어서 바꿀 수 있습니다.</p>' +
+    (groups.length ? groups.map(([k, t, ns]) => `<h4>${t}</h4>` + ns.map(n =>
+      `<label><input type="checkbox" value="${k}:${esc(n)}"> ${esc(n)}<small>${fileInfo[n] ? mb(fileInfo[n].size) : ''}</small></label>`).join('')).join('')
+      : '<p class="help">불러온 파일이 없습니다.</p>') +
+    '<div class="actions"><button class="btn sm" id="manageClose">닫기</button><button class="btn sm primary" id="manageDel" disabled>선택한 파일 지우기</button></div>';
+}
+async function removeModules(items) {
+  for (const it of items) {
+    const kind = kindOf(it), name = nameOf(it);
+    if (kind === 'bible') { delete bibles[name]; delete plain[name]; }
+    if (kind === 'comm') { comms[name]?.close(); delete comms[name]; delete commText[name]; }
+    if (kind === 'dict') {
+      dicts[name]?.close(); delete dicts[name];
+      await idb('cache', 'readwrite', s => s.delete(`dict:${name}:${dictSize[name]}`)).catch(() => {});
+      for (const c of [dictText, dictLite, dictTitles, dictById, finders, dictSize]) delete c[name];
+    }
+    if (fileInfo[name]) await idb('files', 'readwrite', s => s.delete(fileInfo[name].key)).catch(() => {});
+    delete fileInfo[name];
+  }
+  await load([], false); // 선택된 번역본·주석·사전을 남은 것으로 다시 맞추고 화면 갱신
+}
+$('manageBtn').onclick = e => { e.stopPropagation(); renderManage(); openPop($('manageBox'), $('menuBtn')); };
+$('manageBox').onclick = e => e.stopPropagation();
+$('manageBox').onchange = () => { $('manageDel').disabled = !$('manageBox').querySelector('input:checked'); };
+$('manageBox').addEventListener('click', async e => {
+  if (e.target.id === 'manageClose') return closePops();
+  if (e.target.id !== 'manageDel') return;
+  const items = [...$('manageBox').querySelectorAll('input:checked')].map(i => i.value);
+  if (!items.length || !confirm(`${items.map(nameOf).join(', ')}\n\n${items.length}개 파일을 지울까요? 원본 파일은 그대로 남습니다.`)) return;
+  await removeModules(items);
+  flash(`${items.length}개 파일을 지웠습니다`);
+  renderManage();
+});
+
 $('nudgeBackup').onclick = exportMarks;
 $('nudgeLater').onclick = snoozeNudge;
 $('noteBox').onclick = e => e.stopPropagation();
@@ -1065,7 +1171,7 @@ $('verTabs').onclick = e => {
   const t = e.target.closest('[data-ver]'); if (!t) return;
   const n = t.dataset.ver;
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
-  save(); refreshBible();
+  sortVersions(); save(); refreshBible();
 };
 $('bible').onclick = e => {
   const nb = e.target.closest('[data-note]');
