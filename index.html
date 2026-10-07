@@ -173,6 +173,12 @@
   mark { background: var(--accent-soft); color: inherit; border-radius: 2px; }
   .progress { color: var(--muted); }
   .credit { color: var(--muted); font-size: 12px; margin: 20px 0 0; }
+  .search-opts { display: flex; flex-wrap: wrap; gap: 12px; margin: -6px 0 12px; font-size: 13px; color: var(--muted); }
+  .search-opts select { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); margin-left: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+  .chip { height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 12px; }
+  .chip:hover { background: var(--bg); }
+  .chip.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
   .credit a { color: inherit; }
 
   /* 빈 화면 */
@@ -234,7 +240,7 @@
   <button class="btn icon" id="prev" title="이전 장 (←)" aria-label="이전 장">‹</button>
   <button class="btn ref-btn" id="refBtn" aria-haspopup="dialog">요한복음 3장</button>
   <button class="btn icon" id="next" title="다음 장 (→)" aria-label="다음 장">›</button>
-  <input class="search" id="q" type="search" placeholder="검색 ( / )" aria-label="성경·주석 검색">
+  <input class="search" id="q" type="search" placeholder="검색 ( / )" aria-label="성경·주석 검색" title="여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호">
   <button class="btn icon" id="smaller" title="글자 작게" aria-label="글자 작게" style="font-size:13px">가</button>
   <button class="btn icon" id="bigger" title="글자 크게" aria-label="글자 크게" style="font-size:17px">가</button>
   <button class="btn" id="fontBtn" title="본문 글꼴 바꾸기">명조</button>
@@ -1001,17 +1007,63 @@ $('wordPop').onclick = e => {
 /* ---------- 검색 (성경 / 주석) ---------- */
 const reEsc = q => new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
 
+// 검색: 여러 단어(모두 포함), "따옴표"(붙은 그대로), H430·G26(원어 번호). 번역본·범위·책으로 좁히기
 function search(q) {
   q = q.trim();
   if (!q) { hits = null; S.tab = 'comm'; return renderComm(); }
-  const ver = firstLocal(); // ESV는 장 단위로만 받을 수 있어 전체 검색에서 제외
-  let bible = [];
-  if (ver) {
-    plain[ver] ||= bibles[ver].map(plainVerse);
-    bible = plain[ver].reduce((a, t, i) => (t.includes(q) && a.push(i), a), []);
-  }
-  hits = { q, ver, bible, comm: null, scope: ver ? 'bible' : 'comm' };
+  const Q = parseQuery(q), prev = hits;
+  hits = {
+    q, Q, bible: null, comm: null, book: 0,
+    // 고른 번역본은 다음 검색에도 유지 (원어 번호 검색 때 자동으로 고른 원어 성경은 제외)
+    ver: prev && !prev.Q.strong && bibles[prev.ver] ? prev.ver : '', range: prev?.range || 'all',
+    scope: prev?.scope === 'comm' && !Q.strong ? 'comm' : 'bible',
+  };
+  // 히브리어 번호를 '신약'에서, 헬라어 번호를 '구약'에서 찾으면 늘 0개 → 범위를 전체로
+  if (Q.strong && hits.range === (Q.strong[0] === 'H' ? 'nt' : 'ot')) hits.range = 'all';
   S.tab = 'search'; renderComm();
+  runBibleSearch();
+}
+
+// 검색어 표시: 이미 "따옴표"가 있으면 그대로, 아니면 “ ”로 감쌈
+const qLabel = q => /"/.test(q) ? esc(q) : `“${esc(q)}”`;
+const inRange = (b, range) => range === 'ot' ? b <= 39 : range === 'nt' ? b >= 40 : range === 'book' ? b === S.b : true;
+// 원어 정보(BHS 기본형 또는 <WH430> 태그)가 있는 성경인지
+const hasOriginal = (n, lang) => bibles[n] && (bibles[n].orig ??= {
+  H: bibles[n].some(l => l.includes('<sub>') || l.includes('<WH')), G: bibles[n].some(l => l.includes('<WG')),
+})[lang];
+
+async function runBibleSearch() {
+  const h = hits;
+  if (h.Q.strong) {
+    const lang = h.Q.strong[0];
+    h.ver = hasOriginal(h.ver, lang) ? h.ver : allVersions().find(n => hasOriginal(n, lang)) || '';
+    if (!h.ver) { h.bible = []; h.note = `원어 번호 검색은 ${lang === 'H' ? 'BHS처럼 원어 기본형' : '스트롱 번호 태그'}이 있는 성경이 필요합니다.`; return renderHits(); }
+    h.bible = await strongVerses(h.Q.strong, h.ver).catch(() => []);
+  } else {
+    h.ver ||= firstLocal() || ''; // ESV는 장 단위로만 받을 수 있어 전체 검색에서 제외
+    plain[h.ver] ||= h.ver ? bibles[h.ver].map(plainVerse) : [];
+    h.bible = plain[h.ver].reduce((a, t, i) => (h.Q.test(t) && a.push(i), a), []);
+  }
+  if (hits === h && S.tab === 'search') renderHits();
+}
+
+// 원어 번호가 나오는 절: <WH430> 태그, 또는 BHS 기본형을 사전 표제어와 맞대어 (같은 철자 단어도 함께 나올 수 있음)
+async function strongVerses(num, ver) {
+  const L = bibles[ver], lang = num[0], tag = new RegExp(`<W${lang}0*${num.slice(1)}[a-z]?>`);
+  const find = S.dict ? (await liteOf(S.dict), finderOf(S.dict, lang)) : null;
+  const memo = new Map(), out = [];
+  for (let i = 0; i < L.length; i++) {
+    const line = L[i];
+    if (!line) continue;
+    if (tag.test(line)) { out.push(i); continue; }
+    if (!find || !line.includes('<sub>')) continue;
+    for (const m of line.matchAll(/<sub>(?:<font[^>]*>)?([֐-׿]+)/g)) {
+      let ids = memo.get(m[1]);
+      if (!ids) memo.set(m[1], ids = find(m[1]));
+      if (ids.includes(num)) { out.push(i); break; }
+    }
+  }
+  return out;
 }
 
 // 주석 전체를 글자로 풀어 둠 (처음 한 번만, 수 초 걸림)
@@ -1047,29 +1099,50 @@ async function searchComm() {
   })).catch(err => { if (hits === h) $('comm').querySelector('.progress')?.replaceChildren(`주석 검색에 실패했습니다: ${err.message}`); });
   if (!texts) return;
   if (hits !== h) return;
-  h.comm = { name, list: texts.filter(e => e.text.includes(h.q)) };
+  h.comm = { name, list: texts.filter(e => h.Q.test(e.text)) };
   if (S.tab === 'search') renderHits();
 }
 
 function renderHits() {
-  const h = hits, re = reEsc(h.q), mk = s => esc(s).replace(re, m => `<mark>${m}</mark>`);
-  const commN = h.comm?.name === S.comm ? h.comm.list.length : '';
+  const h = hits, mk = s => h.Q.re && !h.Q.strong ? esc(s).replace(h.Q.re, m => `<mark>${m}</mark>`) : esc(s);
+  const inR = b => inRange(b, h.range);
+  const bibleList = (h.bible || []).filter(i => inR(REF[i][0]));
+  const commList = h.comm?.name === S.comm ? h.comm.list.filter(e => inR(e.b)) : null;
+  const locals = allVersions().filter(n => bibles[n] && (!h.Q.strong || hasOriginal(n, h.Q.strong[0])));
   let html = `<div class="seg">
-    ${h.ver ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 · ${h.ver} ${h.bible.length}</button>` : ''}
-    ${S.comm ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 · ${S.comm} ${commN}</button>` : ''}</div>`;
+    ${locals.length ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 ${h.bible ? bibleList.length : '…'}</button>` : ''}
+    ${S.comm && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 · ${S.comm} ${commList ? commList.length : ''}</button>` : ''}</div>
+    <div class="search-opts">
+      ${h.scope === 'bible' && locals.length > 1 ? `<label>번역본 <select data-sopt="ver">${locals.map(n => `<option ${n === h.ver ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>` : ''}
+      <label>범위 <select data-sopt="range">${[['all', '전체'], ['ot', '구약'], ['nt', '신약'], ['book', `현재 책 (${BOOKS[S.b - 1]})`]]
+        .map(([v, t]) => `<option value="${v}" ${v === h.range ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+    </div>`;
   if (h.scope === 'bible') {
-    html += `<p class="hits-sum">“${esc(h.q)}” ${h.bible.length}절${h.bible.length > 500 ? ', 처음 500절만 표시' : ''}</p>` +
-      h.bible.slice(0, 500).map(i => `<button class="hit" data-i="${i}"><span class="ref">${refName(...REF[i])}</span>${mk(plain[h.ver][i])}</button>`).join('');
+    if (h.note) { $('comm').innerHTML = html + `<p class="hits-sum">${h.note}</p>`; return; }
+    if (!locals.length) { $('comm').innerHTML = html + '<p class="hits-sum">성경 파일(.ont)을 추가하면 성경에서 찾을 수 있습니다.</p>'; return; }
+    if (!h.bible) { $('comm').innerHTML = html + `<p class="progress">${qLabel(h.q)} 찾는 중…</p>`; return; }
+    // 원어 성경(BHS)에서 찾았으면 본문은 읽기 쉬운 번역본으로
+    const show = bibles[h.ver]?.rtl ? (allVersions().find(n => bibles[n] && !bibles[n].rtl) || h.ver) : h.ver;
+    plain[show] ||= bibles[show].map(plainVerse);
+    const byBook = {};
+    for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
+    const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
+    html += `<p class="hits-sum">${qLabel(h.q)} ${bibleList.length}절 (구약 ${ot}, 신약 ${bibleList.length - ot})${h.Q.strong ? ` · ${esc(h.ver)}의 원어 기준, 같은 철자 단어가 함께 나올 수 있음` : ''}</p>` +
+      (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
+        .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
+      (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
+      shown.slice(0, 500).map(i => `<button class="hit" data-i="${i}"><span class="ref">${refName(...REF[i])}</span>${mk(plain[show][i])}</button>`).join('') +
+      (!bibleList.length ? '<p class="muted">여러 단어는 모두 들어 있는 절을, "따옴표"는 붙은 그대로, H430·G26은 원어 번호로 찾습니다.</p>' : '');
   } else if (!S.comm) {
     html += '<p class="hits-sum">주석 파일을 추가하면 주석에서도 찾을 수 있습니다.</p>';
   } else if (h.comm?.name !== S.comm) {
     $('comm').innerHTML = html + `<p class="progress">${S.comm} 주석에서 찾는 중…</p>`;
     return searchComm(); // 진행률 칸을 먼저 그린 뒤 색인 시작
   } else {
-    const list = h.comm.list;
-    html += `<p class="hits-sum">“${esc(h.q)}” ${list.length}개 항목${list.length > 300 ? ', 처음 300개만 표시' : ''}</p>` +
+    const list = commList, low = h.Q.terms[0]?.toLowerCase() || '';
+    html += `<p class="hits-sum">${qLabel(h.q)} ${list.length}개 항목${list.length > 300 ? ', 처음 300개만 표시' : ''}</p>` +
       list.slice(0, 300).map(e => {
-        const i = e.text.indexOf(h.q), snip = (i > 50 ? '…' : '') + e.text.slice(Math.max(0, i - 50), i + h.q.length + 90) + '…';
+        const i = Math.max(0, e.text.toLowerCase().indexOf(low)), snip = (i > 50 ? '…' : '') + e.text.slice(Math.max(0, i - 50), i + low.length + 90) + '…';
         return `<button class="hit" data-go="${e.b}.${e.c}.${e.f}" data-to-comm><span class="ref">${SHORT[e.b - 1]} ${e.c}:${e.f === e.t ? e.f : e.f + '-' + e.t}</span>${mk(snip)}</button>`;
       }).join('');
   }
@@ -1316,10 +1389,19 @@ $('comTabs2').onclick = e => {
   const t = e.target.closest('[data-comm2]'); if (!t) return;
   S.comm2 = t.dataset.comm2; save(); renderComm(); if (S.v) syncComm(S.v);
 };
+// 검색 결과: 번역본·범위 바꾸기
+$('comm').onchange = e => {
+  const o = e.target.dataset.sopt; if (!o || !hits) return;
+  hits.book = 0;
+  if (o === 'ver') { hits.ver = e.target.value; hits.bible = null; renderHits(); runBibleSearch(); }
+  else { hits.range = e.target.value; renderHits(); }
+};
 $('comm').onsubmit = e => { if (e.target.id === 'dictForm') { e.preventDefault(); dictSearch($('dq').value); } };
 $('comm').onclick = e => {
   const sc = e.target.closest('[data-scope]');
   if (sc) { hits.scope = sc.dataset.scope; return renderHits(); }
+  const sb = e.target.closest('[data-sbook]');
+  if (sb) { hits.book = +sb.dataset.sbook === hits.book ? 0 : +sb.dataset.sbook; renderHits(); return $('comm').scrollTop = 0; }
   const dg = e.target.closest('[data-dict-go], [data-strong]');
   if (dg) {
     e.preventDefault();

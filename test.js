@@ -28,6 +28,19 @@ assert.strictEqual(plainVerse('본문에 표시가 없으면 (a 그대로 둠)')
 assert.match(verseHtml('In the beginning<RF>Or, at first<Rf> God'), /beginning<sup class="fn"[^>]*data-fn="Or, at first"[^>]*>1<\/sup> God/);
 assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In the beginning God');
 
+// 검색어
+{
+  const { parseQuery } = require('./decode.js');
+  const q = parseQuery('사랑 "독생자를 주셨으니"');
+  assert.deepStrictEqual(q.terms, ['독생자를 주셨으니', '사랑']);
+  assert(q.test('하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니'));
+  assert(!q.test('독생자를 사랑하사')); // 따옴표 안은 붙은 그대로
+  assert(parseQuery('god LOVED').test('For God so loved the world'));
+  assert.strictEqual(parseQuery('h430').strong, 'H430');
+  assert.strictEqual(parseQuery('사랑').strong, null);
+  assert(!parseQuery('   ').test('아무 글'));
+}
+
 // 스트롱 번호 태그가 붙은 성경 (KJV+, TR+ 등)
 assert.strictEqual(verseHtml('In the beginning<WH7225> God<WH430> created<WH1254><WH853>'),
   'In the <span class="w" data-strong="H7225">beginning</span> <span class="w" data-strong="H430">God</span> <span class="w" data-strong="H1254,H853">created</span>');

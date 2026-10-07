@@ -355,6 +355,19 @@ const plainVerse = s => splitNotes(s || '').t.replace(FN, '')
   .replace(/<TRANS>[\s\S]*?<trans>/g, '').replace(/<sub>[\s\S]*?<\/sub>/g, '')
   .replace(/<[^>]*>/g, '').replace(/¶\s*/g, '').replace(/\s+/g, ' ').trim();
 
+// 검색어: 띄어 쓴 단어는 모두 들어 있어야, "따옴표"는 붙은 그대로, H430·G26은 원어 번호 검색. 영어는 대소문자 무시
+function parseQuery(q) {
+  q = q.trim();
+  const strong = /^[HhGg]\d{1,5}$/.test(q) ? q[0].toUpperCase() + +q.slice(1) : null;
+  const terms = [...[...q.matchAll(/"([^"]+)"/g)].map(m => m[1].trim()), ...q.replace(/"[^"]*"/g, ' ').split(/\s+/)].filter(Boolean);
+  const low = terms.map(x => x.toLowerCase());
+  return {
+    strong, terms,
+    test: t => { t = t.toLowerCase(); return low.length > 0 && low.every(x => t.includes(x)); },
+    re: terms.length ? new RegExp(terms.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi') : null,
+  };
+}
+
 // 교차 참조 한 줄("lnb nmc+1 …", 36진수) → [[시작 줄 번호, 범위 길이], …]
 const parseXrefs = line => (line || '').split(' ').filter(Boolean).map(x => { const [s, n] = x.split('+'); return [parseInt(s, 36), n ? parseInt(n, 36) : 0]; });
 
@@ -373,4 +386,4 @@ function parseEsv(t) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs };
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery };
