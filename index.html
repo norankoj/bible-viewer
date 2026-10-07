@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>성경 뷰어</title>
+<link rel="stylesheet" href="vendor/pretendard.css">
+<style>
+  /* 강조색은 코발트 하나(하이라이트 4색은 사용자 표시용). 모서리: 컨트롤 6px, 팝오버 10px */
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --line: #e3e5ea; --fg: #1d2027; --muted: #646b7a;
+    --accent: #2c4aa8; --accent-soft: #e8edfa; --on-accent: #ffffff; --red: #b4232c; --ot: #4b5b78;
+    --hl-yellow: #fbefb4; --hl-green: #d7efd3; --hl-blue: #d7e4fa; --hl-pink: #f8dbe6;
+    --shadow: 0 12px 32px rgb(29 32 39 / .12);
+    --sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --serif: "AppleMyungjo", "Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
+    --read: var(--serif); --fs: 17px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121317; --surface: #181a1f; --line: #2a2d35; --fg: #e4e6eb; --muted: #949aa8;
+      --accent: #8fa7ee; --accent-soft: #232a40; --on-accent: #121317; --red: #f0857f; --ot: #a9b6cf;
+      --hl-yellow: #48401c; --hl-green: #213b26; --hl-blue: #22314c; --hl-pink: #482532;
+      --shadow: 0 12px 32px rgb(0 0 0 / .45);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--sans); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: default; opacity: .4; }
+  input[type=file] { display: none; }
+
+  /* 상단 바 */
+  .bar { height: 56px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .btn { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); white-space: nowrap; transition: background .15s, transform .1s; }
+  .btn:hover:not(:disabled) { background: var(--bg); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn.icon { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 13px; }
+  .btn.sm.icon { width: 28px; padding: 0; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
+  .ref-btn { font-weight: 600; font-size: 15px; border-color: transparent; }
+  .search { flex: 0 1 280px; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); margin-left: auto; }
+  .search:focus, .btn:focus-visible, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .status { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  /* 백업 알림 */
+  .nudge { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent-soft); border-bottom: 1px solid var(--line); font-size: 13px; }
+  .nudge[hidden] { display: none; }
+  .nudge span { margin-right: auto; }
+
+  /* 본문 영역: 성경 | 주석 (| 주석 2) */
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); min-height: 0; }
+  main.split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); }
+  #pane2 { display: none; }
+  main.split #pane2 { display: flex; }
+  .pane { display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
+  .pane + .pane { border-left: 1px solid var(--line); background: var(--bg); }
+  .tabs { flex: none; display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); white-space: nowrap; }
+  .tab:hover { color: var(--fg); }
+  .tab.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .tabs .spacer { margin-left: auto; }
+  .tabs .hint { color: var(--muted); font-size: 12px; align-self: center; white-space: nowrap; }
+  .scroll { flex: 1; overflow-y: auto; padding: 24px 32px 96px; }
+
+  /* 성경 */
+  .chapter-title { font: 600 20px/1.3 var(--sans); margin: 0 0 16px; }
+  .verse { font: var(--fs)/1.85 var(--read); padding: 2px 8px; margin: 0 -8px 4px; border-radius: 6px; cursor: pointer; max-width: 42em; user-select: none; }
+  .verse:hover { background: var(--bg); }
+  .vn { font: 600 11px var(--sans); color: var(--accent); margin-right: 6px; vertical-align: 3px; }
+  .red { color: var(--red); } .ot { color: var(--ot); }
+  .ts { display: block; font: 600 13px var(--sans); color: var(--muted); margin: 14px 0 2px; }
+  .par { display: grid; grid-template-columns: 28px repeat(var(--n), minmax(0, 1fr)); column-gap: 20px; }
+  .par .head { position: sticky; top: -24px; background: var(--surface); padding: 6px 0 8px; font-weight: 600; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); margin-bottom: 8px; z-index: 1; }
+  .par .row { display: contents; }
+  .par .row > * { padding: 6px 0; font: var(--fs)/1.75 var(--read); cursor: pointer; user-select: none; }
+  .par .row > .vn { font: 600 11px/2.6 var(--sans); padding-left: 6px; }
+  /* 선택: 왼쪽 막대 + (하이라이트가 없으면) 연한 배경 */
+  .verse.on, .par .row.on > .vn { box-shadow: inset 3px 0 0 var(--accent); }
+  .verse.on:not([class*="hl-"]), .par .row.on:not([class*="hl-"]) > * { background: var(--accent-soft); }
+  .hl-yellow, .verse.hl-yellow, .par .row.hl-yellow > * { background: var(--hl-yellow); }
+  .hl-green, .verse.hl-green, .par .row.hl-green > * { background: var(--hl-green); }
+  .hl-blue, .verse.hl-blue, .par .row.hl-blue > * { background: var(--hl-blue); }
+  .hl-pink, .verse.hl-pink, .par .row.hl-pink > * { background: var(--hl-pink); }
+  .note-badge { font: 600 11px var(--sans); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
+
+  /* 선택 작업 막대 */
+  .selbar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 16px; border-top: 1px solid var(--line); background: var(--surface); }
+  .selbar[hidden] { display: none; }
+  .sel-ref { font-weight: 600; margin-right: 6px; }
+  .swatches { display: flex; gap: 4px; align-items: center; margin: 0 6px; }
+  .sw { width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 6px; padding: 0; }
+  .sw:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* 주석 */
+  .entry { font: calc(var(--fs) - 1px)/1.85 var(--read); max-width: 44em; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+  .entry:last-child { border-bottom: 0; }
+  .entry h3 { font: 600 13px var(--sans); color: var(--accent); margin: 0 0 8px -8px; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+  .entry.on h3 { background: var(--accent-soft); }
+  .entry a[data-ref] { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+
+  /* 검색 결과·보관함 목록 */
+  .seg { display: flex; gap: 4px; margin: 0 0 16px; flex-wrap: wrap; }
+  .hits-sum { color: var(--muted); margin: 0 0 12px; }
+  .hit { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 8px; margin: 0 -8px; border-radius: 6px; font: calc(var(--fs) - 2px)/1.7 var(--read); }
+  .hit:hover { background: var(--surface); }
+  .hit .ref { font: 600 12px var(--sans); color: var(--accent); margin-right: 8px; }
+  .hit .sw { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 8px; }
+  .note-text { white-space: pre-wrap; font-family: var(--sans); font-size: 14px; }
+  .saved h4 { font: 600 13px var(--sans); color: var(--muted); margin: 28px 0 6px; }
+  .saved h4:first-child { margin-top: 0; }
+  .saved .none { color: var(--muted); margin: 0; font-size: 13px; }
+  mark { background: var(--accent-soft); color: inherit; border-radius: 2px; }
+  .progress { color: var(--muted); }
+
+  /* 빈 화면 */
+  .empty { max-width: 28em; margin: 12vh auto 0; color: var(--muted); }
+  .empty h2 { color: var(--fg); font-size: 18px; margin: 0 0 8px; }
+  .empty .btn { margin: 16px 8px 0 0; }
+  .empty.small { margin-top: 8vh; text-align: center; }
+
+  /* 팝오버 */
+  .pop { position: fixed; z-index: 20; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 16px; display: none; }
+  .pop.open { display: block; animation: pop .14s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce) { .pop.open { animation: none; } }
+  #picker { width: min(560px, calc(100vw - 32px)); max-height: 75vh; overflow-y: auto; }
+  #picker h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  #picker h4 + .grid { margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
+  .grid button { height: 32px; border: 0; border-radius: 6px; background: var(--bg); }
+  .grid button:hover, .grid button.on { background: var(--accent-soft); color: var(--accent); }
+  #picker .back { border: 0; background: none; color: var(--accent); padding: 0; margin-bottom: 12px; font-weight: 600; }
+  #menu { width: 260px; padding: 6px; }
+  #menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 6px; }
+  #menu button:hover { background: var(--bg); }
+  #menu small { display: block; color: var(--muted); }
+  #menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+  #tip { max-width: 380px; padding: 12px 14px; font: 14px/1.7 var(--read); pointer-events: none; }
+  #tip b { font: 600 12px var(--sans); color: var(--accent); display: block; margin-bottom: 4px; }
+  #noteBox { width: min(380px, calc(100vw - 32px)); }
+  #noteBox label { display: block; font-weight: 600; margin-bottom: 8px; }
+  #noteBox textarea { width: 100%; min-height: 140px; resize: vertical; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); line-height: 1.6; }
+  #noteBox .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+  #noteBox .actions .btn:first-child { margin-right: auto; }
+
+  @media (max-width: 760px) {
+    .bar { flex-wrap: wrap; height: auto; padding: 8px 16px; }
+    .search { flex: 1 1 100%; order: 9; margin: 0; }
+    main, main.split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 55% 45%; }
+    main.split #pane2, [data-split] { display: none !important; }
+    .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
+    .scroll { padding: 16px 16px 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button class="btn" id="back" title="이전 위치로 (Alt+←)" disabled>뒤로</button>
+  <button class="btn icon" id="prev" title="이전 장 (←)" aria-label="이전 장">‹</button>
+  <button class="btn ref-btn" id="refBtn" aria-haspopup="dialog">요한복음 3장</button>
+  <button class="btn icon" id="next" title="다음 장 (→)" aria-label="다음 장">›</button>
+  <input class="search" id="q" type="search" placeholder="검색 ( / )" aria-label="성경·주석 검색">
+  <button class="btn icon" id="smaller" title="글자 작게" aria-label="글자 작게" style="font-size:13px">가</button>
+  <button class="btn icon" id="bigger" title="글자 크게" aria-label="글자 크게" style="font-size:17px">가</button>
+  <button class="btn" id="fontBtn" title="본문 글꼴 바꾸기">명조</button>
+  <button class="btn" id="menuBtn" aria-haspopup="menu">파일</button>
+  <span class="status" id="status" role="status"></span>
+</div>
+<div class="nudge" id="nudge" role="status" hidden>
+  <span id="nudgeText"></span>
+  <button class="btn sm primary" id="nudgeBackup">지금 백업</button>
+  <button class="btn sm" id="nudgeLater">나중에</button>
+</div>
+<main id="main">
+  <section class="pane">
+    <div class="tabs" id="verTabs"></div>
+    <div class="scroll" id="bible"></div>
+    <div class="selbar" id="selbar" hidden></div>
+  </section>
+  <section class="pane">
+    <div class="tabs" id="comTabs"></div>
+    <div class="scroll" id="comm"></div>
+  </section>
+  <section class="pane" id="pane2">
+    <div class="tabs" id="comTabs2"></div>
+    <div class="scroll" id="comm2"></div>
+  </section>
+</main>
+
+<div class="pop" id="picker" role="dialog" aria-label="성경 책과 장 선택"></div>
+<div class="pop" id="menu" role="menu">
+  <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석을 한 번에 추가</small></button>
+  <button id="addFiles">파일 선택<small>.ont 성경, .cmt.twm 주석</small></button>
+  <hr>
+  <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
+  <button id="importMarks">백업 불러오기</button>
+  <hr>
+  <button id="clearAll">저장된 성경·주석 파일 지우기<small>메모와 책갈피는 지우지 않습니다</small></button>
+</div>
+<div class="pop" id="noteBox" role="dialog" aria-label="메모">
+  <label for="noteText" id="noteRef"></label>
+  <textarea id="noteText" placeholder="이 절에 대한 메모"></textarea>
+  <div class="actions">
+    <button class="btn sm" id="noteDel">메모 삭제</button>
+    <button class="btn sm" id="noteCancel">취소</button>
+    <button class="btn sm primary" id="noteSave">저장</button>
+  </div>
+</div>
+<div class="pop" id="tip"></div>
+<input type="file" id="files" accept=".ont,.twm" multiple>
+<input type="file" id="folder" webkitdirectory multiple>
+<input type="file" id="importFile" accept=".json,application/json">
+
+<script src="vendor/sql-wasm.js"></script>
+<script src="vendor/sql-wasm-bin.js"></script>
+<script src="decode.js"></script>
+<script>
+const BOOKS = '창세기 출애굽기 레위기 민수기 신명기 여호수아 사사기 룻기 사무엘상 사무엘하 열왕기상 열왕기하 역대상 역대하 에스라 느헤미야 에스더 욥기 시편 잠언 전도서 아가 이사야 예레미야 예레미야애가 에스겔 다니엘 호세아 요엘 아모스 오바댜 요나 미가 나훔 하박국 스바냐 학개 스가랴 말라기 마태복음 마가복음 누가복음 요한복음 사도행전 로마서 고린도전서 고린도후서 갈라디아서 에베소서 빌립보서 골로새서 데살로니가전서 데살로니가후서 디모데전서 디모데후서 디도서 빌레몬서 히브리서 야고보서 베드로전서 베드로후서 요한일서 요한이서 요한삼서 유다서 요한계시록'.split(' ');
+const SHORT = '창 출 레 민 신 수 삿 룻 삼상 삼하 왕상 왕하 대상 대하 스 느 에 욥 시 잠 전 아 사 렘 애 겔 단 호 욜 암 옵 욘 미 나 합 습 학 슥 말 마 막 눅 요 행 롬 고전 고후 갈 엡 빌 골 살전 살후 딤전 딤후 딛 몬 히 약 벧전 벧후 요일 요이 요삼 유 계'.split(' ');
+const COLORS = { yellow: '노랑', green: '초록', blue: '파랑', pink: '분홍' };
+const $ = id => document.getElementById(id);
+const bibles = {}, comms = {}, plain = {}, commText = {}, indexing = {};
+const marks = new Map(); // 하이라이트·메모: "책.장.절", 책갈피: "bm:책.장.절-절"
+let SQL, hits = null, sel = new Set(), hist = [], noteV = 0;
+
+const prefs = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const S = { b: 43, c: 3, v: 0, versions: [], comm: '', comm2: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
+const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, split: S.split });
+
+// 줄 번호 → [책, 장, 절]
+const REF = [];
+VERSES.forEach((cs, bi) => cs.forEach((n, ci) => { for (let v = 1; v <= n; v++) REF.push([bi + 1, ci + 1, v]); }));
+const refName = (b, c, v) => `${SHORT[b - 1]} ${c}:${v}`;
+const order = m => m.b * 1e6 + m.c * 1e3 + m.v;
+const plainVerse = s => (s || '').replace(/<[^>]*>/g, '').replace(/¶\s*/g, '').replace(/\s+/g, ' ').trim();
+const sorted = () => [...sel].sort((a, b) => a - b);
+// [16,17,18,20] → "16-18, 20"
+const rangeLabel = vs => vs.reduce((a, v) => {
+  const last = a.at(-1);
+  if (last && v === last[1] + 1) last[1] = v; else a.push([v, v]);
+  return a;
+}, []).map(([f, t]) => f === t ? f : `${f}-${t}`).join(', ');
+
+/* ---------- 브라우저 저장소 (IndexedDB). 막힌 환경이면 저장 없이 동작 ---------- */
+function idb(store, mode, fn) {
+  return new Promise((ok, no) => {
+    const r = indexedDB.open('bible-viewer', 2);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains('files')) db.createObjectStore('files');
+      if (!db.objectStoreNames.contains('marks')) db.createObjectStore('marks', { keyPath: 'id' });
+    };
+    r.onerror = () => no(r.error);
+    r.onsuccess = () => {
+      const tx = r.result.transaction(store, mode), q = fn(tx.objectStore(store));
+      tx.oncomplete = () => ok(q.result);
+      tx.onerror = () => no(tx.error);
+    };
+  });
+}
+
+async function addFile(f) {
+  const name = f.name.replace(/(\.cmt)?\.(twm|ont)$/i, '');
+  const u8 = new Uint8Array(await f.arrayBuffer());
+  if (/\.ont$/i.test(f.name)) { bibles[name] = parseOnt(u8); delete plain[name]; }
+  else {
+    SQL ||= await initSqlJs({ wasmBinary: Uint8Array.from(atob(window.SQL_WASM_B64), c => c.charCodeAt(0)) });
+    comms[name]?.close();
+    comms[name] = new SQL.Database(u8);
+    delete commText[name];
+  }
+}
+
+async function load(files, persist) {
+  files = files.filter(f => /\.(ont|twm)$/i.test(f.name));
+  // 저장 공간이 부족할 때 브라우저가 임의로 지우지 않도록 영구 저장 요청 (지원 안 하면 무시)
+  if (persist && files.length) navigator.storage?.persist?.().catch(() => {});
+  for (const [i, f] of files.entries()) {
+    $('status').textContent = `불러오는 중 ${i + 1}/${files.length} · ${f.name}`;
+    try {
+      await addFile(f);
+      if (persist) await idb('files', 'readwrite', s => s.put(f, f.name)).catch(() => {});
+    } catch (err) { alert(`${f.name}: 읽을 수 없습니다 (${err.message})`); }
+  }
+  $('status').textContent = '';
+  const cn = Object.keys(comms);
+  S.versions = S.versions.filter(n => bibles[n]);
+  if (!S.versions.length && Object.keys(bibles).length) S.versions = [Object.keys(bibles)[0]];
+  if (!comms[S.comm]) S.comm = cn[0] || '';
+  if (!comms[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
+  if (!S.comm2) S.split = false;
+  go(S.b, S.c, S.v);
+}
+
+/* ---------- 이동 ---------- */
+// jump: 책·장 선택, 링크, 검색 결과처럼 "건너뛰는" 이동이면 뒤로가기 기록을 남김
+function go(b, c, v, jump) {
+  c = Math.min(Math.max(c, 1), VERSES[b - 1].length);
+  if (jump && (b !== S.b || c !== S.c || v !== S.v)) { hist.push({ b: S.b, c: S.c, v: S.v }); hist = hist.slice(-50); }
+  $('back').disabled = !hist.length;
+  S.b = b; S.c = c; S.v = v || 0;
+  sel = new Set(S.v ? [S.v] : []);
+  if (S.tab === 'search' && !hits) S.tab = 'comm';
+  save();
+  const recent = prefs.get('recent', []).filter(r => r.b !== b || r.c !== c);
+  prefs.set('recent', [{ b, c }, ...recent].slice(0, 20));
+  $('refBtn').textContent = `${BOOKS[b - 1]} ${c}장`;
+  renderBible(); renderComm();
+  $('bible').scrollTop = 0;
+  if (S.v) select(S.v); else { $('comm').scrollTop = $('comm2').scrollTop = 0; renderSelbar(); }
+}
+
+function back() { const p = hist.pop(); if (p) go(p.b, p.c, p.v); }
+
+function step(d) {
+  const { b, c } = S;
+  if (VERSES[b - 1][c - 1 + d]) return go(b, c + d);
+  if (b + d >= 1 && b + d <= 66) go(b + d, d > 0 ? 1 : VERSES[b + d - 1].length);
+}
+
+/* ---------- 성경 ---------- */
+const welcome = `<div class="empty"><h2>성경과 주석을 추가하세요</h2>
+  <p><b>bible-viewer</b> 폴더를 통째로 고르면 그 안의 <b>성경</b>, <b>주석</b> 폴더를 한 번에 불러옵니다. 한 번 추가하면 다음부터는 자동으로 열립니다.</p>
+  <p>파일은 이 컴퓨터 안에서만 읽고 어디에도 보내지 않습니다.</p>
+  <button class="btn" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button></div>`;
+
+function verseMark(v) {
+  const m = marks.get(`${S.b}.${S.c}.${v}`);
+  return { cls: m?.color ? ` hl-${m.color}` : '', badge: m?.note ? `<button class="note-badge" data-note="${v}" title="메모 보기">메모</button>` : '' };
+}
+
+function renderBible() {
+  const names = Object.keys(bibles);
+  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}">${n}</button>`).join('') +
+    (names.length > 1 ? `<span class="hint spacer">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '');
+  const vs = S.versions;
+  if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
+  const { b, c } = S, base = START[b][c - 1], n = VERSES[b - 1][c - 1];
+  const title = `<h1 class="chapter-title">${BOOKS[b - 1]} ${c}장</h1>`;
+  const ids = Array.from({ length: n }, (_, i) => i + 1);
+  if (vs.length === 1) {
+    const L = bibles[vs[0]];
+    $('bible').innerHTML = title + ids.map(v => {
+      const m = verseMark(v);
+      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${verseHtml(L[base + v - 1] || '')}${m.badge}</p>`;
+    }).join('');
+  } else {
+    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><span class="head"></span>${vs.map(x => `<span class="head">${x}</span>`).join('')}` +
+      ids.map(v => {
+        const m = verseMark(v);
+        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span>${verseHtml(bibles[x][base + v - 1] || '')}${i ? '' : m.badge}</span>`).join('')}</div>`;
+      }).join('') + '</div>';
+  }
+}
+
+// 하이라이트·메모 바뀐 뒤 스크롤 위치를 지키며 다시 그림
+function refreshBible() {
+  const top = $('bible').scrollTop;
+  renderBible(); $('bible').scrollTop = top; renderSelbar();
+  if (S.tab === 'saved') renderComm();
+}
+
+/* ---------- 절 선택 (Shift: 범위, Cmd/Ctrl: 여러 개) ---------- */
+function select(v, mode) {
+  const vs = sorted();
+  if (mode === 'range' && vs.length) {
+    const from = Math.min(S.v || v, v), to = Math.max(S.v || v, v);
+    sel = new Set(Array.from({ length: to - from + 1 }, (_, i) => from + i));
+  } else if (mode === 'toggle') {
+    sel.has(v) && sel.size > 1 ? sel.delete(v) : sel.add(v);
+  } else sel = new Set([v]);
+  if (mode !== 'range') S.v = v;
+  $('bible').querySelectorAll('[data-v]').forEach(e => e.classList.toggle('on', sel.has(+e.dataset.v)));
+  const p = $('bible').querySelector(`[data-v="${v}"]`);
+  // 대조 보기의 행은 display:contents라 위치가 없으므로 첫 칸으로 스크롤
+  if (p) (p.classList.contains('row') ? p.firstElementChild : p).scrollIntoView({ block: 'nearest' });
+  renderSelbar();
+  syncComm(v);
+}
+
+function syncComm(v) {
+  for (const id of ['comm', 'comm2']) {
+    const entries = [...$(id).querySelectorAll('.entry')];
+    entries.forEach(e => e.classList.remove('on'));
+    const a = entries.find(e => +e.dataset.f <= v && v <= +e.dataset.t);
+    if (a) { a.classList.add('on'); a.scrollIntoView(); }
+  }
+}
+
+function renderSelbar() {
+  const bar = $('selbar');
+  if (!sel.size || !S.versions.length) { bar.hidden = true; return; }
+  const vs = sorted(), first = vs[0];
+  const bmId = `bm:${S.b}.${S.c}.${first}-${vs.at(-1)}`;
+  const hasNote = marks.get(`${S.b}.${S.c}.${first}`)?.note;
+  bar.hidden = false;
+  bar.innerHTML = `<span class="sel-ref">${SHORT[S.b - 1]} ${S.c}:${rangeLabel(vs)}</span>
+    <button class="btn sm" data-act="copy" title="Cmd/Ctrl+C">복사</button>
+    <span class="swatches">${Object.entries(COLORS).map(([k, n]) => `<button class="sw hl-${k}" data-hl="${k}" title="${n} 하이라이트" aria-label="${n} 하이라이트"></button>`).join('')}
+      <button class="btn sm" data-hl="" title="하이라이트 지우기">지우기</button></span>
+    <button class="btn sm" data-act="note">${hasNote ? '메모 보기' : '메모'}</button>
+    <button class="btn sm" data-act="bm">${marks.has(bmId) ? '책갈피 해제' : '책갈피'}</button>
+    <button class="btn sm icon" data-act="clear" title="선택 해제 (Esc)" aria-label="선택 해제">×</button>`;
+}
+
+/* ---------- 복사 ---------- */
+async function copySel() {
+  const vs = sorted(), { b, c } = S, base = START[b][c - 1];
+  const label = `${BOOKS[b - 1]} ${c}:${rangeLabel(vs)}`;
+  const text = S.versions.map(name => `${label} (${name})\n` +
+    (vs.length === 1 ? plainVerse(bibles[name][base + vs[0] - 1]) : vs.map(v => `${v} ${plainVerse(bibles[name][base + v - 1])}`).join('\n'))).join('\n\n');
+  try { await navigator.clipboard.writeText(text); }
+  catch { // file:// 등 클립보드 API가 막힌 환경
+    const t = Object.assign(document.createElement('textarea'), { value: text });
+    document.body.append(t); t.select(); document.execCommand('copy'); t.remove();
+  }
+  flash(`${label} 복사했습니다`);
+}
+let flashTimer;
+function flash(msg) { $('status').textContent = msg; clearTimeout(flashTimer); flashTimer = setTimeout(() => $('status').textContent = '', 2500); }
+
+/* ---------- 하이라이트·메모·책갈피 ---------- */
+/* ---------- 백업 알림: 백업 안 한 변경이 10개 쌓이거나 7일이 지나면 ---------- */
+const DAY = 864e5;
+const backupState = () => prefs.get('backup', { dirty: 0, since: 0, nudgeAt: 10, snoozeUntil: 0 });
+function markDirty() {
+  const s = backupState();
+  if (!s.dirty) s.since = Date.now();
+  s.dirty++; prefs.set('backup', s); checkNudge();
+}
+function checkNudge() {
+  const s = backupState(), now = Date.now();
+  const show = s.dirty > 0 && now >= s.snoozeUntil && (s.dirty >= s.nudgeAt || now - s.since > 7 * DAY);
+  $('nudge').hidden = !show;
+  if (show) $('nudgeText').textContent = `백업하지 않은 메모·하이라이트·책갈피 변경이 ${s.dirty}개 있습니다. 브라우저 데이터가 지워지면 함께 사라지니 백업해 두세요.`;
+}
+// 나중에: 하루 동안 숨기고, 이후 10개가 더 쌓이거나 7일이 지나면 다시 알림
+function snoozeNudge() {
+  const s = backupState();
+  prefs.set('backup', { ...s, nudgeAt: s.dirty + 10, snoozeUntil: Date.now() + DAY });
+  checkNudge();
+}
+
+function putMark(m) {
+  markDirty();
+  m.t = Date.now();
+  const empty = !m.bm && !m.color && !m.note;
+  if (empty) marks.delete(m.id); else marks.set(m.id, m);
+  idb('marks', 'readwrite', s => empty ? s.delete(m.id) : s.put(m)).catch(() => flash('저장하지 못했습니다. 브라우저 저장소가 막혀 있습니다'));
+}
+function setVerse(v, patch) {
+  const id = `${S.b}.${S.c}.${v}`, m = { ...(marks.get(id) || { id, b: S.b, c: S.c, v }), ...patch };
+  for (const k of ['color', 'note']) if (!m[k]) delete m[k];
+  putMark(m);
+}
+function toggleBookmark() {
+  const vs = sorted(), id = `bm:${S.b}.${S.c}.${vs[0]}-${vs.at(-1)}`;
+  if (marks.has(id)) { marks.delete(id); markDirty(); idb('marks', 'readwrite', s => s.delete(id)).catch(() => {}); flash('책갈피를 해제했습니다'); }
+  else { putMark({ id, bm: true, b: S.b, c: S.c, v: vs[0], v2: vs.at(-1) }); flash('책갈피에 추가했습니다'); }
+  renderSelbar();
+  if (S.tab === 'saved') renderComm();
+}
+
+function openNote(v, anchor) {
+  noteV = v;
+  $('noteRef').textContent = `${BOOKS[S.b - 1]} ${S.c}:${v} 메모`;
+  $('noteText').value = marks.get(`${S.b}.${S.c}.${v}`)?.note || '';
+  $('noteDel').hidden = !$('noteText').value;
+  openPop($('noteBox'), anchor);
+  $('noteText').focus();
+}
+function saveNote() {
+  setVerse(noteV, { note: $('noteText').value.trim() });
+  closePops(); refreshBible();
+}
+
+/* ---------- 백업 ---------- */
+function exportMarks() {
+  const data = JSON.stringify({ app: 'bible-viewer', version: 1, marks: [...marks.values()] }, null, 1);
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([data], { type: 'application/json' })),
+    download: `성경뷰어-메모-${new Date().toISOString().slice(0, 10)}.json`,
+  });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  prefs.set('backup', { dirty: 0, since: 0, nudgeAt: 10, snoozeUntil: 0 });
+  checkNudge();
+  flash('백업 파일을 다운로드 폴더에 저장했습니다');
+}
+// 외부 파일이므로 형식을 하나하나 확인한 항목만 받아들임
+const validMark = m => m && typeof m.id === 'string' && /^(bm:)?\d+\.\d+\.\d+(-\d+)?$/.test(m.id) &&
+  [m.b, m.c, m.v].every(Number.isInteger) && m.b >= 1 && m.b <= 66 && VERSES[m.b - 1][m.c - 1] >= m.v &&
+  (m.note === undefined || typeof m.note === 'string') && (m.color === undefined || m.color in COLORS) &&
+  (!m.bm || Number.isInteger(m.v2));
+async function importMarks(file) {
+  try {
+    const list = JSON.parse(await file.text()).marks;
+    if (!Array.isArray(list)) throw new Error('백업 파일 형식이 아닙니다');
+    const ok = list.filter(validMark).map(m => ({ id: m.id, b: m.b, c: m.c, v: m.v, v2: m.v2, bm: m.bm || undefined, color: m.color, note: m.note, t: m.t || Date.now() }));
+    for (const m of ok) Object.keys(m).forEach(k => m[k] === undefined && delete m[k]);
+    await idb('marks', 'readwrite', s => { ok.forEach(m => s.put(m)); return s; });
+    ok.forEach(m => marks.set(m.id, m));
+    refreshBible();
+    alert(`${ok.length}개를 불러왔습니다${list.length > ok.length ? ` (${list.length - ok.length}개는 형식이 맞지 않아 건너뜀)` : ''}.`);
+  } catch (err) { alert(`백업을 불러오지 못했습니다: ${err.message}`); }
+}
+
+/* ---------- 주석 ---------- */
+const rows = (db, sql, params) => { const st = db.prepare(sql); st.bind(params); const r = []; while (st.step()) r.push(st.get()); st.free(); return r; };
+
+function commHtml(name) {
+  const db = comms[name];
+  if (!db) return `<p class="empty small">${Object.keys(bibles).length ? '주석 파일(.cmt.twm)을 추가하면 여기에 나옵니다.' : ''}</p>`;
+  const { b, c } = S;
+  // TEXT로 받으면 UTF-8 디코딩에서 RVF 바이트가 깨지므로 blob으로 받음
+  const list = rows(db, 'select r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) where r.bi=? and r.ci=? order by r.fvi, r.topic_id', [b, c]);
+  return list.length
+    ? list.map(([f, t, d]) => `<article class="entry" data-f="${f}" data-t="${t}"><h3>${BOOKS[b - 1]} ${c}:${f === t ? f : f + '-' + t}</h3><div>${toHtml(d)}</div></article>`).join('')
+    : `<p class="empty small">${name}에는 ${BOOKS[b - 1]} ${c}장 주석이 없습니다.</p>`;
+}
+
+function renderComm() {
+  const names = Object.keys(comms);
+  const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
+  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}"`, n)).join('') +
+    (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
+    tab(S.tab === 'saved', 'data-saved', '보관함') +
+    (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
+  $('main').classList.toggle('split', S.split);
+  if (S.tab === 'search' && hits) renderHits();
+  else if (S.tab === 'saved') renderSaved();
+  else $('comm').innerHTML = commHtml(S.comm);
+  if (S.split) {
+    $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${n}"`, n)).join('');
+    $('comm2').innerHTML = commHtml(S.comm2);
+  }
+}
+
+/* ---------- 검색 (성경 / 주석) ---------- */
+const reEsc = q => new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+
+function search(q) {
+  q = q.trim();
+  if (!q) { hits = null; S.tab = 'comm'; return renderComm(); }
+  const ver = S.versions[0];
+  let bible = [];
+  if (ver) {
+    plain[ver] ||= bibles[ver].map(plainVerse);
+    bible = plain[ver].reduce((a, t, i) => (t.includes(q) && a.push(i), a), []);
+  }
+  hits = { q, ver, bible, comm: null, scope: ver ? 'bible' : 'comm' };
+  S.tab = 'search'; renderComm();
+}
+
+// 주석 전체를 글자로 풀어 둠 (처음 한 번만, 수 초 걸림)
+async function indexComm(name, progress) {
+  if (commText[name]) return commText[name];
+  return indexing[name] ||= (async () => {
+    const db = comms[name], total = rows(db, 'select count(*) from bible_refs', [])[0][0];
+    const st = db.prepare('select r.bi, r.ci, r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) order by r.bi, r.ci, r.fvi');
+    const out = [];
+    try {
+      while (st.step()) {
+        const [b, c, f, t, d] = st.get();
+        const text = toHtml(d).replace(/<br>/g, ' ').replace(/<[^>]+>/g, '')
+          .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+        out.push({ b, c, f, t, text });
+        if (out.length % 400 === 0) { progress(out.length / total); await new Promise(r => setTimeout(r)); }
+      }
+      return commText[name] = out;
+    } finally { st.free(); delete indexing[name]; } // 실패해도 다음 검색에서 다시 시도
+  })();
+}
+
+async function searchComm() {
+  const name = S.comm, h = hits;
+  if (!name) return;
+  const texts = await indexComm(name, p => {
+    const el = hits === h && S.tab === 'search' && $('comm').querySelector('.progress');
+    if (el) el.textContent = `${name} 주석 색인 중 ${Math.round(p * 100)}% (처음 한 번만)`;
+  }).catch(err => { if (hits === h) $('comm').querySelector('.progress')?.replaceChildren(`주석 검색에 실패했습니다: ${err.message}`); });
+  if (!texts) return;
+  if (hits !== h) return;
+  h.comm = { name, list: texts.filter(e => e.text.includes(h.q)) };
+  if (S.tab === 'search') renderHits();
+}
+
+function renderHits() {
+  const h = hits, re = reEsc(h.q), mk = s => esc(s).replace(re, m => `<mark>${m}</mark>`);
+  const commN = h.comm?.name === S.comm ? h.comm.list.length : '';
+  let html = `<div class="seg">
+    ${h.ver ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 · ${h.ver} ${h.bible.length}</button>` : ''}
+    ${S.comm ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 · ${S.comm} ${commN}</button>` : ''}</div>`;
+  if (h.scope === 'bible') {
+    html += `<p class="hits-sum">“${esc(h.q)}” ${h.bible.length}절${h.bible.length > 500 ? ', 처음 500절만 표시' : ''}</p>` +
+      h.bible.slice(0, 500).map(i => `<button class="hit" data-i="${i}"><span class="ref">${refName(...REF[i])}</span>${mk(plain[h.ver][i])}</button>`).join('');
+  } else if (!S.comm) {
+    html += '<p class="hits-sum">주석 파일을 추가하면 주석에서도 찾을 수 있습니다.</p>';
+  } else if (h.comm?.name !== S.comm) {
+    $('comm').innerHTML = html + `<p class="progress">${S.comm} 주석에서 찾는 중…</p>`;
+    return searchComm(); // 진행률 칸을 먼저 그린 뒤 색인 시작
+  } else {
+    const list = h.comm.list;
+    html += `<p class="hits-sum">“${esc(h.q)}” ${list.length}개 항목${list.length > 300 ? ', 처음 300개만 표시' : ''}</p>` +
+      list.slice(0, 300).map(e => {
+        const i = e.text.indexOf(h.q), snip = (i > 50 ? '…' : '') + e.text.slice(Math.max(0, i - 50), i + h.q.length + 90) + '…';
+        return `<button class="hit" data-go="${e.b}.${e.c}.${e.f}" data-to-comm><span class="ref">${SHORT[e.b - 1]} ${e.c}:${e.f === e.t ? e.f : e.f + '-' + e.t}</span>${mk(snip)}</button>`;
+      }).join('');
+  }
+  $('comm').innerHTML = html;
+}
+
+/* ---------- 보관함 ---------- */
+function renderSaved() {
+  const all = [...marks.values()], L = bibles[S.versions[0]];
+  const verseOf = m => L ? esc(plainVerse(L[START[m.b][m.c - 1] + m.v - 1])) : '';
+  const item = (m, label, body) => `<button class="hit" data-go="${m.b}.${m.c}.${m.v}"><span class="ref">${label}</span>${body}</button>`;
+  const section = (title, list, none) => `<h4>${title}</h4>` + (list.length ? list.join('') : `<p class="none">${none}</p>`);
+  const bms = all.filter(m => m.bm).sort((a, b) => b.t - a.t)
+    .map(m => item(m, `${SHORT[m.b - 1]} ${m.c}:${m.v === m.v2 ? m.v : m.v + '-' + m.v2}`, verseOf(m)));
+  const notes = all.filter(m => m.note).sort((a, b) => order(a) - order(b))
+    .map(m => item(m, refName(m.b, m.c, m.v), `<span class="note-text">${esc(m.note)}</span>`));
+  const hls = all.filter(m => m.color).sort((a, b) => order(a) - order(b))
+    .map(m => item(m, `<span class="sw hl-${m.color}"></span>${refName(m.b, m.c, m.v)}`, verseOf(m)));
+  const recent = prefs.get('recent', []).map(r => item({ ...r, v: 0 }, `${BOOKS[r.b - 1]} ${r.c}장`, ''));
+  $('comm').innerHTML = `<div class="saved">` +
+    section('책갈피', bms, '절을 고르고 아래 막대에서 "책갈피"를 누르세요.') +
+    section('메모', notes, '절을 고르고 "메모"를 누르면 여기에 모입니다.') +
+    section('하이라이트', hls, '절을 고르고 색을 누르면 여기에 모입니다.') +
+    section('최근 본 곳', recent, '') + '</div>';
+}
+
+/* ---------- 팝오버 ---------- */
+function openPop(el, anchor) {
+  closePops();
+  const r = anchor.getBoundingClientRect();
+  el.classList.add('open');
+  el.style.left = Math.max(16, Math.min(r.left, innerWidth - el.offsetWidth - 16)) + 'px';
+  el.style.top = (r.bottom + el.offsetHeight + 8 > innerHeight ? Math.max(8, r.top - el.offsetHeight - 6) : r.bottom + 6) + 'px';
+}
+const closePops = () => document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && p.classList.remove('open'));
+
+function pickerBooks() {
+  const grid = (from, to) => `<div class="grid">${SHORT.slice(from, to).map((s, i) => `<button data-book="${from + i + 1}" title="${BOOKS[from + i]}" class="${S.b === from + i + 1 ? 'on' : ''}">${s}</button>`).join('')}</div>`;
+  $('picker').innerHTML = `<h4>구약</h4>${grid(0, 39)}<h4>신약</h4>${grid(39, 66)}`;
+}
+function pickerChapters(b) {
+  $('picker').innerHTML = `<button class="back" data-back>‹ ${BOOKS[b - 1]}</button><div class="grid">` +
+    VERSES[b - 1].map((_, i) => `<button data-chap="${i + 1}" data-b="${b}" class="${S.b === b && S.c === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('') + '</div>';
+}
+
+/* ---------- 이벤트 ---------- */
+$('refBtn').onclick = e => { e.stopPropagation(); pickerBooks(); openPop($('picker'), $('refBtn')); };
+$('picker').onclick = e => {
+  e.stopPropagation();
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.book) pickerChapters(+t.dataset.book);
+  else if (t.dataset.back !== undefined) pickerBooks();
+  else if (t.dataset.chap) { closePops(); go(+t.dataset.b, +t.dataset.chap, 0, true); }
+};
+$('menuBtn').onclick = e => { e.stopPropagation(); openPop($('menu'), $('menuBtn')); };
+$('addFolder').onclick = () => { closePops(); $('folder').click(); };
+$('addFiles').onclick = () => { closePops(); $('files').click(); };
+$('exportMarks').onclick = () => { closePops(); marks.size ? exportMarks() : alert('아직 저장한 메모·하이라이트·책갈피가 없습니다.'); };
+$('importMarks').onclick = () => { closePops(); $('importFile').click(); };
+$('importFile').onchange = e => { if (e.target.files[0]) importMarks(e.target.files[0]); e.target.value = ''; };
+$('clearAll').onclick = async () => {
+  closePops();
+  if (!confirm('브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.')) return;
+  await idb('files', 'readwrite', s => s.clear()).catch(() => {});
+  location.reload();
+};
+$('files').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
+$('folder').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
+$('nudgeBackup').onclick = exportMarks;
+$('nudgeLater').onclick = snoozeNudge;
+$('noteBox').onclick = e => e.stopPropagation();
+$('noteSave').onclick = saveNote;
+$('noteCancel').onclick = closePops;
+$('noteDel').onclick = () => { $('noteText').value = ''; saveNote(); };
+$('noteText').onkeydown = e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveNote(); };
+document.addEventListener('click', closePops);
+
+$('back').onclick = back;
+$('prev').onclick = () => step(-1);
+$('next').onclick = () => step(1);
+$('verTabs').onclick = e => {
+  const t = e.target.closest('[data-ver]'); if (!t) return;
+  const n = t.dataset.ver;
+  S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
+  save(); refreshBible();
+};
+$('bible').onclick = e => {
+  const nb = e.target.closest('[data-note]');
+  if (nb) { e.stopPropagation(); select(+nb.dataset.note); return openNote(+nb.dataset.note, nb); }
+  const p = e.target.closest('[data-v]');
+  if (p) select(+p.dataset.v, e.shiftKey ? 'range' : (e.metaKey || e.ctrlKey) ? 'toggle' : undefined);
+};
+$('selbar').onclick = e => {
+  const t = e.target.closest('button'); if (!t) return;
+  e.stopPropagation();
+  if (t.dataset.hl !== undefined) { sorted().forEach(v => setVerse(v, { color: t.dataset.hl })); refreshBible(); }
+  else if (t.dataset.act === 'copy') copySel();
+  else if (t.dataset.act === 'note') openNote(sorted()[0], t);
+  else if (t.dataset.act === 'bm') toggleBookmark();
+  else if (t.dataset.act === 'clear') { sel.clear(); refreshBible(); }
+};
+$('comTabs').onclick = e => {
+  const t = e.target.closest('.tab'); if (!t) return;
+  if (t.dataset.comm) { S.comm = t.dataset.comm; S.tab = 'comm'; if (S.comm2 === S.comm) S.comm2 = Object.keys(comms).find(n => n !== S.comm) || ''; }
+  else if (t.dataset.search !== undefined) S.tab = 'search';
+  else if (t.dataset.saved !== undefined) S.tab = 'saved';
+  else if (t.dataset.split !== undefined) S.split = !S.split;
+  save(); renderComm(); if (S.v) syncComm(S.v);
+};
+$('comTabs2').onclick = e => {
+  const t = e.target.closest('[data-comm2]'); if (!t) return;
+  S.comm2 = t.dataset.comm2; save(); renderComm(); if (S.v) syncComm(S.v);
+};
+$('comm').onclick = e => {
+  const sc = e.target.closest('[data-scope]');
+  if (sc) { hits.scope = sc.dataset.scope; return renderHits(); }
+  const h = e.target.closest('.hit');
+  if (h?.dataset.i) { const [b, c, v] = REF[+h.dataset.i]; return go(b, c, v, true); }
+  if (h?.dataset.go) {
+    const [b, c, v] = h.dataset.go.split('.').map(Number);
+    if (h.dataset.toComm !== undefined) S.tab = 'comm';
+    return go(b, c, v, true);
+  }
+  linkClick(e);
+};
+$('comm2').onclick = linkClick;
+function linkClick(e) {
+  const a = e.target.closest('a[data-ref]'); if (!a) return;
+  e.preventDefault();
+  const [b, c, v] = parseRef(a.dataset.ref);
+  if (b) go(b, c, v, true);
+}
+
+// 주석 속 성경 참조에 마우스를 올리면 본문 미리보기
+function showTip(e) {
+  const a = e.target.closest('a[data-ref]'), tip = $('tip');
+  if (!a || !S.versions[0]) return tip.classList.remove('open');
+  const m = a.dataset.ref.match(/id=(\d+)\.(\d+)\.(\d+)(?:-(\d+)\.(\d+)\.(\d+))?/); if (!m) return;
+  const from = START[+m[1]]?.[m[2] - 1] + (+m[3]) - 1;
+  const to = m[4] ? START[+m[4]]?.[m[5] - 1] + (+m[6]) - 1 : from;
+  if (!(from >= 0)) return;
+  const L = bibles[S.versions[0]], ids = Array.from({ length: Math.min(to - from + 1, 6) }, (_, i) => from + i);
+  tip.innerHTML = `<b>${refName(...REF[from])}${to > from ? '-' + REF[to][2] : ''} · ${S.versions[0]}</b>` +
+    ids.map(i => (ids.length > 1 ? `<span class="vn">${REF[i][2]}</span>` : '') + verseHtml(L[i] || '')).join(' ') + (to - from >= 6 ? ' …' : '');
+  tip.classList.add('open');
+  const r = a.getBoundingClientRect();
+  tip.style.left = Math.max(16, Math.min(r.left, innerWidth - tip.offsetWidth - 16)) + 'px';
+  tip.style.top = (r.bottom + tip.offsetHeight + 8 > innerHeight ? r.top - tip.offsetHeight - 6 : r.bottom + 6) + 'px';
+}
+for (const id of ['comm', 'comm2']) {
+  $(id).onmouseover = showTip;
+  $(id).onmouseleave = () => $('tip').classList.remove('open');
+}
+
+$('q').onkeydown = e => { if (e.key === 'Enter') search(e.target.value); if (e.key === 'Escape') { e.target.value = ''; search(''); e.target.blur(); } };
+document.onkeydown = e => {
+  if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (sel.size) { sel.clear(); refreshBible(); } }
+  if (/INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowLeft' && e.altKey) return back();
+  if (e.key === 'ArrowLeft') step(-1);
+  if (e.key === 'ArrowRight') step(1);
+  if (e.key === '/') { e.preventDefault(); $('q').focus(); }
+  // 글자를 드래그해 고른 게 없을 때만 선택한 절을 복사
+  if (e.key === 'c' && (e.metaKey || e.ctrlKey) && sel.size && !String(getSelection())) { e.preventDefault(); copySel(); }
+};
+
+// 글자 크기·글꼴
+let fs = prefs.get('fs', 17), serif = prefs.get('serif', true);
+const applyFont = () => {
+  document.documentElement.style.setProperty('--fs', fs + 'px');
+  document.documentElement.style.setProperty('--read', serif ? 'var(--serif)' : 'var(--sans)');
+  $('fontBtn').textContent = serif ? '명조' : '고딕';
+  prefs.set('fs', fs); prefs.set('serif', serif);
+};
+$('smaller').onclick = () => { fs = Math.max(13, fs - 1); applyFont(); };
+$('bigger').onclick = () => { fs = Math.min(26, fs + 1); applyFont(); };
+$('fontBtn').onclick = () => { serif = !serif; applyFont(); };
+applyFont();
+checkNudge();
+
+Promise.all([
+  idb('marks', 'readonly', s => s.getAll()).then(list => list.forEach(m => marks.set(m.id, m))).catch(() => {}),
+  idb('files', 'readonly', s => s.getAll()).catch(() => []),
+]).then(([, files]) => load(files || [], false));
+</script>
+</body>
+</html>
