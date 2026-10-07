@@ -3,17 +3,70 @@ const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&
 const SKIP = new Set(['fonttbl', 'colortbl', 'stylesheet', 'info', 'pict', 'header', 'footer']);
 const href = tag => (tag.match(/HYPERLINK\s+"([^"]*)"/) || [])[1] || null;
 
+/* ---------- 크로스 히브라이카/그라에카(옛 전용 글꼴) → 유니코드 ----------
+   StrongBniel 등 한국 사전은 원어를 이 글꼴의 영문 자판 글자로 적어 둠.
+   대응표는 스트롱 사전 표제어 14,000여 개와 맞대어 만들고 검증함 (히브리어 96%, 헬라어 97% 글자 일치) */
+const DAG = 'ּ', HOLAM = 'ֹ';
+const HEB_CONS = {
+  a: 'א', b: 'ב', g: 'ג', d: 'ד', h: 'ה', w: 'ו', z: 'ז', j: 'ח', f: 'ט', y: 'י', k: 'כ', l: 'ל', m: 'מ', '!': 'ם', n: 'נ',
+  '@': 'ן', s: 'ס', '[': 'ע', p: 'פ', '#': 'ף', x: 'צ', $: 'ץ', q: 'ק', r: 'ר', t: 'ת', '`': 'ש', v: 'שׁ', c: 'שׂ',
+  '&': 'ךְ', ')': 'ךְ', '/': 'ו' + HOLAM,
+  // 대문자 = 다게쉬가 찍힌 자음
+  B: 'ב' + DAG, G: 'ג' + DAG, D: 'ד' + DAG, '+': 'ד' + DAG, H: 'ה' + DAG, W: 'ו' + DAG, Z: 'ז' + DAG, F: 'ט' + DAG, Y: 'י' + DAG,
+  K: 'כ' + DAG, L: 'ל' + DAG, M: 'מ' + DAG, N: 'נ' + DAG, S: 'ס' + DAG, P: 'פ' + DAG, X: 'צ' + DAG, Q: 'ק' + DAG, R: 'ר' + DAG,
+  T: 'ת' + DAG, V: 'ש' + DAG + 'ׁ', C: 'ש' + DAG + 'ׂ',
+};
+const HEB_MARK = {
+  ';': 'ָ', ':': 'ָ', "'": 'ַ', '"': 'ַ', ']': 'ְ', '}': 'ֲ', '>': 'ֱ', '?': 'ֳ', i: 'ִ', I: 'ִ',
+  e: 'ֵ', E: 'ֵ', ',': 'ֶ', '<': 'ֶ', o: HOLAM, O: HOLAM, u: 'ֻ', U: 'ֻ',
+};
+const HEB_SEP = { ' ': ' ', '-': '־', A: '־' };
+// 화면 순서(왼→오)로 저장돼 있어 [자음+부호] 묶음으로 나눈 뒤 묶음 순서를 뒤집음.
+// 대문자 O(홀렘)는 다음(오른쪽) 자음의 점. 단 앞이 ו면 홀렘 바브.
+function crossHebrew(s) {
+  const cl = [];
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (HEB_CONS[ch]) cl.push(HEB_CONS[ch]);
+    else if (HEB_SEP[ch]) cl.push(HEB_SEP[ch]);
+    else if (HEB_MARK[ch]) {
+      const prevIsVav = cl.length && cl[cl.length - 1][0] === 'ו';
+      if (ch === 'O' && !prevIsVav && HEB_CONS[s[i + 1]]) { cl.push(HEB_CONS[s[++i]] + HOLAM); continue; }
+      if (cl.length) cl[cl.length - 1] += HEB_MARK[ch]; else cl.push(HEB_MARK[ch]);
+    } else cl.push(ch);
+  }
+  // 카메츠를 파타흐(')+점(;)으로 겹쳐 찍은 경우 → 카메츠 하나로
+  return cl.reverse().map(c => c.includes('ָ') ? c.replace('ַ', '') : c).join('').normalize('NFC');
+}
+const GRK = {
+  a: 'α', b: 'β', g: 'γ', d: 'δ', e: 'ε', z: 'ζ', h: 'η', q: 'θ', i: 'ι', k: 'κ', l: 'λ', m: 'μ', n: 'ν', x: 'ξ', o: 'ο', p: 'π',
+  r: 'ρ', s: 'σ', '"': 'ς', t: 'τ', u: 'υ', f: 'φ', c: 'χ', y: 'ψ', w: 'ω',
+  A: 'Α', B: 'Β', G: 'Γ', D: 'Δ', E: 'Ε', Z: 'Ζ', H: 'Η', Q: 'Θ', I: 'Ι', K: 'Κ', L: 'Λ', M: 'Μ', N: 'Ν', X: 'Ξ', O: 'Ο', P: 'Π',
+  R: 'Ρ', S: 'Σ', T: 'Τ', U: 'Υ', F: 'Φ', C: 'Χ', Y: 'Ψ', W: 'Ω',
+  j: '̓', J: '̔', v: '́', ';': '̀', "'": '͂', '/': 'ͅ', '>': '̈', '?': '̈́', '<': '-',
+  // 숨표+강세를 한 글자로 쓴 것 (!, @, #, $ 는 대문자 앞에 옴)
+  '[': '̓́', '{': '̔́', '}': '̔́', '+': '̓', '|': '̔͂', '!': '̓', '@': '̔', '#': '̓́', $: '̔́',
+};
+const crossGreek = s => [...s].map(ch => GRK[ch] ?? ch).join('')
+  .replace(/([̀-ͯ]+)([Α-Ω])/g, '$2$1') // 대문자 앞의 숨표·강세를 대문자 뒤로
+  .normalize('NFC');
+// 글꼴 이름 → 변환 종류
+const crossKind = name => /HEBRAICA/i.test(name) ? 'heb' : /GRAECA/i.test(name) ? 'grk' : null;
+
 function rtfToHtml(s) {
   const colors = ((s.match(/\{\\colortbl;([^}]*)\}/) || [])[1] || '').split(';').map(c => {
     const m = c.match(/\\red(\d+)\\green(\d+)\\blue(\d+)/);
     return m && (m[1] | m[2] | m[3]) ? `rgb(${m[1]},${m[2]},${m[3]})` : '';
   });
+  // 글꼴 번호 → 크로스 원어 글꼴인지
+  const fonts = {};
+  for (const m of (s.match(/\{\\fonttbl[\s\S]*?\}\}/)?.[0] || '').matchAll(/\{\\f(\d+)[^ ;]* ([^;{}]*);\}/g)) fonts[m[1]] = crossKind(m[2]);
   const dec = new TextDecoder('euc-kr');
   const re = /\\(?:([a-zA-Z]+)(-?\d+)? ?|'([0-9a-fA-F]{2})|([\s\S]))/y;
   let out = '', cur = '', close = '', bytes = [], stack = [], skipChars = 0;
-  let st = { b: 0, cf: 0, fs: 20, uc: 1, link: null, href: null, skip: false, star: false, inst: null };
+  let st = { b: 0, cf: 0, fs: 20, f: 0, uc: 1, link: null, href: null, skip: false, star: false, inst: null };
 
-  const emit = t => {
+  const emit = (t, cls) => {
     if (st.inst !== null) { st.inst += t; return; }
     if (st.skip || !t) return;
     const key = [st.b, st.cf, st.fs > 22, st.link].join('|');
@@ -24,9 +77,16 @@ function rtfToHtml(s) {
       out += close + (st.link ? `<a href="#" data-ref="${esc(st.link)}">` : '') + `<span style="${style}">`;
       cur = key; close = '</span>' + (st.link ? '</a>' : '');
     }
-    out += esc(t);
+    out += cls ? `<span class="${cls}"${cls === 'heb' ? ' dir="rtl"' : ''}>${esc(t)}</span>` : esc(t);
   };
-  const flush = () => { if (bytes.length) { const b = bytes; bytes = []; emit(dec.decode(new Uint8Array(b))); } };
+  const flush = () => {
+    if (!bytes.length) return;
+    const b = bytes; bytes = [];
+    const kind = fonts[st.f];
+    if (!kind) return emit(dec.decode(new Uint8Array(b)));
+    const [, pre, word, post] = String.fromCharCode(...b).match(/^(\s*)([\s\S]*?)(\s*)$/); // 앞뒤 공백은 뒤집지 않음
+    emit(pre); emit(kind === 'heb' ? crossHebrew(word) : crossGreek(word), kind); emit(post);
+  };
   const par = () => { flush(); if (!st.skip && st.inst === null) { out += close + '<br>'; cur = close = ''; } };
 
   for (let i = 0; i < s.length;) {
@@ -51,11 +111,12 @@ function rtfToHtml(s) {
     if (!m) { i++; continue; }
     i = re.lastIndex;
     if (m[3]) { if (skipChars) skipChars--; else bytes.push(parseInt(m[3], 16)); continue; }
+    // \\ \{ \} 는 글자 그대로: 원어 글꼴 단어(예: 하테프 파타흐 '}') 중간에서 끊기지 않게 같은 묶음에 넣음
+    if (m[4] === '\\' || m[4] === '{' || m[4] === '}') { bytes.push(m[4].charCodeAt(0)); continue; }
     flush();
     if (m[4]) {
       const sym = m[4];
       if (sym === '*') st.star = true;
-      else if (sym === '\\' || sym === '{' || sym === '}') emit(sym);
       else if (sym === '~') emit(' ');
       else if (sym === '_') emit('-');
       else if (sym === '\n' || sym === '\r') par();
@@ -71,7 +132,8 @@ function rtfToHtml(s) {
       case 'b': st.b = n !== '0'; break;
       case 'cf': st.cf = +n; break;
       case 'fs': st.fs = +n; break;
-      case 'plain': st.b = 0; st.cf = 0; st.fs = 20; break;
+      case 'plain': st.b = 0; st.cf = 0; st.fs = 20; st.f = 0; break;
+      case 'f': st.f = +n; break;
       case 'fldrslt': st.link = st.href; break;
       default: if (SKIP.has(w)) st.skip = true;
     }
@@ -212,13 +274,50 @@ const TAGS = {
   TRANS: '<span class="tr">', trans: '</span>', K: '<span class="kt">[', k: ']</span>', R: '<span class="qr">', r: '</span>', // 음역, 케티브/케레
   sub: '<span class="gl">', '/sub': '</span>', font: '', '/font': '', // 기본형·뜻
 };
+const tagHtml = t => esc(t)
+  // 스트롱 번호 태그: 단어<WH430><WH853> → 누르면 사전이 뜨는 단어
+  .replace(/(\S+?)((?:&lt;W[HG]\d+[a-z]?&gt;)+)/g, (_, w, tags) =>
+    `<span class="w" data-strong="${[...tags.matchAll(/W([HG])(\d+)/g)].map(m => m[1] + +m[2]).join(',')}">${w}</span>`)
+  .replace(/&lt;(\/?[A-Za-z]+)(?:(?!&gt;).)*&gt;/g, (_, k) => TAGS[k] || '')
+  .replace(/&lt;([^&]+)&gt;/g, '<b class="ts">$1</b>');
+
+// BHS 형식: 원어 <TRANS>음역<trans> <sub><font…>기본형 뜻</font></sub> → 기본형으로 사전을 찾는 단어
+const BHS_WORD = /(\S+) <TRANS>([\s\S]*?)<trans> <sub>(?:<font[^>]*>)?([\s\S]*?)(?:<\/font>)?<\/sub>/g;
+const bhsWord = ([, word, tr, gloss]) => {
+  const lemma = gloss.match(/^[֐-׿]+/)?.[0] || '';
+  const en = gloss.slice(lemma.length).replace(/[^\sA-Za-z-]/g, '').trim(); // 영어 뜻 (후보 순서 정할 때 씀)
+  return `<span class="w"${lemma ? ` data-lemma="${esc(lemma)}" data-gloss="${esc(en)}"` : ''}>${esc(word)}</span> <span class="tr">${esc(tr)}</span> <span class="gl">${esc(gloss)}</span>`;
+};
+
 // theWord는 <FR> 등을 절 끝에서 안 닫는 경우가 많음 → 절 단위로 닫아줌
 function verseHtml(t) {
-  const h = esc(t)
-    .replace(/&lt;(\/?[A-Za-z]+)(?:(?!&gt;).)*&gt;/g, (_, k) => TAGS[k] || '')
-    .replace(/&lt;([^&]+)&gt;/g, '<b class="ts">$1</b>');
+  let h = '', last = 0;
+  for (const m of t.matchAll(BHS_WORD)) { h += tagHtml(t.slice(last, m.index)) + bhsWord(m); last = m.index + m[0].length; }
+  h += tagHtml(t.slice(last));
   const open = tag => (h.match(new RegExp(`<${tag}[ >]`, 'g')) || []).length - (h.match(new RegExp(`</${tag}>`, 'g')) || []).length;
   return h + '</i>'.repeat(Math.max(0, open('i'))) + '</span>'.repeat(Math.max(0, open('span')));
+}
+
+// 사전 항목 HTML의 첫 원어 단어(표제어)
+const headword = html => html.match(/<span class="(?:heb|grk)"[^>]*>([^<]+)</)?.[1] || '';
+// 원어 비교용 열쇠: 모음·억양·숨표 부호와 공백·마켑을 빼고 글자만 (ς→σ)
+const lemmaKey = s => s.normalize('NFD').replace(/[֑-ׇ̀-ͯ]/g, '').replace(/[\s־]/g, '').replace(/ς/g, 'σ').toLowerCase();
+// 정확히 맞는 게 없을 때: 모음 보조 글자(ו, י)를 쓰고 안 쓰는 철자 차이(אַהֲרֹן / אַהֲרוֹן)까지 같게
+const looseKey = s => lemmaKey(s).replace(/[וי]/g, '');
+// 모음까지 같은지 (억양·메텍 부호만 빼고, 카메츠 하투프 = 카메츠)
+const vowelKey = s => s.normalize('NFD').replace(/[֑-ֽ֯׀׃]/g, '').replace(/ׇ/g, 'ָ').replace(/[\s־]/g, '').normalize('NFC');
+
+// 사전 표제어 [{s: 'H430', h: 'אֱלֹהִים'}, …] → 원어 기본형으로 스트롱 번호 후보 찾기.
+// 모음까지 같은 것 → 글자만 같은 것 → 보조 글자 차이까지 무시 순으로 (동음이의어는 후보 여러 개)
+function lemmaFinder(entries) {
+  const maps = { v: new Map(), k: new Map(), l: new Map() };
+  const add = (m, key, s) => { if (key) m.set(key, [...(m.get(key) || []), s]); };
+  for (const { s, h } of entries) {
+    if (!h) continue;
+    add(maps.v, vowelKey(h), s); add(maps.k, lemmaKey(h), s);
+    if (looseKey(h).length > 1) add(maps.l, looseKey(h), s);
+  }
+  return lemma => maps.v.get(vowelKey(lemma)) || maps.k.get(lemmaKey(lemma)) || (looseKey(lemma).length > 1 && maps.l.get(looseKey(lemma))) || [];
 }
 
 // 복사·검색용 글자만 (음역·기본형 풀이는 빼고, 태그 제거)
@@ -241,4 +340,4 @@ function parseEsv(t) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse };
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder };

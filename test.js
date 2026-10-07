@@ -1,11 +1,25 @@
 // 실행: node test.js "<Hokma2.cmt.twm 경로>"
 const { DatabaseSync } = require('node:sqlite');
 const assert = require('node:assert');
-const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, plainVerse } = require('./decode.js');
+const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder } = require('./decode.js');
 
-// BHS 같은 원어 본문 태그: 음역·기본형 풀이는 작게, 복사할 땐 빼고
+// 크로스 글꼴 → 유니코드
+assert.strictEqual(crossHebrew('!yhiOla>'), 'אֱלֹהִים'.normalize('NFC'));
+assert.strictEqual(crossHebrew('h[;r;'), 'רָעָה'.normalize('NFC'));
+assert.strictEqual(crossHebrew('ba;\''), 'אָב'.normalize('NFC'));       // 파타흐+점 = 카메츠
+assert.strictEqual(crossHebrew('@a;v] tyBe'), 'בֵּית שְׁאָן'.normalize('NFC')); // 여러 단어도 순서대로
+assert.strictEqual(crossGreek('ajgavph'), 'ἀγάπη');
+assert.strictEqual(crossGreek('qeov"'), 'θεός');
+assert.strictEqual(crossGreek('!Abraavm'), 'Ἀβραάμ');                 // 대문자 앞 숨표
+assert.strictEqual(lemmaKey('בָּרָא'), lemmaKey('ברא'));
+assert.strictEqual(lemmaKey('θεός'), lemmaKey('θεος'));
+
+// BHS 같은 원어 본문: 단어는 누를 수 있게(기본형), 음역·기본형 풀이는 작게, 복사할 땐 빼고
 const bhs = "בְּ <TRANS>bᵊ<trans> <sub><font color='gray'>בְּ in</font></sub> רֵאשִׁ֖ית";
-assert.strictEqual(verseHtml(bhs), 'בְּ <span class="tr">bᵊ</span> <span class="gl">בְּ in</span> רֵאשִׁ֖ית');
+assert.strictEqual(verseHtml(bhs), '<span class="w" data-lemma="בְּ" data-gloss="in">בְּ</span> <span class="tr">bᵊ</span> <span class="gl">בְּ in</span> רֵאשִׁ֖ית');
+// 스트롱 번호 태그가 붙은 성경 (KJV+, TR+ 등)
+assert.strictEqual(verseHtml('In the beginning<WH7225> God<WH430> created<WH1254><WH853>'),
+  'In the <span class="w" data-strong="H7225">beginning</span> <span class="w" data-strong="H430">God</span> <span class="w" data-strong="H1254,H853">created</span>');
 assert.strictEqual(plainVerse(bhs), 'בְּ רֵאשִׁ֖ית');
 assert.strictEqual(verseHtml('<K>קטיב<k> <R>קרי<r>'), '<span class="kt">[קטיב]</span> <span class="qr">קרי</span>');
 // .ot(구약만) / .nt(신약만): 제자리에 들어가고, 나머지는 빈 절
@@ -65,6 +79,24 @@ assert.deepStrictEqual(parseRef('tw://bible.*?id=11.4.29-11.4.31|_AUTODETECT_|')
   assert(!JSON.stringify(ok.body).includes('secret')); // 키가 응답에 새지 않음
   console.log('api/esv ok');
 })();
+
+// 사전(선택: 세 번째 인자로 .gbk.twm 경로): 표제어가 원어로 풀리고, BHS 기본형으로 번호를 찾음
+if (process.argv[4]) {
+  const dict = new DatabaseSync(process.argv[4], { readOnly: true });
+  const html = s => toHtml(dict.prepare('select cast(c.data as blob) d from topics t join content c on c.topic_id = t.id where t.subject = ?').get(s).d);
+  assert.strictEqual(headword(html('H430')), 'אֱלֹהִים'.normalize('NFC'));
+  assert.strictEqual(headword(html('G26')), 'ἀγάπη');
+  assert.strictEqual(headword(html('H3290')), 'יַעֲקֹב'.normalize('NFC')); // RTF의 \} (하테프 파타흐)가 단어 중간에 있어도
+  const entries = [];
+  for (const { s, d } of dict.prepare("select t.subject s, cast(c.data as blob) d from topics t join content c on c.topic_id = t.id where t.subject like 'H%'").iterate())
+    entries.push({ s, h: headword(toHtml(d)) });
+  const find = lemmaFinder(entries);
+  // 창 1:1 BHS 기본형들 + 철자 차이(바브 유무)
+  for (const [lemma, strong] of [['ברא', 'H1254'], ['אֱלֹהִים', 'H430'], ['רֵאשִׁית', 'H7225'], ['שָׁמַיִם', 'H8064'], ['אֶרֶץ', 'H776'], ['אַהֲרֹן', 'H175']])
+    assert(find(lemma).includes(strong), `${lemma} → ${strong}: ${find(lemma)}`);
+  assert.deepStrictEqual(find('וְ'), []); // 접두어는 엉뚱한 항목과 맞으면 안 됨
+  console.log('dict ok');
+}
 
 // 주석이 가리키는 절이 절 구분표 범위 안에 있는지 (호크마 자체 오류 6곳: 왕하12, 대상28, 대하34, 시8, 시87, 아6)
 const out = db.prepare('select bi, ci, max(tvi) v from bible_refs group by bi, ci').all().filter(r => !(VERSES[r.bi - 1][r.ci - 1] >= r.v));
