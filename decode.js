@@ -289,11 +289,41 @@ const bhsWord = ([, word, tr, gloss]) => {
   return `<span class="w"${lemma ? ` data-lemma="${esc(lemma)}" data-gloss="${esc(en)}"` : ''}>${esc(word)}</span> <span class="tr">${esc(tr)}</span> <span class="gl">${esc(gloss)}</span>`;
 };
 
+/* ---------- 각주 ----------
+   ① theWord 표준: 본문<RF>각주<Rf>
+   ② 표준새번역 등 내보낸 본문: 본문 속 "b하나님의 영은…" 표시 + 절 끝 "(b 또는 '하나님의 바람' c …)"
+   각주 자리는 \u0001번호\u0001 로 표시해 두고, 화면에서는 누르는 위첨자로 바꿈 */
+const FN = /\u0001(\d+)\u0001/g;
+function splitNotes(t) {
+  const notes = [];
+  t = t.replace(/<RF[^>]*>([\s\S]*?)<Rf>/g, (_, n) => {
+    notes.push({ label: String(notes.length + 1), text: n.replace(/<[^>]*>/g, '').trim() });
+    return `\u0001${notes.length - 1}\u0001`;
+  });
+  const m = t.match(/\(([a-z]) ((?:[^()]|\([^()]*\))*)\)\s*$/); // 절 끝 괄호 (안에 괄호 한 겹까지)
+  if (m) {
+    const byLabel = {};
+    for (const part of (m[1] + ' ' + m[2]).split(/ (?=[a-z] )/)) byLabel[part[0]] = part.slice(2).trim();
+    const start = notes.length;
+    // 본문의 표시: 앞이 처음·공백·문장부호이고 바로(또는 한 칸 띄고) 뒤가 한글·따옴표인 소문자 하나
+    const body = t.slice(0, m.index).replace(/(^|[\s"'“‘(\]])([a-z])(?=\s?[가-힣"'“‘(])/g, (all, pre, l) => {
+      if (byLabel[l] == null) return all;
+      notes.push({ label: l, text: byLabel[l] });
+      return `${pre}\u0001${notes.length - 1}\u0001`;
+    });
+    if (notes.length > start) t = body.trimEnd(); // 표시를 하나도 못 찾았으면 원래대로 둠
+  }
+  return { t, notes };
+}
+const fnHtml = (h, notes) => h.replace(FN, (_, i) =>
+  `<sup class="fn" tabindex="0" title="${esc(notes[i].text)}" data-fn="${esc(notes[i].text)}">${esc(notes[i].label)}</sup>`);
+
 // theWord는 <FR> 등을 절 끝에서 안 닫는 경우가 많음 → 절 단위로 닫아줌
-function verseHtml(t) {
+function verseHtml(raw) {
+  const { t, notes } = splitNotes(raw);
   let h = '', last = 0;
   for (const m of t.matchAll(BHS_WORD)) { h += tagHtml(t.slice(last, m.index)) + bhsWord(m); last = m.index + m[0].length; }
-  h += tagHtml(t.slice(last));
+  h = fnHtml(h + tagHtml(t.slice(last)), notes);
   const open = tag => (h.match(new RegExp(`<${tag}[ >]`, 'g')) || []).length - (h.match(new RegExp(`</${tag}>`, 'g')) || []).length;
   return h + '</i>'.repeat(Math.max(0, open('i'))) + '</span>'.repeat(Math.max(0, open('span')));
 }
@@ -320,8 +350,8 @@ function lemmaFinder(entries) {
   return lemma => maps.v.get(vowelKey(lemma)) || maps.k.get(lemmaKey(lemma)) || (looseKey(lemma).length > 1 && maps.l.get(looseKey(lemma))) || [];
 }
 
-// 복사·검색용 글자만 (음역·기본형 풀이는 빼고, 태그 제거)
-const plainVerse = s => (s || '')
+// 복사·검색용 글자만 (각주·음역·기본형 풀이는 빼고, 태그 제거)
+const plainVerse = s => splitNotes(s || '').t.replace(FN, '')
   .replace(/<TRANS>[\s\S]*?<trans>/g, '').replace(/<sub>[\s\S]*?<\/sub>/g, '')
   .replace(/<[^>]*>/g, '').replace(/¶\s*/g, '').replace(/\s+/g, ' ').trim();
 

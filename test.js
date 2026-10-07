@@ -17,6 +17,17 @@ assert.strictEqual(lemmaKey('θεός'), lemmaKey('θεος'));
 // BHS 같은 원어 본문: 단어는 누를 수 있게(기본형), 음역·기본형 풀이는 작게, 복사할 땐 빼고
 const bhs = "בְּ <TRANS>bᵊ<trans> <sub><font color='gray'>בְּ in</font></sub> רֵאשִׁ֖ית";
 assert.strictEqual(verseHtml(bhs), '<span class="w" data-lemma="בְּ" data-gloss="in">בְּ</span> <span class="tr">bᵊ</span> <span class="gl">בְּ in</span> רֵאשִׁ֖ית');
+// 각주: 표준새번역식(본문 표시 + 절 끝 괄호), theWord <RF>
+const snb = "주 하나님이 b땅의 흙으로 c사람을 지으시고, 생명체가 되었다.(b 히, '아다마' c 히, '아담')";
+assert.strictEqual(plainVerse(snb), '주 하나님이 땅의 흙으로 사람을 지으시고, 생명체가 되었다.');
+assert.match(verseHtml(snb), /<sup class="fn"[^>]*data-fn="히, &#39;아다마&#39;|<sup class="fn"[^>]*data-fn="히, '아다마'"[^>]*>b<\/sup>땅의/);
+assert.doesNotMatch(verseHtml(snb), /\(b 히/);
+const nested = "b그룹들을 세우시고(b 살아 있는 피조물, 얼굴을 가지고 있는 것으로 생각됨(겔 1:5-12; 10:21))";
+assert.strictEqual(plainVerse(nested), '그룹들을 세우시고');
+assert.strictEqual(plainVerse('본문에 표시가 없으면 (a 그대로 둠)'), '본문에 표시가 없으면 (a 그대로 둠)'); // 표시를 못 찾으면 손대지 않음
+assert.match(verseHtml('In the beginning<RF>Or, at first<Rf> God'), /beginning<sup class="fn"[^>]*data-fn="Or, at first"[^>]*>1<\/sup> God/);
+assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In the beginning God');
+
 // 스트롱 번호 태그가 붙은 성경 (KJV+, TR+ 등)
 assert.strictEqual(verseHtml('In the beginning<WH7225> God<WH430> created<WH1254><WH853>'),
   'In the <span class="w" data-strong="H7225">beginning</span> <span class="w" data-strong="H430">God</span> <span class="w" data-strong="H1254,H853">created</span>');

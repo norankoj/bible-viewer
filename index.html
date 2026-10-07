@@ -107,6 +107,11 @@
   .gl { color: var(--muted); }
   .kt { color: var(--muted); } .qr { color: var(--accent); }
   body.no-gloss .tr, body.no-gloss .gl { display: none; }
+  /* 각주: 누르는 위첨자 */
+  .fn { font: 600 .62em var(--sans); color: var(--accent); vertical-align: super; line-height: 0; padding: 0 2px; margin: 0 1px; border-radius: 4px; cursor: pointer; }
+  .fn:hover, .fn:focus-visible { background: var(--accent-soft); outline: none; }
+  #notePop { max-width: min(360px, calc(100vw - 32px)); font: 14px/1.7 var(--read); }
+  #notePop b { font: 600 12px var(--sans); color: var(--accent); display: block; margin-bottom: 4px; }
   /* 원어 단어: 누르면 사전 팝업 */
   .w { cursor: pointer; border-radius: 4px; }
   .w:hover { background: var(--accent-soft); color: var(--accent); }
@@ -295,6 +300,7 @@
 </div>
 <div class="pop" id="wordPop" role="dialog" aria-label="단어 뜻"></div>
 <div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
+<div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="tip"></div>
 <input type="file" id="files" accept=".ont,.ot,.nt,.twm,.ontx,.otx,.ntx" multiple>
 <input type="file" id="folder" webkitdirectory multiple>
@@ -435,6 +441,7 @@ function go(b, c, v, jump) {
   S.b = b; S.c = c; S.v = v || 0;
   sel = new Set(S.v ? [S.v] : []);
   esvErrors.clear(); // 실패했던 ESV 장은 다시 열 때 재시도
+  $('notePop').classList.remove('open'); $('wordPop').classList.remove('open'); // 다른 장으로 가면 이전 절의 작은 창은 닫음
   if (S.tab === 'search' && !hits) S.tab = 'comm';
   save();
   const recent = prefs.get('recent', []).filter(r => r.b !== b || r.c !== c);
@@ -940,6 +947,15 @@ function wordPopAt(i, lemma = '') {
       `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</div>` : '');
 }
 
+// 각주 위첨자 → 작은 창 (마우스를 올리면 브라우저 말풍선으로도 보임)
+function showNote(fn) {
+  const v = fn.closest('[data-v]')?.dataset.v;
+  $('notePop').innerHTML = `<b>${refName(S.b, S.c, v)} 각주 ${esc(fn.textContent)}</b>${esc(fn.dataset.fn)}`;
+  openPop($('notePop'), fn);
+}
+$('notePop').onclick = e => e.stopPropagation();
+$('bible').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList.contains('fn')) showNote(e.target); });
+
 $('wordPop').onclick = e => {
   e.stopPropagation();
   const alt = e.target.closest('[data-alt]');
@@ -1235,6 +1251,8 @@ $('verTabs').onclick = e => {
 $('bible').onclick = e => {
   const nb = e.target.closest('[data-note]');
   if (nb) { e.stopPropagation(); select(+nb.dataset.note); return openNote(+nb.dataset.note, nb); }
+  const fn = e.target.closest('.fn');
+  if (fn) { e.stopPropagation(); return showNote(fn); }
   const w = e.target.closest('.w');
   if (w) { e.stopPropagation(); select(+w.closest('[data-v]').dataset.v); return showWord(w); }
   const p = e.target.closest('[data-v]');
