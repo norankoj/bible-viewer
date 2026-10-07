@@ -58,6 +58,9 @@
   main.split { grid-template-columns: minmax(0, var(--s1, 1.1fr)) minmax(0, var(--s2, 1fr)) minmax(0, var(--s3, 1fr)); }
   #pane2 { display: none; }
   main.split #pane2 { display: flex; }
+  /* 주석 칸 숨김: 성경 칸만 */
+  main.no-comm { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) !important; }
+  main.no-comm > .pane:not(:first-child) { display: none !important; }
   .pane { position: relative; display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
   .resizer { position: absolute; top: 0; bottom: 0; left: -5px; width: 10px; cursor: col-resize; z-index: 5; touch-action: none; }
   .resizer::after { content: ""; position: absolute; top: 0; bottom: 0; left: 4px; width: 2px; background: transparent; transition: background .15s; }
@@ -292,7 +295,7 @@ const prefs = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 const S = { b: 43, c: 3, v: 0, versions: [], comm: '', comm2: '', dict: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
-const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, dict: S.dict, split: S.split });
+const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, dict: S.dict, split: S.split, hideComm: S.hideComm });
 
 // 줄 번호 → [책, 장, 절]
 const REF = [];
@@ -472,7 +475,8 @@ function renderBible() {
   $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}">${n}</button>`).join('') +
     (S.versions.some(n => bibles[n]?.rtl) ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` +
       `<button class="tab" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
-    (names.length > 1 ? `<span class="hint ${S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '');
+    (names.length > 1 ? `<span class="hint ${S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
+    (S.hideComm ? `<button class="tab on ${names.length > 1 || S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
   const vs = S.versions;
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
   const { b, c } = S, n = VERSES[b - 1][c - 1];
@@ -667,8 +671,10 @@ function renderComm() {
     Object.keys(dicts).map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}"`, n)).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
-    (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
+    (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '') +
+    `<button class="tab ${names.length > 1 ? '' : 'spacer'}" data-hide-comm title="주석 칸 숨기기 (성경 칸 위 '주석 보기'로 다시 열기)" aria-label="주석 칸 숨기기">숨기기 ›</button>`;
   $('main').classList.toggle('split', S.split);
+  $('main').classList.toggle('no-comm', !!S.hideComm);
   if (S.tab === 'search' && hits) renderHits();
   else if (S.tab === 'saved') renderSaved();
   else if (S.tab === 'dict' && dicts[S.dict]) renderDict();
@@ -811,7 +817,7 @@ async function showWord(w) {
     : rankCandidates(finderOf(name, /[֐-׿]/.test(lemma) ? 'H' : 'G')(lemma), w.dataset.gloss, name);
   pop.dataset.ids = ids.join(',');
   // 옆 사전 모드: 첫 후보를 사전 탭에 열고, 다른 후보는 "‹ 목록"에
-  if (wordSide && ids.length) {
+  if (wordSide && !S.hideComm && ids.length) { // 주석 칸을 숨겼으면 팝업으로
     closePops();
     const info = byIdOf(name);
     D.q = lemma; D.entry = ids[0]; D.list = ids.length > 1 ? ids.map(s => info.get(s)).filter(Boolean) : null; D.scroll = 0;
@@ -1031,6 +1037,7 @@ $('next').onclick = () => step(1);
 let gloss = prefs.get('gloss', true), wordSide = prefs.get('wordSide', false);
 document.body.classList.toggle('no-gloss', !gloss);
 $('verTabs').onclick = e => {
+  if (e.target.closest('[data-show-comm]')) { S.hideComm = false; save(); renderComm(); renderBible(); if (S.v) syncComm(S.v); return; }
   if (e.target.closest('[data-word-side]')) { wordSide = !wordSide; prefs.set('wordSide', wordSide); return renderBible(); }
   if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
   const t = e.target.closest('[data-ver]'); if (!t) return;
@@ -1062,6 +1069,7 @@ $('comTabs').onclick = e => {
   else if (t.dataset.search !== undefined) S.tab = 'search';
   else if (t.dataset.saved !== undefined) S.tab = 'saved';
   else if (t.dataset.split !== undefined) S.split = !S.split;
+  else if (t.dataset.hideComm !== undefined) { S.hideComm = true; save(); renderComm(); return renderBible(); }
   save(); renderComm(); if (S.v) syncComm(S.v);
 };
 $('comTabs2').onclick = e => {
