@@ -313,11 +313,12 @@ const rangeLabel = vs => vs.reduce((a, v) => {
 /* ---------- 브라우저 저장소 (IndexedDB). 막힌 환경이면 저장 없이 동작 ---------- */
 function idb(store, mode, fn) {
   return new Promise((ok, no) => {
-    const r = indexedDB.open('bible-viewer', 2);
+    const r = indexedDB.open('bible-viewer', 3);
     r.onupgradeneeded = () => {
       const db = r.result;
       if (!db.objectStoreNames.contains('files')) db.createObjectStore('files');
       if (!db.objectStoreNames.contains('marks')) db.createObjectStore('marks', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache'); // 사전 요약 등 다시 만들 수 있는 것
     };
     r.onerror = () => no(r.error);
     r.onsuccess = () => {
@@ -339,7 +340,10 @@ async function addFile(f) {
   const tables = rows(db, "select name from sqlite_master where type='table'", []).flat();
   // 주석은 성경 구절표(bible_refs), 사전·일반 도서는 항목표(topics)가 있음
   if (tables.includes('bible_refs')) { comms[name]?.close(); comms[name] = db; delete commText[name]; }
-  else if (tables.includes('topics')) { dicts[name]?.close(); dicts[name] = db; delete dictText[name]; }
+  else if (tables.includes('topics')) {
+    dicts[name]?.close(); dicts[name] = db; dictSize[name] = u8.length; // 크기가 바뀌면(다른 파일) 저장된 요약을 새로 만듦
+    for (const c of [dictText, dictLite, dictTitles, dictById, finders]) delete c[name];
+  }
   else { db.close(); throw new Error('주석이나 사전 형식이 아닙니다'); }
 }
 
@@ -695,9 +699,25 @@ const subjects = (name, lang) => dictSubjects[name + lang] ||=
 const dictTitles = {};
 function titlesOf(name) {
   if (dictTitles[name]) return dictTitles[name];
-  if (dictText[name]) return dictTitles[name] = new Map(dictText[name].map(e => [e.s, { h: e.h, t: dictTitle(e.text) }]));
-  indexDict(name, () => {}).then(() => { if (S.tab === 'dict' && S.dict === name && !D.entry) renderDict(); }).catch(() => {});
+  if (dictLite[name]) return dictTitles[name] = new Map(dictLite[name].map(e => [e.s, { h: e.h, t: e.title }]));
+  liteOf(name).then(() => { if (S.tab === 'dict' && S.dict === name && !D.entry) renderDict(); }).catch(() => {});
   return null;
+}
+
+// 사전 요약 [{s, h 원어, title, body 풀이 앞부분}]: 목록·단어 팝업에 씀.
+// 처음 한 번만 사전 전체를 풀어 만들고(약 6초) 브라우저에 보관 → 다음부터는 바로 읽음
+const dictSize = {}, dictLite = {}, liteLoading = {};
+function liteOf(name) {
+  if (dictLite[name]) return Promise.resolve(dictLite[name]);
+  return liteLoading[name] ||= (async () => {
+    const key = `dict:${name}:${dictSize[name]}`;
+    let lite = await idb('cache', 'readonly', s => s.get(key)).catch(() => null);
+    if (!Array.isArray(lite)) {
+      lite = (await indexDict(name, () => {})).map(e => { const { title, body } = dictParts(e.text); return { s: e.s, h: e.h, title, body: body.slice(0, 300) }; });
+      idb('cache', 'readwrite', s => s.put(lite, key)).catch(() => {});
+    }
+    return dictLite[name] = lite;
+  })().finally(() => delete liteLoading[name]);
 }
 const dictRow = subject => rows(dicts[S.dict], 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
 // 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
@@ -768,9 +788,9 @@ const indexDict = (name, progress) => indexDb(dictText, name, dicts[name],
 
 // 색인이 끝난 사전: 번호 → 항목, 원어 기본형 → 번호 후보 (히브리어/헬라어 따로)
 const dictById = {}, finders = {};
-const byIdOf = name => dictById[name] ||= new Map(dictText[name].map(e => [e.s, e]));
+const byIdOf = name => dictById[name] ||= new Map(dictLite[name].map(e => [e.s, e]));
 const finderOf = (name, lang) => (finders[name] ||= {
-  H: lemmaFinder(dictText[name].filter(e => e.s[0] === 'H')), G: lemmaFinder(dictText[name].filter(e => e.s[0] === 'G')),
+  H: lemmaFinder(dictLite[name].filter(e => e.s[0] === 'H')), G: lemmaFinder(dictLite[name].filter(e => e.s[0] === 'G')),
 })[lang];
 
 async function dictSearch(q) {
@@ -799,7 +819,7 @@ async function dictSearch(q) {
 function rankCandidates(ids, gloss, name) {
   const info = byIdOf(name), words = (gloss || '').toLowerCase().split(/[^a-z]+/).filter(x => x.length > 2);
   const score = s => {
-    const t = (info.get(s)?.text || '').slice(0, 200).toLowerCase();
+    const e = info.get(s), t = `${e?.title || ''} ${e?.body || ''}`.slice(0, 200).toLowerCase();
     return (words.some(x => t.includes(x)) ? 2 : 0) - (t.slice(0, 120).includes('아람') ? 1 : 0);
   };
   return [...ids].sort((a, b) => score(b) - score(a) || a.slice(1) - b.slice(1));
@@ -810,7 +830,7 @@ async function showWord(w) {
   const show = html => { pop.innerHTML = html; if (!pop.classList.contains('open')) openPop(pop, w); };
   if (!name) return show('<p class="muted">원어 사전 파일(.gbk.twm)을 추가하면 단어 뜻이 나옵니다.</p>');
   show('<p class="muted">사전 준비 중… (처음 한 번, 몇 초 걸립니다)</p>');
-  const ready = await indexDict(name, () => {}).catch(() => null);
+  const ready = await liteOf(name).catch(() => null);
   if (!ready || !pop.classList.contains('open')) return;
   const lemma = w.dataset.lemma || '';
   const ids = w.dataset.strong ? w.dataset.strong.split(',')
@@ -820,7 +840,8 @@ async function showWord(w) {
   if (wordSide && !S.hideComm && ids.length) { // 주석 칸을 숨겼으면 팝업으로
     closePops();
     const info = byIdOf(name);
-    D.q = lemma; D.entry = ids[0]; D.list = ids.length > 1 ? ids.map(s => info.get(s)).filter(Boolean) : null; D.scroll = 0;
+    D.q = lemma; D.entry = ids[0]; D.scroll = 0;
+    D.list = ids.length > 1 ? ids.map(s => info.get(s)).filter(Boolean).map(e => ({ s: e.s, h: e.h, text: e.title })) : null;
     S.tab = 'dict'; return renderComm();
   }
   wordPopAt(0, lemma);
@@ -835,12 +856,12 @@ function wordPopAt(i, lemma = '') {
       ? '접두어(그리고, 정관사, 전치사 등)라 사전에 따로 실려 있지 않습니다.' : '사전에서 찾지 못했습니다.'}</p>`;
     return;
   }
-  const { title, body } = dictParts(e.text);
+  const { title, body } = e;
   pop.innerHTML = `<div class="head"><span class="ref">${e.s}</span>${lexHtml(e.s, e.h)}</div>
     <p class="title">${esc(title)}</p><p class="body">${esc(body.slice(0, 260))}${body.length > 260 ? '…' : ''}</p>
     <button class="btn sm primary" data-open="${e.s}">사전에서 전체 보기</button>` +
     (ids.length > 1 ? `<div class="alts"><p class="muted">다른 후보 (같은 철자)</p>${ids.map((s, k) => k === i ? '' :
-      `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(dictTitle(info.get(s)?.text || ''))}</button>`).join('')}</div>` : '');
+      `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</div>` : '');
 }
 
 $('wordPop').onclick = e => {
@@ -987,6 +1008,7 @@ $('clearAll').onclick = async () => {
   closePops();
   if (!confirm('브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.')) return;
   await idb('files', 'readwrite', s => s.clear()).catch(() => {});
+  await idb('cache', 'readwrite', s => s.clear()).catch(() => {});
   location.reload();
 };
 $('files').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
