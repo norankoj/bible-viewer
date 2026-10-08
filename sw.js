@@ -20,6 +20,7 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(e.request)
       .then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return r; })
-      .catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match('index.html')))
+      // 보관본이 없을 때 화면 주소만 index.html로 (스크립트 자리에 HTML을 주면 깨짐)
+      .catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || (e.request.mode === 'navigate' ? caches.match('index.html') : Response.error())))
   );
 });

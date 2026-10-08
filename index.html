@@ -375,8 +375,8 @@ function idb(store, mode, fn) {
     r.onerror = () => no(r.error);
     r.onsuccess = () => {
       const tx = r.result.transaction(store, mode), q = fn(tx.objectStore(store));
-      tx.oncomplete = () => ok(q.result);
-      tx.onerror = () => no(tx.error);
+      tx.oncomplete = () => { r.result.close(); ok(q.result); };
+      tx.onerror = () => { r.result.close(); no(tx.error); };
     };
   });
 }
@@ -591,14 +591,15 @@ const rtlAttr = (name, v) => isHebLine(name, v) ? ' dir="rtl" class="heb"' : '';
 /* ---------- 번호 없는 원어 성경(BHSSBL 등)에 STEPBible 자료로 단어 번호 붙이기 ----------
    구약/신약 자료(data/orig-ot.js, orig-nt.js)는 그런 성경을 볼 때만 불러옴 */
 const ORIG_TEXT = /[֐-׿Ͱ-Ͽἀ-῿]/;
-const needsTag = n => bibles[n] && (bibles[n].needsTag ??= bibles[n].some(l => ORIG_TEXT.test(l)) && !bibles[n].some(l => /<W[HG]\d|<sub>/.test(l)));
+// 원어 글자가 1000절 이상 (각주에 헬라어 몇 단어 있는 번역본은 제외)
+const needsTag = n => bibles[n] && (bibles[n].needsTag ??= bibles[n].filter(l => ORIG_TEXT.test(l)).length >= 1000 && !bibles[n].some(l => /<W[HG]\d|<sub>/.test(l)));
 const origData = {}, origLoading = {};
 function loadOrig(part) { // part: 'ot' | 'nt'
   if (origData[part]) return Promise.resolve(origData[part]);
   return origLoading[part] ||= new Promise((ok, no) => {
     const v = part === 'ot' ? 'ORIG_OT' : 'ORIG_NT';
     const s = Object.assign(document.createElement('script'), { src: `data/orig-${part}.js` });
-    s.onload = () => { origData[part] = window[v].split('\n'); delete window[v]; ok(origData[part]); };
+    s.onload = () => { if (typeof window[v] !== 'string') return s.onerror(); origData[part] = window[v].split('\n'); delete window[v]; ok(origData[part]); };
     s.onerror = () => { origLoading[part] = null; no(new Error('원어 자료를 불러오지 못했습니다')); };
     document.head.append(s);
   });
@@ -626,11 +627,13 @@ function cellHtml(name, v) {
 
 function renderBible() {
   const names = allVersions();
-  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${n}" title="누르면 보기/끄기 · 끌어서 순서 바꾸기">${esc(nm(n))}</button>`).join('') +
-    (S.versions.some(n => bibles[n]?.rtl) ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` +
-      `<button class="tab" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
-    (names.length > 1 ? `<span class="hint ${S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
-    (S.hideComm ? `<button class="tab on ${names.length > 1 || S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
+  // 음역·뜻은 BHS 기본형 성경만, 단어 뜻 위치는 단어를 누를 수 있는 성경(원어·스트롱 번호)이면
+  const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
+  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${esc(n)}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${esc(n)}" title="누르면 보기/끄기 · 끌어서 순서 바꾸기">${esc(nm(n))}</button>`).join('') +
+    (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
+    (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
+    (names.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
+    (S.hideComm ? `<button class="tab on ${names.length > 1 || words ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
   const vs = S.versions;
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
   const { b, c } = S, n = VERSES[b - 1][c - 1];
@@ -829,9 +832,9 @@ function renderComm() {
   closeUnusedComms(); // 2단 보기를 끄거나 주석을 바꾸면 안 보는 주석은 닫음
   const names = commNames();
   const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
-  const drag = (kind, n) => `draggable="true" data-drag="${kind}:${n}" title="끌어서 순서 바꾸기"`;
-  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}" ${drag('comm', n)}`, esc(nm(n)))).join('') +
-    dictNames().map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}" ${drag('dict', n)}`, esc(nm(n)))).join('') +
+  const drag = (kind, n) => `draggable="true" data-drag="${kind}:${esc(n)}" title="끌어서 순서 바꾸기"`;
+  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${esc(n)}" ${drag('comm', n)}`, esc(nm(n)))).join('') +
+    dictNames().map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${esc(n)}" ${drag('dict', n)}`, esc(nm(n)))).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'xref', 'data-xref', '교차 참조') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
@@ -845,7 +848,7 @@ function renderComm() {
   else if (S.tab === 'dict' && dictFiles[S.dict]) renderDict();
   else $('comm').innerHTML = commHtml(S.comm);
   if (S.split) {
-    $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${n}"`, esc(nm(n)))).join('');
+    $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${esc(n)}"`, esc(nm(n)))).join('');
     $('comm2').innerHTML = commHtml(S.comm2);
   }
 }
@@ -997,7 +1000,7 @@ function loadXrefs() {
   if (xrefLines) return Promise.resolve(xrefLines);
   return xrefLoading ||= new Promise((ok, no) => {
     const s = Object.assign(document.createElement('script'), { src: 'data/xrefs.js' });
-    s.onload = () => { xrefLines = window.XREFS.split('\n'); delete window.XREFS; ok(xrefLines); };
+    s.onload = () => { if (typeof window.XREFS !== 'string') return s.onerror(); xrefLines = window.XREFS.split('\n'); delete window.XREFS; ok(xrefLines); };
     s.onerror = () => { xrefLoading = null; no(new Error('교차 참조 파일을 불러오지 못했습니다')); };
     document.head.append(s);
   });
@@ -1220,7 +1223,8 @@ function renderHits() {
     if (!locals.length) { $('comm').innerHTML = html + '<p class="hits-sum">성경 파일(.ont)을 추가하면 성경에서 찾을 수 있습니다.</p>'; return; }
     if (!h.bible) { $('comm').innerHTML = html + `<p class="progress">${qLabel(h.q)} 찾는 중…</p>`; return; }
     // 원어 성경(BHS)에서 찾았으면 본문은 읽기 쉬운 번역본으로
-    const show = bibles[h.ver]?.rtl ? (allVersions().find(n => bibles[n] && !bibles[n].rtl) || h.ver) : h.ver;
+    const origOnly = n => bibles[n].rtl || needsTag(n);
+    const show = origOnly(h.ver) ? (allVersions().find(n => bibles[n] && !origOnly(n)) || h.ver) : h.ver;
     plain[show] ||= bibles[show].map(plainVerse);
     const byBook = {};
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
@@ -1234,7 +1238,7 @@ function renderHits() {
   } else if (!S.comm) {
     html += '<p class="hits-sum">주석 파일을 추가하면 주석에서도 찾을 수 있습니다.</p>';
   } else if (h.comm?.name !== S.comm) {
-    $('comm').innerHTML = html + `<p class="progress">${S.comm} 주석에서 찾는 중…</p>`;
+    $('comm').innerHTML = html + `<p class="progress">${esc(nm(S.comm))} 주석에서 찾는 중…</p>`;
     return searchComm(); // 진행률 칸을 먼저 그린 뒤 색인 시작
   } else {
     const list = commList, low = h.Q.terms[0]?.toLowerCase() || '';
@@ -1499,7 +1503,7 @@ $('selbar').onclick = e => {
 };
 $('comTabs').onclick = e => {
   const t = e.target.closest('.tab'); if (!t) return;
-  if (t.dataset.comm) { S.comm = t.dataset.comm; S.tab = 'comm'; if (S.comm2 === S.comm) S.comm2 = Object.keys(comms).find(n => n !== S.comm) || ''; }
+  if (t.dataset.comm) { S.comm = t.dataset.comm; S.tab = 'comm'; if (S.comm2 === S.comm) S.comm2 = commNames().find(n => n !== S.comm) || ''; }
   else if (t.dataset.dict) { S.dict = t.dataset.dict; S.tab = 'dict'; }
   else if (t.dataset.xref !== undefined) S.tab = 'xref';
   else if (t.dataset.search !== undefined) S.tab = 'search';
@@ -1683,7 +1687,8 @@ $('presetBox').onclick = e => {
   if (t.dataset.psave) { presets[+t.dataset.psave] = capture(); prefs.set('presets', presets); renderPresets(); flash(`세팅 ${+t.dataset.psave + 1}에 저장했습니다`); }
   if (t.dataset.papply) { closePops(); applyPreset(+t.dataset.papply); }
 };
-addEventListener('keydown', e => { if (e.altKey && (e.key === '1' || e.key === '2')) { e.preventDefault(); applyPreset(+e.key - 1); } });
+// e.code: 맥의 Option+1은 e.key가 '¡'라서 자판 위치로 봄
+addEventListener('keydown', e => { if (e.altKey && (e.code === 'Digit1' || e.code === 'Digit2')) { e.preventDefault(); applyPreset(+e.code.at(-1) - 1); } });
 
 Promise.all([
   idb('marks', 'readonly', s => s.getAll()).then(list => list.forEach(m => marks.set(m.id, m))).catch(() => {}),
