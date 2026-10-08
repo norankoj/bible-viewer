@@ -588,7 +588,37 @@ const sortVersions = () => { S.versions = allVersions().filter(n => S.versions.i
 const isHebLine = (name, v) => /[֐-׿]/.test(bibles[name]?.[START[S.b][S.c - 1] + v - 1] || '');
 const rtlAttr = (name, v) => isHebLine(name, v) ? ' dir="rtl" class="heb"' : '';
 
+/* ---------- 번호 없는 원어 성경(BHSSBL 등)에 STEPBible 자료로 단어 번호 붙이기 ----------
+   구약/신약 자료(data/orig-ot.js, orig-nt.js)는 그런 성경을 볼 때만 불러옴 */
+const ORIG_TEXT = /[֐-׿Ͱ-Ͽἀ-῿]/;
+const needsTag = n => bibles[n] && (bibles[n].needsTag ??= bibles[n].some(l => ORIG_TEXT.test(l)) && !bibles[n].some(l => /<W[HG]\d|<sub>/.test(l)));
+const origData = {}, origLoading = {};
+function loadOrig(part) { // part: 'ot' | 'nt'
+  if (origData[part]) return Promise.resolve(origData[part]);
+  return origLoading[part] ||= new Promise((ok, no) => {
+    const v = part === 'ot' ? 'ORIG_OT' : 'ORIG_NT';
+    const s = Object.assign(document.createElement('script'), { src: `data/orig-${part}.js` });
+    s.onload = () => { origData[part] = window[v].split('\n'); delete window[v]; ok(origData[part]); };
+    s.onerror = () => { origLoading[part] = null; no(new Error('원어 자료를 불러오지 못했습니다')); };
+    document.head.append(s);
+  });
+}
+// 줄 번호 i 의 본문에 번호 태그를 붙인 것 (자료가 아직 없으면 null)
+function taggedLine(name, i) {
+  const part = i < 23145 ? 'ot' : 'nt', d = origData[part];
+  if (!d) return null;
+  const cache = bibles[name].tagged ||= new Map();
+  if (!cache.has(i)) cache.set(i, tagOriginal(bibles[name][i], d[part === 'ot' ? i : i - 23145], part === 'ot' ? 'H' : 'G'));
+  return cache.get(i);
+}
+
 function cellHtml(name, v) {
+  if (name !== ESV && needsTag(name)) {
+    const i = START[S.b][S.c - 1] + v - 1, t = taggedLine(name, i);
+    if (t !== null) return verseHtml(t);
+    const part = i < 23145 ? 'ot' : 'nt';
+    if (!origLoading[part]) loadOrig(part).then(() => { refreshBible(); if (S.v) select(S.v); }).catch(() => {});
+  }
   if (name !== ESV) return verseHtml(verseText(name, S.b, S.c, v));
   const ch = esvChapter(S.b, S.c), err = esvErrors.get(`${S.b}.${S.c}`);
   return ch ? esc(ch[v - 1] ?? '') : `<span class="muted">${err && v === 1 ? `ESV를 불러오지 못했습니다: ${esc(err)}` : v === 1 ? 'ESV 불러오는 중…' : ''}</span>`;
@@ -606,7 +636,8 @@ function renderBible() {
   const { b, c } = S, n = VERSES[b - 1][c - 1];
   const title = `<h1 class="chapter-title">${BOOKS[b - 1]} ${c}장</h1>`;
   const ids = Array.from({ length: n }, (_, i) => i + 1);
-  const notice = vs.includes(ESV) ? `<p class="esv-notice">${ESV_NOTICE}</p>` : '';
+  const notice = (vs.includes(ESV) ? `<p class="esv-notice">${ESV_NOTICE}</p>` : '') +
+    (vs.some(needsTag) ? '<p class="esv-notice">원어 단어 번호: STEPBible TAHOT·TAGNT (Tyndale House, CC BY 4.0)</p>' : '');
   if (vs.length === 1) {
     $('bible').innerHTML = title + ids.map(v => {
       const m = verseMark(v);
@@ -1093,7 +1124,8 @@ const qLabel = q => /"/.test(q) ? esc(q) : `“${esc(q)}”`;
 const inRange = (b, range) => range === 'ot' ? b <= 39 : range === 'nt' ? b >= 40 : range === 'book' ? b === S.b : true;
 // 원어 정보(BHS 기본형 또는 <WH430> 태그)가 있는 성경인지
 const hasOriginal = (n, lang) => bibles[n] && (bibles[n].orig ??= {
-  H: bibles[n].some(l => l.includes('<sub>') || l.includes('<WH')), G: bibles[n].some(l => l.includes('<WG')),
+  H: bibles[n].some(l => l.includes('<sub>') || l.includes('<WH')) || needsTag(n) && bibles[n].some(l => /[֐-׿]/.test(l)),
+  G: bibles[n].some(l => l.includes('<WG')) || needsTag(n) && bibles[n].some(l => /[Ͱ-Ͽἀ-῿]/.test(l)),
 })[lang];
 
 async function runBibleSearch() {
@@ -1115,9 +1147,11 @@ async function runBibleSearch() {
 async function strongVerses(num, ver) {
   const L = bibles[ver], lang = num[0], tag = new RegExp(`<W${lang}0*${num.slice(1)}[a-z]?>`);
   const find = S.dict ? (await liteOf(S.dict), finderOf(S.dict, lang)) : null;
+  const auto = needsTag(ver); // 번호 없는 원어 성경이면 STEPBible 자료로 붙여서 찾음
+  if (auto) await loadOrig(lang === 'H' ? 'ot' : 'nt');
   const memo = new Map(), out = [];
   for (let i = 0; i < L.length; i++) {
-    const line = L[i];
+    const line = auto ? (L[i] && taggedLine(ver, i)) : L[i];
     if (!line) continue;
     if (tag.test(line)) { out.push(i); continue; }
     if (!find || !line.includes('<sub>')) continue;

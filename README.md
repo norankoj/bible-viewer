@@ -51,3 +51,4 @@ node test.js "<주석.cmt.twm 경로>" "<성경.ont 경로>"
 - [sql.js](https://github.com/sql-js/sql.js) (MIT, `vendor/sql.js-LICENSE.txt`)
 - [Pretendard](https://github.com/orioncactus/pretendard) (SIL Open Font License 1.1, `vendor/Pretendard-LICENSE.txt`)
 - 교차 참조: [OpenBible.info](https://www.openbible.info/labs/cross-references/) (CC BY 4.0). `node tools/build-xrefs.js cross_references.txt`로 `data/xrefs.js`를 다시 만들 수 있습니다.
+- 원어 단어 번호: [STEPBible](https://github.com/STEPBible/STEPBible-Data) TAHOT·TAGNT (Tyndale House, CC BY 4.0). 번호가 없는 히브리어·헬라어 성경(BHS 등)의 단어를 눌러 사전을 볼 수 있게 합니다. `node tools/build-orig.js <TAHOT 4개> <TAGNT 2개>`로 `data/orig-ot.js`·`data/orig-nt.js`를 다시 만들 수 있습니다.

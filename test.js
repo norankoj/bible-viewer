@@ -40,6 +40,14 @@ assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In t
   assert.match(dctHtml('אֱלֹהִים^엘로아흐(H433, 하나님)'), /엘로아흐\(<a href="#" data-strong="H433">H433<\/a>, 하나님\)/); // 글자로 적힌 번호도 링크
 }
 
+// 번호 없는 원어 성경에 STEPBible 번호 붙이기 (악센트·대소문자·끝글자 무시, 본문 순서대로)
+{
+  const { origKey, tagOriginal } = require('./decode.js');
+  assert.strictEqual(origKey('Οὕτως'), origKey('ουτως'));
+  assert.strictEqual(tagOriginal('Οὕτως γὰρ ἠγάπησεν', `${origKey('ουτως')}:${(3779).toString(36)} ${origKey('ηγαπησεν')}:p`, 'G'), 'Οὕτως<WG3779> γὰρ ἠγάπησεν<WG25>');
+  assert.strictEqual(tagOriginal('בָּרָא אֱלֹהִים', origKey('אלהים') + ':' + (430).toString(36), 'H'), 'בָּרָא אֱלֹהִים<WH430>');
+}
+
 // HebGrkKo 사전(선택: 네 번째 인자 .dct)과 bhs5t 기본형 연결
 if (process.argv[5]) {
   const { lemmaFinder } = require('./decode.js');

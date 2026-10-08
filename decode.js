@@ -412,6 +412,41 @@ function dctHtml(dtext) {
   return `<span class="${lang}"${lang === 'heb' ? ' dir="rtl"' : ''}>${esc(head.trim())}</span> ${out}`;
 }
 
+/* ---------- 원어 단어 → 스트롱 번호 (STEPBible TAHOT/TAGNT, CC BY 4.0) ----------
+   원어 성경 본문에 번호가 없을 때(BHSSBL 등), 절마다 자료의 단어와 맞대어 번호를 붙임.
+   비교 열쇠: 모음·악센트·숨표를 빼고 글자만, 짧은 영문자로 (히브리어 끝글자 = 보통 글자, ς = σ) */
+const HEB_KEY = 'אבגדהוזחטיכלמנסעפצקרשת', HEB_ASCII = 'abgdhwzxTyklmnsEpcqrSt';
+const GRK_KEY = 'αβγδεζηθικλμνξοπρστυφχψω', GRK_ASCII = 'abgdezhqiklmnxoprstufcyw';
+const FINAL = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+function origKey(word) {
+  let out = '';
+  for (const ch of word.normalize('NFD').toLowerCase()) {
+    const h = HEB_KEY.indexOf(FINAL[ch] || ch);
+    if (h >= 0) { out += HEB_ASCII[h]; continue; }
+    const g = GRK_KEY.indexOf(ch === 'ς' ? 'σ' : ch);
+    if (g >= 0) out += GRK_ASCII[g];
+  }
+  return out;
+}
+// 본문 속 원어 단어 (히브리어: 마켑·소프 파숙 빼고, 헬라어: 결합 부호 포함)
+const ORIG_WORD = /[֑-ֽֿ-ׂׄ-ׇא-תװ-״]+|[Ͱ-Ͽἀ-῿][̀-ͯͰ-Ͽἀ-῿]*/g;
+// 자료 한 절("brAsit:5ox brA:yu …") 과 본문을 맞대어, 단어 뒤에 theWord식 번호 태그(<WH7225>)를 붙임
+function tagOriginal(line, data, lang) {
+  if (!line || !data) return line;
+  const list = data.split(' ').map(x => { const [f, s] = x.split(':'); return { f, s: lang + parseInt(s, 36), used: false }; });
+  let p = 0;
+  return line.replace(ORIG_WORD, w => {
+    const k = origKey(w);
+    if (!k) return w;
+    // 앞에서 이어지는 자리부터 같은 글자인 단어를 찾고, 없으면 처음부터 (사본 차이로 순서가 조금 다를 수 있음)
+    let i = list.findIndex((e, j) => j >= p && !e.used && e.f === k);
+    if (i < 0) i = list.findIndex(e => !e.used && e.f === k);
+    if (i < 0) return w;
+    list[i].used = true; p = i + 1;
+    return `${w}<W${list[i].s}>`;
+  });
+}
+
 // 교차 참조 한 줄("lnb nmc+1 …", 36진수) → [[시작 줄 번호, 범위 길이], …]
 const parseXrefs = line => (line || '').split(' ').filter(Boolean).map(x => { const [s, n] = x.split('+'); return [parseInt(s, 36), n ? parseInt(n, 36) : 0]; });
 
@@ -430,4 +465,4 @@ function parseEsv(t) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml };
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal };
