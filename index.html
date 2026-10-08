@@ -595,7 +595,8 @@ function refreshBible() {
 }
 
 /* ---------- 절 선택 (Shift: 범위, Cmd/Ctrl: 여러 개) ---------- */
-function select(v, mode) {
+// click: 마우스로 누른 절(이미 보이는 절)이면 화면을 크게 옮기지 않음
+function select(v, mode, click) {
   const vs = sorted();
   if (mode === 'range' && vs.length) {
     const from = Math.min(S.v || v, v), to = Math.max(S.v || v, v);
@@ -607,7 +608,15 @@ function select(v, mode) {
   $('bible').querySelectorAll('[data-v]').forEach(e => e.classList.toggle('on', sel.has(+e.dataset.v)));
   const p = $('bible').querySelector(`[data-v="${v}"]`);
   // 대조 보기의 행은 display:contents라 위치가 없으므로 첫 칸으로 스크롤
-  if (p) (p.classList.contains('row') ? p.firstElementChild : p).scrollIntoView({ block: 'nearest' });
+  if (p) {
+    const el = p.classList.contains('row') ? p.firstElementChild : p, box = $('bible');
+    if (click) el.scrollIntoView({ block: 'nearest' });
+    else { // ↓/↑·링크 이동: 절이 다 안 보이면 위쪽(번역본 이름 줄 아래)에 붙여서 이어지는 본문이 아래로 보이게
+      const r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+      const top = b.top + (box.querySelector('.par .head')?.offsetHeight || 0) + 8;
+      if (r.top < top || r.bottom > b.bottom) box.scrollTop += r.top - top;
+    }
+  }
   renderSelbar();
   syncComm(v);
   if (S.tab === 'xref' && mode !== 'range') renderXref(); // 고른 절의 관련 구절로
@@ -1385,13 +1394,13 @@ $('verTabs').onclick = e => {
 };
 $('bible').onclick = e => {
   const nb = e.target.closest('[data-note]');
-  if (nb) { e.stopPropagation(); select(+nb.dataset.note); return openNote(+nb.dataset.note, nb); }
+  if (nb) { e.stopPropagation(); select(+nb.dataset.note, undefined, true);return openNote(+nb.dataset.note, nb); }
   const fn = e.target.closest('.fn');
   if (fn) { e.stopPropagation(); return showNote(fn); }
   const w = e.target.closest('.w');
-  if (w) { e.stopPropagation(); select(+w.closest('[data-v]').dataset.v); return showWord(w); }
+  if (w) { e.stopPropagation(); select(+w.closest('[data-v]').dataset.v, undefined, true); return showWord(w); }
   const p = e.target.closest('[data-v]');
-  if (p) select(+p.dataset.v, e.shiftKey ? 'range' : (e.metaKey || e.ctrlKey) ? 'toggle' : undefined);
+  if (p) select(+p.dataset.v, e.shiftKey ? 'range' : (e.metaKey || e.ctrlKey) ? 'toggle' : undefined, true);
 };
 $('selbar').onclick = e => {
   const t = e.target.closest('button'); if (!t) return;
