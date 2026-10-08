@@ -15,7 +15,7 @@ self.addEventListener('activate', e => {
 // 인터넷이 되면 항상 새 파일(업데이트가 바로 반영), 안 되면 보관본
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
-  if (e.request.method !== 'GET' || u.origin !== location.origin || u.pathname.startsWith('/api/')) return; // ESV 등은 그대로
+  if (e.request.method !== 'GET' || u.origin !== location.origin) return;
   if (!/(\/|\.(html|js|css|png|webmanifest))$/.test(u.pathname)) return; // 화면 파일만
   e.respondWith(
     fetch(e.request)

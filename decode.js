@@ -450,19 +450,4 @@ function tagOriginal(line, data, lang) {
 // 교차 참조 한 줄("lnb nmc+1 …", 36진수) → [[시작 줄 번호, 범위 길이], …]
 const parseXrefs = line => (line || '').split(' ').filter(Boolean).map(x => { const [s, n] = x.split('+'); return [parseInt(s, 36), n ? parseInt(n, 36) : 0]; });
 
-// ESV API 요청 (브라우저와 Vercel 서버 함수가 함께 씀)
-const EN = 'Genesis Exodus Leviticus Numbers Deuteronomy Joshua Judges Ruth 1_Samuel 2_Samuel 1_Kings 2_Kings 1_Chronicles 2_Chronicles Ezra Nehemiah Esther Job Psalm Proverbs Ecclesiastes Song_of_Solomon Isaiah Jeremiah Lamentations Ezekiel Daniel Hosea Joel Amos Obadiah Jonah Micah Nahum Habakkuk Zephaniah Haggai Zechariah Malachi Matthew Mark Luke John Acts Romans 1_Corinthians 2_Corinthians Galatians Ephesians Philippians Colossians 1_Thessalonians 2_Thessalonians 1_Timothy 2_Timothy Titus Philemon Hebrews James 1_Peter 2_Peter 1_John 2_John 3_John Jude Revelation'.split(' ').map(s => s.replace(/_/g, ' '));
-const esvQuery = (b, c) => new URLSearchParams({
-  q: `${EN[b - 1]} ${c}:1-${VERSES[b - 1][c - 1]}`, // 범위를 적어야 유다서처럼 한 장짜리 책도 1절이 아니라 장 전체가 옴
-  'include-passage-references': false, 'include-verse-numbers': true, 'include-first-verse-numbers': true,
-  'include-footnotes': false, 'include-headings': false, 'include-short-copyright': false, 'indent-poetry': false, 'indent-paragraphs': 0,
-}).toString();
-
-// ESV API 본문("[16] For God so loved… [17] …") → 절 배열 (index = 절-1)
-function parseEsv(t) {
-  const out = [], parts = t.split(/\[(\d+)\]/);
-  for (let i = 1; i < parts.length; i += 2) out[+parts[i] - 1] = parts[i + 1].replace(/\s+/g, ' ').trim();
-  return out;
-}
-
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal };
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal };

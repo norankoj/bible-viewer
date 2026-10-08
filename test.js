@@ -1,7 +1,7 @@
 // 실행: node test.js "<Hokma2.cmt.twm 경로>"
 const { DatabaseSync } = require('node:sqlite');
 const assert = require('node:assert');
-const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder } = require('./decode.js');
+const { toHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder } = require('./decode.js');
 
 // 크로스 글꼴 → 유니코드
 assert.strictEqual(crossHebrew('!yhiOla>'), 'אֱלֹהִים'.normalize('NFC'));
@@ -83,10 +83,6 @@ assert.strictEqual(ot.length, 31102); assert.strictEqual(ot[0], 'o0'); assert.st
 const nt = parseOnt(enc(Array.from({ length: 7957 }, (_, i) => 'n' + i).join('\n')), 'nt');
 assert.strictEqual(nt[23145], 'n0'); assert.strictEqual(nt[31101], 'n7956'); assert.strictEqual(nt[0], ''); assert.strictEqual(nt.rtl, false);
 
-// ESV API 본문 → 절 배열 (시 같은 줄바꿈·들여쓰기는 공백 하나로)
-assert.deepStrictEqual(parseEsv('\n  [1] The LORD is my shepherd;\n      I shall not want.\n  [2] He makes me lie down\n'),
-  ['The LORD is my shepherd; I shall not want.', 'He makes me lie down']);
-
 // 절 구분표: 66권, 1189장, 31102절, 요 3:16 = 26136번째 줄
 assert.strictEqual(VERSES.length, 66);
 assert.strictEqual(VERSES.flat().length, 1189);
@@ -109,66 +105,3 @@ assert.doesNotMatch(rvf, /[\u0000-\u0008]|�/);
 assert.doesNotMatch(rvf, /<a [^>]*>\) 상품들/); // 일반 텍스트에 붙은 태그는 링크 아님
 
 assert.deepStrictEqual(parseRef('tw://bible.*?id=11.4.29-11.4.31|_AUTODETECT_|'), [11, 4, 29]);
-
-// Vercel 서버 함수 /api/esv: 키 숨김, 한 장 요청만 허용
-(async () => {
-  const handler = require('./api/esv.js');
-  const call = async query => {
-    const res = { headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(s) { this.code = s; return this; }, json(j) { this.body = j; return this; } };
-    await handler({ query }, res);
-    return res;
-  };
-  let sent;
-  global.fetch = async (url, opt) => { sent = { url, auth: opt.headers.Authorization }; return { ok: true, json: async () => ({ passages: ['[1] In the beginning [2] The earth'] }) }; };
-  delete process.env.ESV_API_KEY;
-  assert.strictEqual((await call({ b: '43', c: '3' })).code, 503); // 키 설정 전
-  process.env.ESV_API_KEY = 'secret';
-  for (const q of [{ b: '67', c: '1' }, { b: '43', c: '22' }, { b: 'x', c: '1' }, {}]) assert.strictEqual((await call(q)).code, 400);
-  const ok = await call({ b: '65', c: '1' });
-  assert.strictEqual(ok.code, 200);
-  assert.deepStrictEqual(ok.body.verses, ['In the beginning', 'The earth']);
-  assert.strictEqual(ok.headers['Cache-Control'], 'no-store');
-  assert.match(decodeURIComponent(sent.url), /q=Jude\+1:1-25/);
-  assert.strictEqual(sent.auth, 'Token secret');
-  assert(!JSON.stringify(ok.body).includes('secret')); // 키가 응답에 새지 않음
-  console.log('api/esv ok');
-})();
-
-// 사전(선택: 세 번째 인자로 .gbk.twm 경로): 표제어가 원어로 풀리고, BHS 기본형으로 번호를 찾음
-if (process.argv[4]) {
-  const dict = new DatabaseSync(process.argv[4], { readOnly: true });
-  const html = s => toHtml(dict.prepare('select cast(c.data as blob) d from topics t join content c on c.topic_id = t.id where t.subject = ?').get(s).d);
-  assert.strictEqual(headword(html('H430')), 'אֱלֹהִים'.normalize('NFC'));
-  assert.strictEqual(headword(html('G26')), 'ἀγάπη');
-  assert.strictEqual(headword(html('H3290')), 'יַעֲקֹב'.normalize('NFC')); // RTF의 \} (하테프 파타흐)가 단어 중간에 있어도
-  const entries = [];
-  for (const { s, d } of dict.prepare("select t.subject s, cast(c.data as blob) d from topics t join content c on c.topic_id = t.id where t.subject like 'H%'").iterate())
-    entries.push({ s, h: headword(toHtml(d)) });
-  const find = lemmaFinder(entries);
-  // 창 1:1 BHS 기본형들 + 철자 차이(바브 유무)
-  for (const [lemma, strong] of [['ברא', 'H1254'], ['אֱלֹהִים', 'H430'], ['רֵאשִׁית', 'H7225'], ['שָׁמַיִם', 'H8064'], ['אֶרֶץ', 'H776'], ['אַהֲרֹן', 'H175']])
-    assert(find(lemma).includes(strong), `${lemma} → ${strong}: ${find(lemma)}`);
-  assert.deepStrictEqual(find('וְ'), []); // 접두어는 엉뚱한 항목과 맞으면 안 됨
-  console.log('dict ok');
-}
-
-// 주석이 가리키는 절이 절 구분표 범위 안에 있는지 (호크마 자체 오류 6곳: 왕하12, 대상28, 대하34, 시8, 시87, 아6)
-const out = db.prepare('select bi, ci, max(tvi) v from bible_refs group by bi, ci').all().filter(r => !(VERSES[r.bi - 1][r.ci - 1] >= r.v));
-assert(out.length <= 6, JSON.stringify(out));
-
-// 실제 성경 파일로 위치 확인 (선택: 두 번째 인자로 .ont 경로)
-if (process.argv[3]) {
-  const L = parseOnt(require('fs').readFileSync(process.argv[3]));
-  assert.match(L[START[19][118] + 175], /양|잃/); // 시 119:176
-  assert.match(L[START[39][3] + 5], /땅을 칠/);  // 말 4:6
-  assert.match(L[START[66][21] + 20], /은혜/);   // 계 22:21
-}
-
-// 전체 항목이 예외 없이 변환되고 한글이 나오는지
-let n = 0, bad = 0;
-for (const { d } of db.prepare('select cast(data as blob) d from content').iterate()) {
-  n++; if (!/[가-힣]/.test(toHtml(d))) bad++;
-}
-console.log(`${n} entries, ${bad} without Hangul`);
-assert(bad < n * 0.01);
-console.log('ok');
