@@ -90,6 +90,10 @@ assert.strictEqual(VERSES.flat().reduce((a, b) => a + b), 31102);
 assert.strictEqual(START[43][2] + 15, 26136);
 assert.strictEqual(verseHtml('<FR>a<Fr> <세계의 시작> <x>b'), '<span class="red">a</span> <b class="ts">세계의 시작</b> b');
 assert.strictEqual(verseHtml('<FR>a <FI>b'), '<span class="red">a <i>b</i></span>'); // 안 닫힌 태그
+// 강조·클릭은 단어에만: 앞 단어의 마켑(־), 단락 표시(פ), 케티브는 단어 밖
+assert.match(verseHtml('עַל<WH5921>־פְּנֵי<WH6440>'), /־<span class="w" data-strong="H6440">פְּנֵי<\/span>$/);
+assert.match(verseHtml("אֶחָֽד׃ פ <TRANS>ʔeḥˈāḏ<trans> <sub><font color='gray'>אֶחָד one</font></sub>"), /data-lemma="אֶחָד"[^>]*>אֶחָֽד׃<\/span> פ /);
+assert.match(verseHtml("<font color='blue'>אָהֳלֹֽו</font> <sub>אהלה</sub> <TRANS>ʔohᵒlˈô<trans> <sub><font color='gray'>אֹהֶל tent</font></sub>"), /data-lemma="אֹהֶל"[^>]*>אָהֳלֹֽו<\/span> <span class="kt">\[אהלה\]<\/span>/);
 assert.strictEqual(parseOnt(new Uint8Array([0xc5, 0xc2, 0x0a]))[0], '태'); // EUC-KR
 
 const db = new DatabaseSync(process.argv[2], { readOnly: true });

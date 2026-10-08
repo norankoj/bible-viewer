@@ -276,17 +276,23 @@ const TAGS = {
 };
 const tagHtml = t => esc(t)
   // 스트롱 번호 태그: 단어<WH430><WH853> → 누르면 사전이 뜨는 단어
-  .replace(/(\S+?)((?:&lt;W[HG]\d+[a-z]?&gt;)+)/g, (_, w, tags) =>
-    `<span class="w" data-strong="${[...tags.matchAll(/W([HG])(\d+)/g)].map(m => m[1] + +m[2]).join(',')}">${w}</span>`)
+  // (앞 단어에서 이어진 마켑 ־ 은 단어 밖에 둠: 강조가 ־ 부터 시작하지 않게)
+  .replace(/(־?)(\S+?)((?:&lt;W[HG]\d+[a-z]?&gt;)+)/g, (_, mq, w, tags) =>
+    `${mq}<span class="w" data-strong="${[...tags.matchAll(/W([HG])(\d+)/g)].map(m => m[1] + +m[2]).join(',')}">${w}</span>`)
   .replace(/&lt;(\/?[A-Za-z]+)(?:(?!&gt;).)*&gt;/g, (_, k) => TAGS[k] || '')
   .replace(/&lt;([^&]+)&gt;/g, '<b class="ts">$1</b>');
 
 // BHS 형식: 원어 <TRANS>음역<trans> <sub><font…>기본형 뜻</font></sub> → 기본형으로 사전을 찾는 단어
-const BHS_WORD = /(\S+) <TRANS>([\s\S]*?)<trans> <sub>(?:<font[^>]*>)?([\s\S]*?)(?:<\/font>)?<\/sub>/g;
-const bhsWord = ([, word, tr, gloss]) => {
+// 단어는 앞 단어의 </sub> (또는 줄 처음) 뒤부터 <TRANS> 앞까지 전부: "בֵּית לֶחֶם" 처럼 두 덩어리 이름, "אֶחָֽד׃ פ" 처럼 단락 표시가 붙은 것도 있음
+// 케레·케티브는 "<font color='blue'>읽는 글자</font> <sub>쓰인 글자</sub>" 또는 "<K>쓰인<k> <R>읽는<r>" 로 옴 → 읽는 글자가 단어, 쓰인 글자는 [ ] 로 뒤에
+const BHS_WORD = /(?<=^|>)(\s*)(?:<font color='blue'>([^<]*)<\/font> <sub>([^<]*)<\/sub>|<R>\s*([^<]*)<r>|([^<>\s][^<>]*?)) <TRANS>([\s\S]*?)<trans> <sub>(?:<font[^>]*>)?([\s\S]*?)(?:<\/font>)?<\/sub>/g;
+const bhsWord = ([, sp, qere, ketiv, rq, raw, tr, gloss]) => {
   const lemma = gloss.match(/^[֐-׿]+/)?.[0] || '';
   const en = gloss.slice(lemma.length).replace(/[^\sA-Za-z-]/g, '').trim(); // 영어 뜻 (후보 순서 정할 때 씀)
-  return `<span class="w"${lemma ? ` data-lemma="${esc(lemma)}" data-gloss="${esc(en)}"` : ''}>${esc(word)}</span> <span class="tr">${esc(tr)}</span> <span class="gl">${esc(gloss)}</span>`;
+  // 단락 표시(ס פ)·구분선(׀)은 단어 밖으로: 누르기·강조는 단어에만
+  const [, pre, word, post] = (qere ?? rq ?? raw).match(/^((?:[׀ספ] )*)(.*?)((?: [׀ספ])*)$/);
+  return `${sp}${esc(pre)}<span class="w"${lemma ? ` data-lemma="${esc(lemma)}" data-gloss="${esc(en)}"` : ''}>${esc(word)}</span>${esc(post)}` +
+    `${ketiv ? ` <span class="kt">[${esc(ketiv)}]</span>` : ''} <span class="tr">${esc(tr)}</span> <span class="gl">${esc(gloss)}</span>`;
 };
 
 /* ---------- 각주 ----------
