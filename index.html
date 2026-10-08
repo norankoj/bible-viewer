@@ -971,7 +971,7 @@ function rankCandidates(ids, gloss, name) {
 
 async function showWord(w) {
   const pop = $('wordPop'), name = S.dict;
-  const show = html => { pop.innerHTML = html; if (!pop.classList.contains('open')) openPop(pop, w); };
+  const show = html => { pop.innerHTML = html; openPop(pop, w); }; // 다른 단어를 누르면 그 단어 옆으로
   if (!name) return show('<p class="muted">원어 사전 파일(.gbk.twm)을 추가하면 단어 뜻이 나옵니다.</p>');
   show('<p class="muted">사전 준비 중… (처음 한 번, 몇 초 걸립니다)</p>');
   const ready = await liteOf(name).catch(() => null);
@@ -1007,11 +1007,11 @@ function wordPopAt(i, lemma = '') {
     (ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
       `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</details>` : '') +
     `<div class="body" id="wordBody"><p class="title">${esc(title)}</p>${esc(body)}…</div>`;
-  pop.scrollTop = 0;
+  pop.scrollTop = 0; placePop(pop);
   const name = S.dict;
   openDict(name).then(() => {
     const row = dictRow(e.s), box = $('wordBody');
-    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) box.innerHTML = linkStrong(toHtml(row[1]), e.s[0]);
+    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = linkStrong(toHtml(row[1]), e.s[0]); placePop(pop); }
   }).catch(() => {});
 }
 
@@ -1205,11 +1205,24 @@ function renderSaved() {
 /* ---------- 팝오버 ---------- */
 function openPop(el, anchor) {
   closePops();
-  const r = anchor.getBoundingClientRect();
+  el._anchor = anchor;
   el.classList.add('open');
-  el.style.left = Math.max(16, Math.min(r.left, innerWidth - el.offsetWidth - 16)) + 'px';
-  el.style.top = (r.bottom + el.offsetHeight + 8 > innerHeight ? Math.max(8, r.top - el.offsetHeight - 6) : r.bottom + 6) + 'px';
+  placePop(el);
 }
+// 팝업이 화면 밖으로 나가지 않게: 아래 자리가 되면 아래, 아니면 위, 둘 다 부족하면 화면 안에 맞춤.
+// 내용이 나중에 채워져 길어지면(원어 전체 풀이 등) 다시 부름
+function placePop(el) {
+  if (!el.classList.contains('open') || !el._anchor?.isConnected) return;
+  el.style.maxHeight = ''; // CSS 기본 높이로 재고
+  const r = el._anchor.getBoundingClientRect(), w = el.offsetWidth, gap = 6, edge = 8;
+  const below = innerHeight - r.bottom - gap - edge, above = r.top - gap - edge;
+  // 아래가 되면 아래, 아니면 위, 둘 다 부족하면 넓은 쪽에 맞춰 높이를 줄임 (누른 단어를 가리지 않게, 나머지는 팝업 안 스크롤)
+  let h = el.offsetHeight, down = h <= below || (h > above && below >= above);
+  if (h > (down ? below : above)) { h = Math.max(120, down ? below : above); el.style.maxHeight = h + 'px'; }
+  el.style.left = Math.max(16, Math.min(r.left, innerWidth - w - 16)) + 'px';
+  el.style.top = Math.max(edge, down ? r.bottom + gap : r.top - gap - h) + 'px';
+}
+addEventListener('resize', () => document.querySelectorAll('.pop.open').forEach(placePop));
 const closePops = () => document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && p.classList.remove('open'));
 
 function pickerBooks() {
