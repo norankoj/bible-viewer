@@ -120,7 +120,9 @@
   #wordPop { width: min(460px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; padding-top: 0; overscroll-behavior: contain; }
   #wordPop .head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 12px 0 8px; margin-bottom: 4px; background: var(--surface); border-bottom: 1px solid var(--line); }
   #wordPop .head .ref { font: 600 12px var(--sans); color: var(--accent); }
-  #wordPop .head .btn { margin-left: auto; }
+  #wordPop .head [data-open], .entry h3 .find { margin-left: auto; } /* 버튼은 오른쪽에 나란히 */
+  .entry h3.act { display: flex; align-items: center; gap: 8px; }
+  .btn.find { color: var(--accent); border-color: var(--accent); } /* 스트롱 번호와 같은 색 */
   #wordPop .title { font-weight: 600; margin: 0 0 6px; }
   #wordPop .body { font: calc(var(--fs) - 2px)/1.8 var(--read); margin: 8px 0 4px; }
   #wordPop .body a[data-ref] { color: var(--accent); text-decoration: none; }
@@ -860,7 +862,7 @@ function renderDict(scrollTo) {
   if (D.entry) {
     const row = dictRow(D.entry), same = D.shown === D.entry;
     box.innerHTML = form + '<button class="linkish" data-dict-back>‹ 목록</button>' + (row
-      ? `<article class="entry"><h3>${esc(row[0])} <button class="btn sm" data-search-strong="${esc(row[0])}" title="이 번호가 나오는 성경 구절 찾기">성경에서 검색</button></h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
+      ? `<article class="entry"><h3 class="act">${esc(row[0])}<button class="btn sm find" data-search-strong="${esc(row[0])}" title="이 번호가 나오는 성경 구절 찾기">검색</button></h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
       : `<p class="empty small">${esc(D.entry)} 항목이 없습니다.</p>`);
     box.scrollTop = same ? keep : 0; // 같은 항목을 다시 그릴 때(장 이동 등)는 읽던 위치 유지
     D.shown = D.entry;
@@ -1011,7 +1013,7 @@ function wordPopAt(i, lemma = '') {
   const { title, body } = e;
   // 먼저 요약으로 바로 보여주고, 사전 파일을 열면 전체 풀이(사전과 같은 줄바꿈·서식)로 바꿈
   pop.innerHTML = `<div class="head"><span class="ref">${e.s}</span>${lexHtml(e.s, e.h)}
-    <button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button><button class="btn sm" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 찾기">성경에서 검색</button></div>` +
+    <button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button><button class="btn sm find" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 찾기">검색</button></div>` +
     (ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
       `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</details>` : '') +
     `<div class="body" id="wordBody"><p class="title">${esc(title)}</p>${esc(body)}…</div>`;
