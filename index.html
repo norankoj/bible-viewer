@@ -1142,16 +1142,33 @@ const indexComm = (name, progress) => indexDb(commText, name, comms[name],
   'select r.bi, r.ci, r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) order by r.bi, r.ci, r.fvi',
   progress, ([b, c, f, t], text) => ({ b, c, f, t, text }));
 
+// 주석 하나의 검색 색인. 큰 주석 파일은 하나씩만 열고 색인 뒤 바로 닫음 (메모리에 큰 파일이 둘 이상 안 올라가게).
+// 만든 색인은 브라우저에 보관 → 다음부터는 파일을 열지 않고 바로 (파일이 바뀌면 크기가 달라져 새로 만듦)
+const commKey = name => `comm:${name}:${fileInfo[name]?.size}`;
+async function commIndex(name, progress) {
+  if (commText[name]) return commText[name];
+  const saved = await idb('cache', 'readonly', s => s.get(commKey(name))).catch(() => null);
+  if (Array.isArray(saved)) return commText[name] = saved;
+  await openComm(name);
+  const list = await indexComm(name, progress);
+  closeUnusedComms();
+  idb('cache', 'readwrite', s => s.put(list, commKey(name))).catch(() => {});
+  return list;
+}
+
+// 불러온 주석 전부에서 찾기 (하나가 실패해도 나머지는 계속)
 async function searchComm() {
-  const name = S.comm, h = hits;
-  if (!name) return;
-  const texts = await openComm(name).then(() => indexComm(name, p => {
-    const el = hits === h && S.tab === 'search' && $('comm').querySelector('.progress');
-    if (el) el.textContent = `${name} 주석 색인 중 ${Math.round(p * 100)}% (처음 한 번만)`;
-  })).catch(err => { if (hits === h) $('comm').querySelector('.progress')?.replaceChildren(`주석 검색에 실패했습니다: ${err.message}`); });
-  if (!texts) return;
-  if (hits !== h) return;
-  h.comm = { name, list: texts.filter(e => h.Q.test(e.text)) };
+  const h = hits, names = commNames(), list = [], failed = [];
+  for (const [k, name] of names.entries()) {
+    const texts = await commIndex(name, p => {
+      const el = hits === h && S.tab === 'search' && $('comm').querySelector('.progress');
+      if (el) el.textContent = `${nm(name)} 색인 중 ${Math.round(p * 100)}% (${k + 1}/${names.length}, 주석마다 처음 한 번만)`;
+    }).catch(() => { failed.push(nm(name)); return null; });
+    if (hits !== h) return; // 그 사이 다른 검색을 시작함
+    for (const e of texts || []) if (h.Q.test(e.text)) list.push({ e, name });
+  }
+  list.sort((x, y) => x.e.b - y.e.b || x.e.c - y.e.c || x.e.f - y.e.f);
+  h.comm = { list, failed };
   if (S.tab === 'search') renderHits();
 }
 
@@ -1169,11 +1186,11 @@ function renderHits() {
   const h = hits, mk = s => h.Q.re && !h.Q.strong ? esc(s).replace(h.Q.re, m => `<mark>${m}</mark>`) : esc(s);
   const inR = b => inRange(b, h.range);
   const bibleList = (h.bible || []).filter(i => inR(REF[i][0]));
-  const commList = h.comm?.name === S.comm ? h.comm.list.filter(e => inR(e.b)) : null;
+  const commList = h.comm ? h.comm.list.filter(x => inR(x.e.b)) : null, cns = commNames();
   const locals = allVersions().filter(n => bibles[n] && (!h.Q.strong || hasOriginal(n, h.Q.strong[0])));
   let html = `<div class="seg">
     ${locals.length ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 ${h.bible ? bibleList.length : '…'}</button>` : ''}
-    ${S.comm && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 · ${esc(nm(S.comm))}${commList ? commList.length : ''}</button>` : ''}</div>
+    ${cns.length && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 ${commList ? commList.length : '…'}</button>` : ''}</div>
     <div class="search-opts">
       ${h.scope === 'bible' && locals.length > 1 ? `<label>번역본 <select data-sopt="ver">${locals.map(n => `<option value="${esc(n)}" ${n === h.ver ? 'selected' : ''}>${esc(nm(n))}</option>`).join('')}</select></label>` : ''}
       <label>범위 <select data-sopt="range">${[['all', '전체'], ['ot', '구약'], ['nt', '신약'], ['book', `현재 책 (${BOOKS[S.b - 1]})`]]
@@ -1200,17 +1217,25 @@ function renderHits() {
       (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
       shown.slice(0, 500).map(i => `<button class="hit" data-i="${i}"><span class="ref">${refName(...REF[i])}</span>${line(i)}</button>`).join('') +
       (!bibleList.length ? '<p class="muted">여러 단어는 모두 들어 있는 절을, "따옴표"는 붙은 그대로, H430·G26은 원어 번호로 찾습니다.</p>' : '');
-  } else if (!S.comm) {
+  } else if (!cns.length) {
     html += '<p class="hits-sum">주석 파일을 추가하면 주석에서도 찾을 수 있습니다.</p>';
-  } else if (h.comm?.name !== S.comm) {
-    $('comm').innerHTML = html + `<p class="progress">${esc(nm(S.comm))} 주석에서 찾는 중…</p>`;
-    return searchComm(); // 진행률 칸을 먼저 그린 뒤 색인 시작
+  } else if (!h.comm) {
+    $('comm').innerHTML = html + `<p class="progress">주석 ${cns.length}개에서 찾는 중…</p>`;
+    if (!h.commBusy) { h.commBusy = true; searchComm(); } // 진행률 칸을 먼저 그린 뒤 색인 시작 (탭을 오가도 한 번만)
+    return;
   } else {
-    const list = commList, low = h.Q.terms[0]?.toLowerCase() || '';
+    // 주석별로 좁히기: 전체 / 호크마 12 / 매튜헨리 30
+    const by = {};
+    for (const x of commList) by[x.name] = (by[x.name] || 0) + 1;
+    const cf = by[h.cf] ? h.cf : '', list = cf ? commList.filter(x => x.name === cf) : commList, low = h.Q.terms[0]?.toLowerCase() || '';
     html += `<p class="hits-sum">${qLabel(h.q)} ${list.length}개 항목${list.length > 300 ? ', 처음 300개만 표시' : ''}</p>` +
-      list.slice(0, 300).map(e => {
+      (cns.length > 1 ? `<div class="chips"><button class="chip ${cf ? '' : 'on'}" data-cf="">전체 ${commList.length}</button>${cns.map(n =>
+        `<button class="chip ${n === cf ? 'on' : ''}" data-cf="${esc(n)}">${esc(nm(n))} ${by[n] || 0}</button>`).join('')}</div>` : '') +
+      (h.comm.failed.length ? `<p class="muted">열지 못한 주석: ${esc(h.comm.failed.join(', '))}</p>` : '') +
+      list.slice(0, 300).map(({ e, name }) => {
         const i = Math.max(0, e.text.toLowerCase().indexOf(low)), snip = (i > 50 ? '…' : '') + e.text.slice(Math.max(0, i - 50), i + low.length + 90) + '…';
-        return `<button class="hit" data-go="${e.b}.${e.c}.${e.f}" data-to-comm><span class="ref">${SHORT[e.b - 1]} ${e.c}:${e.f === e.t ? e.f : e.f + '-' + e.t}</span>${mk(snip)}</button>`;
+        return `<button class="hit" data-go="${e.b}.${e.c}.${e.f}" data-to-comm="${esc(name)}"><span class="ref">${SHORT[e.b - 1]} ${e.c}:${e.f === e.t ? e.f : e.f + '-' + e.t}` +
+          `${cns.length > 1 ? ` · ${esc(nm(name))}` : ''}</span>${mk(snip)}</button>`;
       }).join('');
   }
   $('comm').innerHTML = html;
@@ -1343,7 +1368,10 @@ async function removeModules(items) {
   for (const it of items) {
     const kind = kindOf(it), name = nameOf(it);
     if (kind === 'bible') { delete bibles[name]; delete plain[name]; }
-    if (kind === 'comm') { comms[name]?.close(); delete comms[name]; delete commText[name]; delete commFiles[name]; }
+    if (kind === 'comm') {
+      comms[name]?.close(); delete comms[name]; delete commText[name]; delete commFiles[name];
+      await idb('cache', 'readwrite', s => s.delete(commKey(name))).catch(() => {});
+    }
     if (kind === 'dict') {
       dicts[name]?.close(); delete dicts[name];
       await idb('cache', 'readwrite', s => s.delete(`dict:${name}:${dictSize[name]}`)).catch(() => {});
@@ -1464,6 +1492,8 @@ $('comm').onclick = e => {
   if (sc) { hits.scope = sc.dataset.scope; return renderHits(); }
   const ss = e.target.closest('[data-search-strong]');
   if (ss) return searchStrong(ss.dataset.searchStrong);
+  const cf = e.target.closest('[data-cf]');
+  if (cf) { hits.cf = cf.dataset.cf; renderHits(); return $('comm').scrollTop = 0; }
   const sb = e.target.closest('[data-sbook]');
   if (sb) { hits.book = +sb.dataset.sbook === hits.book ? 0 : +sb.dataset.sbook; renderHits(); return $('comm').scrollTop = 0; }
   const dg = e.target.closest('[data-dict-go], [data-strong]');
@@ -1481,7 +1511,11 @@ $('comm').onclick = e => {
   if (h?.dataset.i) { const [b, c, v] = REF[+h.dataset.i]; return go(b, c, v, true); }
   if (h?.dataset.go) {
     const [b, c, v] = h.dataset.go.split('.').map(Number);
-    if (h.dataset.toComm !== undefined) S.tab = 'comm';
+    if (h.dataset.toComm !== undefined) { // 주석 검색 결과: 그 주석을 열어서 그 구절로
+      const n = h.dataset.toComm;
+      if (commFiles[n] && n !== S.comm) { if (S.comm2 === n) S.comm2 = S.comm; S.comm = n; }
+      S.tab = 'comm';
+    }
     return go(b, c, v, true);
   }
   linkClick(e);
