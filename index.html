@@ -251,6 +251,7 @@
 <body>
 <div class="bar">
   <button class="btn" id="back" title="이전 위치로 (Alt+←)" disabled>뒤로</button>
+  <button class="btn" id="fwd" title="다시 앞으로 (Alt+→)" disabled>앞으로</button>
   <button class="btn icon" id="prev" title="이전 장 (←)" aria-label="이전 장">‹</button>
   <button class="btn ref-btn" id="refBtn" aria-haspopup="dialog">요한복음 3장</button>
   <button class="btn icon" id="next" title="다음 장 (→)" aria-label="다음 장">›</button>
@@ -326,7 +327,7 @@
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
 <div class="pop" id="tip"></div>
-<input type="file" id="files" accept=".ont,.ot,.nt,.twm,.ontx,.otx,.ntx" multiple>
+<input type="file" id="files" multiple>
 <input type="file" id="folder" webkitdirectory multiple>
 <input type="file" id="importFile" accept=".json,application/json">
 
@@ -340,7 +341,7 @@ const COLORS = { yellow: '노랑', green: '초록', blue: '파랑', pink: '분�
 const $ = id => document.getElementById(id);
 const bibles = {}, comms = {}, dicts = {}, plain = {}, commText = {}, dictText = {}, indexing = {};
 const marks = new Map(); // 하이라이트·메모: "책.장.절", 책갈피: "bm:책.장.절-절"
-let SQL, hits = null, sel = new Set(), hist = [], noteV = 0;
+let SQL, hits = null, sel = new Set(), hist = [], fwd = [], noteV = 0;
 
 const prefs = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -473,6 +474,9 @@ async function load(files, persist) {
   if (!commFiles[S.comm]) S.comm = cn[0] || '';
   if (!dictFiles[S.dict]) S.dict = dictNames()[0] || '';
   if (S.tab === 'dict' && !S.dict) S.tab = 'comm';
+  // 오프라인 대비: 원어 성경이 있으면 구약·신약 단어 번호 자료를 앱 보관함에 미리 받아 둠 (없을 때 한 번만)
+  if (window.caches && Object.keys(bibles).some(needsTag))
+    for (const p of ['ot', 'nt']) caches.match(`data/orig-${p}.js`).then(r => r || fetch(`data/orig-${p}.js`)).catch(() => {});
   if (S.dict) liteOf(S.dict).catch(() => {}); // 사전 요약을 미리 뒤에서 (목록, 단어 팝업에 씀. 보관본이 있으면 바로)
   if (!commFiles[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
   if (!S.comm2) S.split = false;
@@ -483,8 +487,8 @@ async function load(files, persist) {
 // jump: 책·장 선택, 링크, 검색 결과처럼 "건너뛰는" 이동이면 뒤로가기 기록을 남김
 function go(b, c, v, jump) {
   c = Math.min(Math.max(c, 1), VERSES[b - 1].length);
-  if (jump && (b !== S.b || c !== S.c || v !== S.v)) { hist.push({ b: S.b, c: S.c, v: S.v }); hist = hist.slice(-50); }
-  $('back').disabled = !hist.length;
+  if (jump && (b !== S.b || c !== S.c || v !== S.v)) { hist.push(here()); hist = hist.slice(-50); fwd = []; } // 새로 건너뛰면 앞으로 기록은 버림
+  $('back').disabled = !hist.length; $('fwd').disabled = !fwd.length;
   S.b = b; S.c = c; S.v = v || 0;
   sel = new Set(S.v ? [S.v] : []);
   esvErrors.clear(); // 실패했던 ESV 장은 다시 열 때 재시도
@@ -499,7 +503,9 @@ function go(b, c, v, jump) {
   if (S.v) select(S.v); else { $('comm').scrollTop = $('comm2').scrollTop = 0; renderSelbar(); }
 }
 
-function back() { const p = hist.pop(); if (p) go(p.b, p.c, p.v); }
+const here = () => ({ b: S.b, c: S.c, v: S.v });
+function back() { const p = hist.pop(); if (p) { fwd.push(here()); go(p.b, p.c, p.v); } }
+function forward() { const p = fwd.pop(); if (p) { hist.push(here()); go(p.b, p.c, p.v); } }
 
 function step(d) {
   const { b, c } = S;
@@ -1469,6 +1475,7 @@ $('noteText').onkeydown = e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKe
 document.addEventListener('click', closePops);
 
 $('back').onclick = back;
+$('fwd').onclick = forward;
 $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
 let gloss = prefs.get('gloss', true), wordSide = prefs.get('wordSide', false);
@@ -1584,6 +1591,7 @@ document.onkeydown = e => {
   if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (sel.size) { sel.clear(); refreshBible(); } }
   if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
   if (e.key === 'ArrowLeft' && e.altKey) return back();
+  if (e.key === 'ArrowRight' && e.altKey) return forward();
   if (e.key === 'ArrowLeft') step(-1);
   if (e.key === 'ArrowRight') step(1);
   // ↓/↑: 다음·이전 절 (장 끝이면 다음 장 첫 절 / 앞 장 마지막 절). 주석·사전 칸 안에서는 원래대로 스크롤
