@@ -116,12 +116,16 @@
   .w { cursor: pointer; border-radius: 4px; }
   .w:hover { background: var(--accent-soft); color: var(--accent); }
   .lex.heb { font-size: 1.3em; } .lex.grk { font-family: var(--serif); font-size: 1.1em; }
-  #wordPop { width: min(380px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; }
-  #wordPop .head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  /* 원어 팝업: 머리(번호·원어·버튼)는 고정, 풀이는 사전 탭과 같은 서식으로 스크롤 */
+  #wordPop { width: min(460px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; padding-top: 0; overscroll-behavior: contain; }
+  #wordPop .head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 12px 0 8px; margin-bottom: 4px; background: var(--surface); border-bottom: 1px solid var(--line); }
   #wordPop .head .ref { font: 600 12px var(--sans); color: var(--accent); }
+  #wordPop .head .btn { margin-left: auto; }
   #wordPop .title { font-weight: 600; margin: 0 0 6px; }
-  #wordPop .body { color: var(--muted); font-size: 13px; line-height: 1.65; margin: 0 0 12px; }
-  #wordPop .alts { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 8px; }
+  #wordPop .body { font: calc(var(--fs) - 2px)/1.8 var(--read); margin: 8px 0 4px; }
+  #wordPop .body a[data-ref] { color: var(--accent); text-decoration: none; }
+  #wordPop .alts { margin: 4px 0; font-size: 13px; }
+  #wordPop .alts summary { color: var(--muted); cursor: pointer; padding: 4px 0; }
   #wordPop .alts button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 4px 6px; border-radius: 6px; font-size: 13px; }
   #wordPop .alts button:hover { background: var(--bg); }
   /* 탭 끌어서 순서 바꾸기 */
@@ -129,6 +133,13 @@
   .tab.dragging { opacity: .4; }
   .tab.drop-before { box-shadow: inset 3px 0 0 var(--accent); }
   .tab.drop-after { box-shadow: inset -3px 0 0 var(--accent); }
+  /* 내 세팅 */
+  #presetBox { width: min(380px, calc(100vw - 32px)); }
+  #presetBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 8px; }
+  #presetBox .slot { display: flex; align-items: center; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
+  #presetBox .slot div { flex: 1; min-width: 0; }
+  #presetBox .slot b { display: block; }
+  #presetBox .slot small { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* 파일 관리 */
   #manageBox { width: min(400px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
   #manageBox h4 { font: 600 12px var(--sans); color: var(--muted); margin: 14px 0 4px; }
@@ -136,7 +147,10 @@
   #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: 6px; cursor: pointer; }
   #manageBox label:hover { background: var(--bg); }
   #manageBox label small { margin-left: auto; color: var(--muted); }
-  #manageBox input { width: 16px; height: 16px; accent-color: var(--accent); }
+  #manageBox input[type=checkbox] { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
+  #manageBox .rename { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: none; }
+  #manageBox .rename:hover { border-color: var(--line); }
+  #manageBox .rename:focus { border-color: var(--line); background: var(--bg); outline: 2px solid var(--accent); outline-offset: 1px; }
   #manageBox .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
   .dict-form { display: flex; gap: 8px; margin: 0 0 16px; }
   .dict-form input { flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
@@ -244,6 +258,7 @@
   <button class="btn icon" id="smaller" title="글자 작게" aria-label="글자 작게" style="font-size:13px">가</button>
   <button class="btn icon" id="bigger" title="글자 크게" aria-label="글자 크게" style="font-size:17px">가</button>
   <button class="btn" id="fontBtn" title="본문 글꼴 바꾸기">명조</button>
+  <button class="btn" id="presetBtn" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)">내 세팅</button>
   <button class="btn" id="menuBtn" aria-haspopup="menu">파일</button>
   <span class="status" id="status" role="status"></span>
 </div>
@@ -309,6 +324,7 @@
 <div class="pop" id="wordPop" role="dialog" aria-label="단어 뜻"></div>
 <div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
+<div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
 <div class="pop" id="tip"></div>
 <input type="file" id="files" accept=".ont,.ot,.nt,.twm,.ontx,.otx,.ntx" multiple>
 <input type="file" id="folder" webkitdirectory multiple>
@@ -368,6 +384,11 @@ function idb(store, mode, fn) {
 const MODULE = /\.(ont|ot|nt|twm)$/i;
 // 불러온 파일: 이름 → { key: 저장소 열쇠(원래 파일 이름), size }  (낱개 지우기에 씀)
 const fileInfo = {};
+// 화면에 보이는 이름: 파일 관리에서 바꾼 이름 → 잘 알려진 모듈의 기본 이름 → 파일 이름.
+// (안쪽 구분은 늘 파일 이름이라, 이름을 바꿔도 순서·설정은 그대로)
+const DEFAULT_NAMES = { 메튜: '매튜헨리', 호크마주석: '호크마', Hokma2: '호크마' };
+let displayNames = prefs.get('names', {});
+const nm = n => displayNames[n] || DEFAULT_NAMES[n] || n;
 async function addFile(f) {
   const name = f.name.replace(/(\.(cmt|gbk|dct))?\.(twm|ont|ot|nt)$/i, '');
   fileInfo[name] = { key: f.name, size: f.size };
@@ -555,7 +576,7 @@ function cellHtml(name, v) {
 
 function renderBible() {
   const names = allVersions();
-  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${n}" title="누르면 보기/끄기 · 끌어서 순서 바꾸기">${n}</button>`).join('') +
+  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${n}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${n}" title="누르면 보기/끄기 · 끌어서 순서 바꾸기">${esc(nm(n))}</button>`).join('') +
     (S.versions.some(n => bibles[n]?.rtl) ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` +
       `<button class="tab" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
     (names.length > 1 ? `<span class="hint ${S.versions.some(n => bibles[n]?.rtl) ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
@@ -572,7 +593,7 @@ function renderBible() {
       return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${bibles[vs[0]]?.rtl ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
     }).join('') + notice;
   } else {
-    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><span class="head"></span>${vs.map(x => `<span class="head">${x}</span>`).join('')}` +
+    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}</span>`).join('')}` +
       ids.map(v => {
         const m = verseMark(v);
         return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x)}>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
@@ -637,7 +658,7 @@ async function copySel() {
   const label = `${BOOKS[b - 1]} ${c}:${rangeLabel(vs)}`;
   const t = (name, v) => plainVerse(verseText(name, b, c, v));
   // 아직 못 받은 ESV는 빼고 복사
-  const text = S.versions.filter(name => verseText(name, b, c, vs[0]) !== null).map(name => `${label} (${name})\n` +
+  const text = S.versions.filter(name => verseText(name, b, c, vs[0]) !== null).map(name => `${label} (${nm(name)})\n` +
     (vs.length === 1 ? t(name, vs[0]) : vs.map(v => `${v} ${t(name, v)}`).join('\n'))).join('\n\n');
   try { await navigator.clipboard.writeText(text); }
   catch { // file:// 등 클립보드 API가 막힌 환경
@@ -743,14 +764,14 @@ function commHtml(name) {
   if (!db) { // 처음 볼 때 열고 다시 그림
     openComm(name).then(() => { closeUnusedComms(); renderComm(); if (S.v) syncComm(S.v); })
       .catch(err => flash(`${name}을(를) 열지 못했습니다: ${err.message}`));
-    return `<p class="progress empty small">${esc(name)} 여는 중…</p>`;
+    return `<p class="progress empty small">${esc(nm(name))} 여는 중…</p>`;
   }
   const { b, c } = S;
   // TEXT로 받으면 UTF-8 디코딩에서 RVF 바이트가 깨지므로 blob으로 받음
   const list = rows(db, 'select r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) where r.bi=? and r.ci=? order by r.fvi, r.topic_id', [b, c]);
   return list.length
     ? list.map(([f, t, d]) => `<article class="entry" data-f="${f}" data-t="${t}"><h3>${BOOKS[b - 1]} ${c}:${f === t ? f : f + '-' + t}</h3><div>${toHtml(d)}</div></article>`).join('')
-    : `<p class="empty small">${name}에는 ${BOOKS[b - 1]} ${c}장 주석이 없습니다.</p>`;
+    : `<p class="empty small">${esc(nm(name))}에는 ${BOOKS[b - 1]} ${c}장 주석이 없습니다.</p>`;
 }
 
 function renderComm() {
@@ -758,8 +779,8 @@ function renderComm() {
   const names = commNames();
   const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
   const drag = (kind, n) => `draggable="true" data-drag="${kind}:${n}" title="끌어서 순서 바꾸기"`;
-  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}" ${drag('comm', n)}`, n)).join('') +
-    dictNames().map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}" ${drag('dict', n)}`, n)).join('') +
+  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${n}" ${drag('comm', n)}`, esc(nm(n)))).join('') +
+    dictNames().map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${n}" ${drag('dict', n)}`, esc(nm(n)))).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'xref', 'data-xref', '교차 참조') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
@@ -773,7 +794,7 @@ function renderComm() {
   else if (S.tab === 'dict' && dictFiles[S.dict]) renderDict();
   else $('comm').innerHTML = commHtml(S.comm);
   if (S.split) {
-    $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${n}"`, n)).join('');
+    $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${n}"`, esc(nm(n)))).join('');
     $('comm2').innerHTML = commHtml(S.comm2);
   }
 }
@@ -980,11 +1001,18 @@ function wordPopAt(i, lemma = '') {
     return;
   }
   const { title, body } = e;
-  pop.innerHTML = `<div class="head"><span class="ref">${e.s}</span>${lexHtml(e.s, e.h)}</div>
-    <p class="title">${esc(title)}</p><p class="body">${esc(body.slice(0, 260))}${body.length > 260 ? '…' : ''}</p>
-    <button class="btn sm primary" data-open="${e.s}">사전에서 전체 보기</button>` +
-    (ids.length > 1 ? `<div class="alts"><p class="muted">다른 후보 (같은 철자)</p>${ids.map((s, k) => k === i ? '' :
-      `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</div>` : '');
+  // 먼저 요약으로 바로 보여주고, 사전 파일을 열면 전체 풀이(사전과 같은 줄바꿈·서식)로 바꿈
+  pop.innerHTML = `<div class="head"><span class="ref">${e.s}</span>${lexHtml(e.s, e.h)}
+    <button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button></div>` +
+    (ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
+      `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</details>` : '') +
+    `<div class="body" id="wordBody"><p class="title">${esc(title)}</p>${esc(body)}…</div>`;
+  pop.scrollTop = 0;
+  const name = S.dict;
+  openDict(name).then(() => {
+    const row = dictRow(e.s), box = $('wordBody');
+    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) box.innerHTML = linkStrong(toHtml(row[1]), e.s[0]);
+  }).catch(() => {});
 }
 
 // 각주 위첨자 → 작은 창 (마우스를 올리면 브라우저 말풍선으로도 보임)
@@ -1001,7 +1029,12 @@ $('wordPop').onclick = e => {
   const alt = e.target.closest('[data-alt]');
   if (alt) return wordPopAt(+alt.dataset.alt);
   const open = e.target.closest('[data-open]');
-  if (open) { closePops(); S.tab = 'dict'; D.entry = open.dataset.open; D.list = null; renderComm(); }
+  if (open) { closePops(); S.tab = 'dict'; D.entry = open.dataset.open; D.list = null; renderComm(); return; }
+  // 풀이 속 링크: 번호 참조는 팝업 안에서 그 항목으로, 성경 구절은 그 구절로
+  const st = e.target.closest('[data-strong]');
+  if (st) { e.preventDefault(); $('wordPop').dataset.ids = st.dataset.strong; return wordPopAt(0); }
+  const ref = e.target.closest('a[data-ref]');
+  if (ref) { e.preventDefault(); closePops(); const [b, c, v] = parseRef(ref.dataset.ref); if (b) go(b, c, v, true); }
 };
 
 /* ---------- 검색 (성경 / 주석) ---------- */
@@ -1111,9 +1144,9 @@ function renderHits() {
   const locals = allVersions().filter(n => bibles[n] && (!h.Q.strong || hasOriginal(n, h.Q.strong[0])));
   let html = `<div class="seg">
     ${locals.length ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 ${h.bible ? bibleList.length : '…'}</button>` : ''}
-    ${S.comm && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 · ${S.comm} ${commList ? commList.length : ''}</button>` : ''}</div>
+    ${S.comm && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 · ${esc(nm(S.comm))}${commList ? commList.length : ''}</button>` : ''}</div>
     <div class="search-opts">
-      ${h.scope === 'bible' && locals.length > 1 ? `<label>번역본 <select data-sopt="ver">${locals.map(n => `<option ${n === h.ver ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>` : ''}
+      ${h.scope === 'bible' && locals.length > 1 ? `<label>번역본 <select data-sopt="ver">${locals.map(n => `<option value="${esc(n)}" ${n === h.ver ? 'selected' : ''}>${esc(nm(n))}</option>`).join('')}</select></label>` : ''}
       <label>범위 <select data-sopt="range">${[['all', '전체'], ['ot', '구약'], ['nt', '신약'], ['book', `현재 책 (${BOOKS[S.b - 1]})`]]
         .map(([v, t]) => `<option value="${v}" ${v === h.range ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
     </div>`;
@@ -1127,7 +1160,7 @@ function renderHits() {
     const byBook = {};
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
-    html += `<p class="hits-sum">${qLabel(h.q)} ${bibleList.length}절 (구약 ${ot}, 신약 ${bibleList.length - ot})${h.Q.strong ? ` · ${esc(h.ver)}의 원어 기준, 같은 철자 단어가 함께 나올 수 있음` : ''}</p>` +
+    html += `<p class="hits-sum">${qLabel(h.q)} ${bibleList.length}절 (구약 ${ot}, 신약 ${bibleList.length - ot})${h.Q.strong ? ` · ${esc(nm(h.ver))}의 원어 기준, 같은 철자 단어가 함께 나올 수 있음` : ''}</p>` +
       (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
         .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
       (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
@@ -1282,9 +1315,11 @@ function moveTab(from, to, after) {
 const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + 'MB';
 function renderManage() {
   const groups = [['bible', '성경', allVersions().filter(n => bibles[n])], ['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length);
-  $('manageBox').innerHTML = '<b>불러온 파일</b><p class="help">지울 파일을 고르세요. 컴퓨터에 있는 원본 파일은 그대로 남고, 메모·책갈피도 지워지지 않습니다. 순서는 탭을 끌어서 바꿀 수 있습니다.</p>' +
+  $('manageBox').innerHTML = '<b>불러온 파일</b><p class="help">이름 칸을 고치면 화면에 보이는 이름이 바뀝니다(비우면 원래 이름). 지울 파일은 체크하세요. 원본 파일과 메모·책갈피는 그대로 남습니다. 순서는 탭을 끌어서 바꿉니다.</p>' +
     (groups.length ? groups.map(([k, t, ns]) => `<h4>${t}</h4>` + ns.map(n =>
-      `<label><input type="checkbox" value="${k}:${esc(n)}"> ${esc(n)}<small>${fileInfo[n] ? mb(fileInfo[n].size) : ''}</small></label>`).join('')).join('')
+      `<label><input type="checkbox" value="${k}:${esc(n)}" aria-label="${esc(nm(n))} 고르기">
+        <input class="rename" data-rename="${esc(n)}" value="${esc(nm(n))}" placeholder="${esc(n)}" title="보이는 이름 (원래 파일: ${esc(n)})" aria-label="${esc(n)} 이름">
+        <small>${fileInfo[n] ? mb(fileInfo[n].size) : ''}</small></label>`).join('')).join('')
       : '<p class="help">불러온 파일이 없습니다.</p>') +
     '<div class="actions"><button class="btn sm" id="manageClose">닫기</button><button class="btn sm primary" id="manageDel" disabled>선택한 파일 지우기</button></div>';
 }
@@ -1306,12 +1341,22 @@ async function removeModules(items) {
 }
 $('manageBtn').onclick = e => { e.stopPropagation(); renderManage(); openPop($('manageBox'), $('menuBtn')); };
 $('manageBox').onclick = e => e.stopPropagation();
-$('manageBox').onchange = () => { $('manageDel').disabled = !$('manageBox').querySelector('input:checked'); };
+$('manageBox').onchange = e => {
+  const r = e.target.dataset.rename;
+  if (r !== undefined) { // 보이는 이름 바꾸기 (원래 이름·기본 이름과 같거나 비우면 원래대로)
+    const v = e.target.value.trim();
+    if (!v || v === (DEFAULT_NAMES[r] || r)) delete displayNames[r]; else displayNames[r] = v;
+    prefs.set('names', displayNames); e.target.value = nm(r);
+    refreshBible(); renderComm();
+    return;
+  }
+  $('manageDel').disabled = !$('manageBox').querySelector('input[type=checkbox]:checked');
+};
 $('manageBox').addEventListener('click', async e => {
   if (e.target.id === 'manageClose') return closePops();
   if (e.target.id !== 'manageDel') return;
   const items = [...$('manageBox').querySelectorAll('input:checked')].map(i => i.value);
-  if (!items.length || !confirm(`${items.map(nameOf).join(', ')}\n\n${items.length}개 파일을 지울까요? 원본 파일은 그대로 남습니다.`)) return;
+  if (!items.length || !confirm(`${items.map(i => nm(nameOf(i))).join(', ')}\n\n${items.length}개 파일을 지울까요? 원본 파일은 그대로 남습니다.`)) return;
   await removeModules(items);
   flash(`${items.length}개 파일을 지웠습니다`);
   renderManage();
@@ -1440,7 +1485,7 @@ function showTip(e) {
   const to = m[4] ? START[+m[4]]?.[m[5] - 1] + (+m[6]) - 1 : from;
   if (!(from >= 0)) return;
   const L = bibles[ver], ids = Array.from({ length: Math.min(to - from + 1, 6) }, (_, i) => from + i);
-  tip.innerHTML = `<b>${refName(...REF[from])}${to > from ? '-' + REF[to][2] : ''} · ${ver}</b>` +
+  tip.innerHTML = `<b>${refName(...REF[from])}${to > from ? '-' + REF[to][2] : ''} · ${esc(nm(ver))}</b>` +
     ids.map(i => (ids.length > 1 ? `<span class="vn">${REF[i][2]}</span>` : '') + verseHtml(L[i] || '')).join(' ') + (to - from >= 6 ? ' …' : '');
   tip.classList.add('open');
   const r = a.getBoundingClientRect();
@@ -1455,10 +1500,18 @@ for (const id of ['comm', 'comm2']) {
 $('q').onkeydown = e => { if (e.key === 'Enter') search(e.target.value); if (e.key === 'Escape') { e.target.value = ''; search(''); e.target.blur(); } };
 document.onkeydown = e => {
   if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (sel.size) { sel.clear(); refreshBible(); } }
-  if (/INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
   if (e.key === 'ArrowLeft' && e.altKey) return back();
   if (e.key === 'ArrowLeft') step(-1);
   if (e.key === 'ArrowRight') step(1);
+  // ↓/↑: 다음·이전 절 (장 끝이면 다음 장 첫 절 / 앞 장 마지막 절). 주석·사전 칸 안에서는 원래대로 스크롤
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.target.closest?.('#comm, #comm2, .pop')) {
+    e.preventDefault();
+    const n = VERSES[S.b - 1][S.c - 1], v = S.v ? S.v + (e.key === 'ArrowDown' ? 1 : -1) : 1; // 고른 절이 없으면 1절부터
+    if (v >= 1 && v <= n) return select(v);
+    if (e.key === 'ArrowDown') { if (S.c < VERSES[S.b - 1].length || S.b < 66) { step(1); select(1); } }
+    else if (S.c > 1 || S.b > 1) { step(-1); select(VERSES[S.b - 1][S.c - 1]); }
+  }
   if (e.key === '/') { e.preventDefault(); $('q').focus(); }
   // 글자를 드래그해 고른 게 없을 때만 선택한 절을 복사
   if (e.key === 'c' && (e.metaKey || e.ctrlKey) && sel.size && !String(getSelection())) { e.preventDefault(); copySel(); }
@@ -1509,6 +1562,50 @@ document.querySelectorAll('.resizer').forEach(r => {
   r.ondblclick = () => { cols = { ...COLS }; applyCols(); prefs.set('cols', cols); };
 });
 applyCols();
+
+/* ---------- 내 세팅 1·2: 보는 구성(번역본·주석·2단·사전·글꼴·칸 너비 등)을 저장해 두고 바꾸기 ---------- */
+let presets = prefs.get('presets', [null, null]);
+const capture = () => ({
+  versions: [...S.versions], comm: S.comm, comm2: S.comm2, split: S.split, hideComm: !!S.hideComm, dict: S.dict,
+  tab: ['comm', 'dict', 'xref', 'saved'].includes(S.tab) ? S.tab : 'comm',
+  fs, serif, cols: { ...cols }, gloss, wordSide,
+});
+const presetSummary = p => [
+  p.versions.map(nm).join('+') || '성경 없음',
+  p.hideComm ? '주석 숨김' : [p.comm, p.split && p.comm2].filter(Boolean).map(nm).join('+') || '주석 없음',
+  `글자 ${p.fs}`, p.serif ? '명조' : '고딕',
+].join(' · ');
+function applyPreset(i) {
+  const p = presets[i];
+  if (!p) return flash(`세팅 ${i + 1}이 비어 있습니다. 내 세팅에서 먼저 저장하세요`);
+  const vs = p.versions.filter(n => allVersions().includes(n)); // 지금 없는 파일은 건너뜀
+  if (vs.length) S.versions = vs;
+  if (commFiles[p.comm]) S.comm = p.comm;
+  if (commFiles[p.comm2] && p.comm2 !== S.comm) S.comm2 = p.comm2;
+  if (dictFiles[p.dict]) S.dict = p.dict;
+  S.split = p.split && !!commFiles[S.comm2]; S.hideComm = p.hideComm;
+  S.tab = p.tab === 'dict' && !S.dict ? 'comm' : p.tab;
+  fs = p.fs; serif = p.serif; applyFont();
+  cols = { ...COLS, ...p.cols }; applyCols(); prefs.set('cols', cols);
+  gloss = p.gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss);
+  wordSide = p.wordSide; prefs.set('wordSide', wordSide);
+  sortVersions(); save(); refreshBible(); renderComm(); if (S.v) syncComm(S.v);
+  flash(`세팅 ${i + 1}로 바꿨습니다`);
+}
+function renderPresets() {
+  $('presetBox').innerHTML = '<b>내 세팅</b><p class="help">지금 보는 구성(번역본, 주석, 2단 보기, 사전, 글꼴·크기, 칸 너비)을 저장해 두고 한 번에 바꿉니다. 단축키 Alt+1, Alt+2</p>' +
+    [0, 1].map(i => `<div class="slot"><div><b>세팅 ${i + 1}</b><small>${presets[i] ? esc(presetSummary(presets[i])) : '비어 있음'}</small></div>
+      <button class="btn sm" data-psave="${i}">지금 상태 저장</button>
+      <button class="btn sm primary" data-papply="${i}" ${presets[i] ? '' : 'disabled'}>불러오기</button></div>`).join('');
+}
+$('presetBtn').onclick = e => { e.stopPropagation(); renderPresets(); openPop($('presetBox'), $('presetBtn')); };
+$('presetBox').onclick = e => {
+  e.stopPropagation();
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.psave) { presets[+t.dataset.psave] = capture(); prefs.set('presets', presets); renderPresets(); flash(`세팅 ${+t.dataset.psave + 1}에 저장했습니다`); }
+  if (t.dataset.papply) { closePops(); applyPreset(+t.dataset.papply); }
+};
+addEventListener('keydown', e => { if (e.altKey && (e.key === '1' || e.key === '2')) { e.preventDefault(); applyPreset(+e.key - 1); } });
 
 Promise.all([
   idb('marks', 'readonly', s => s.getAll()).then(list => list.forEach(m => marks.set(m.id, m))).catch(() => {}),
