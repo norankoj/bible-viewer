@@ -381,7 +381,8 @@ function idb(store, mode, fn) {
   });
 }
 
-const MODULE = /\.(ont|ot|nt|twm)$/i;
+// theWord(.ont .ot .nt .twm), Bible Analyzer(.bdb 성경, .dct 사전), MySword(.bbl.mybible 성경)
+const MODULE = /\.(ont|ot|nt|twm|bdb|mybible|dct)$/i;
 // 불러온 파일: 이름 → { key: 저장소 열쇠(원래 파일 이름), size }  (낱개 지우기에 씀)
 const fileInfo = {};
 // 화면에 보이는 이름: 파일 관리에서 바꾼 이름 → 잘 알려진 모듈의 기본 이름 → 파일 이름.
@@ -390,12 +391,15 @@ const DEFAULT_NAMES = { 메튜: '매튜헨리', 호크마주석: '호크마', Ho
 let displayNames = prefs.get('names', {});
 const nm = n => displayNames[n] || DEFAULT_NAMES[n] || n;
 async function addFile(f) {
-  const name = f.name.replace(/(\.(cmt|gbk|dct))?\.(twm|ont|ot|nt)$/i, '');
+  const name = f.name.replace(/(\.(cmt|gbk|dct|bbl))?\.(twm|ont|ot|nt|bdb|mybible|dct)$/i, '');
+  if (/\.mybible$/i.test(f.name) && !/\.bbl\.mybible$/i.test(f.name)) throw new Error('MySword는 성경(.bbl.mybible)만 읽을 수 있습니다');
   fileInfo[name] = { key: f.name, size: f.size };
   const kind = f.name.match(/\.(ont|ot|nt)$/i)?.[1].toLowerCase();
   if (kind) { bibles[name] = parseOnt(new Uint8Array(await f.arrayBuffer()), kind); delete plain[name]; return; }
+  if (/\.(bdb|mybible)$/i.test(f.name)) { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
   // 주석·사전은 여기서 열지 않음 (필요할 때 openComm/openDict). 종류는 이름으로, 모르면 열어서 표를 봄
-  let type = /\.cmt\.twm$/i.test(f.name) ? 'comm' : /\.(gbk|dct)\.twm$/i.test(f.name) ? 'dict' : '';
+  let type = /\.cmt\.twm$/i.test(f.name) ? 'comm' : /\.(gbk|dct)\.twm$|\.dct$/i.test(f.name) ? 'dict' : '';
+  dictKind[name] = /\.dct$/i.test(f.name) ? 'dct' : 'twm'; // Bible Analyzer 사전은 표·서식이 다름
   if (!type) {
     const db = await sqlOpen(f), tables = rows(db, "select name from sqlite_master where type='table'", []).flat();
     db.close();
@@ -410,6 +414,20 @@ async function addFile(f) {
     dictSize[name] = f.size; // 크기가 바뀌면(다른 파일) 저장된 요약을 새로 만듦
     for (const c of [dictText, dictLite, dictById, finders]) delete c[name];
   }
+}
+
+// Bible Analyzer(.bdb)·MySword(.bbl.mybible) 성경: 책·장·절 표를 읽어 theWord와 같은 31102절 배열로
+const dictKind = {};
+async function readSqlBible(f) {
+  const db = await sqlOpen(f), ba = /\.bdb$/i.test(f.name);
+  try {
+    const out = new Array(31102).fill('');
+    for (const [b, c, v, t] of rows(db, ba ? 'select book, chapter, verse, btext from Bible' : 'select Book, Chapter, Verse, Scripture from Bible', [])) {
+      if (!(VERSES[b - 1]?.[c - 1] >= v) || v < 1) continue; // 절 구분에 없는 절(요삼 1:15 등)은 건너뜀
+      out[START[b][c - 1] + v - 1] = ba ? bdbText(t) : (t || '');
+    }
+    return out;
+  } finally { db.close(); }
 }
 
 /* ---------- 주석·사전은 필요할 때만 열기 ----------
@@ -566,7 +584,9 @@ const dictNames = () => ordered('dict', Object.keys(dictFiles));
 const sortVersions = () => { S.versions = allVersions().filter(n => S.versions.includes(n)); };
 
 // 히브리어처럼 오른쪽에서 왼쪽으로 쓰는 본문
-const rtlAttr = name => bibles[name]?.rtl ? ' dir="rtl" class="heb"' : '';
+// 절마다 판단: BHSSBL처럼 구약은 히브리어(오른쪽→왼쪽), 신약은 헬라어인 성경도 있어서
+const isHebLine = (name, v) => /[֐-׿]/.test(bibles[name]?.[START[S.b][S.c - 1] + v - 1] || '');
+const rtlAttr = (name, v) => isHebLine(name, v) ? ' dir="rtl" class="heb"' : '';
 
 function cellHtml(name, v) {
   if (name !== ESV) return verseHtml(verseText(name, S.b, S.c, v));
@@ -590,13 +610,13 @@ function renderBible() {
   if (vs.length === 1) {
     $('bible').innerHTML = title + ids.map(v => {
       const m = verseMark(v);
-      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${bibles[vs[0]]?.rtl ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
+      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${isHebLine(vs[0], v) ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
     }).join('') + notice;
   } else {
     $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}</span>`).join('')}` +
       ids.map(v => {
         const m = verseMark(v);
-        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x)}>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
+        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)}>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
       }).join('') + '</div>' + notice;
   }
 }
@@ -818,7 +838,7 @@ function liteOf(name) {
     if (!Array.isArray(lite)) {
       const wasOpen = !!dicts[name];
       await openDict(name);
-      lite = (await indexDict(name, () => {})).map(e => { const { title, body } = dictParts(e.text); return { s: e.s, h: e.h, title, body: body.slice(0, 300) }; });
+      lite = (await indexDict(name, () => {})).map(e => { const { title, body } = e.title != null ? e : dictParts(e.text); return { s: e.s, h: e.h, title, body: body.slice(0, 300) }; });
       idb('cache', 'readwrite', s => s.put(lite, key)).catch(() => {});
       delete dictText[name]; // 전체 글자 색인은 한글 검색 때 다시 만듦 (메모리 절약)
       if (!wasOpen && !(S.tab === 'dict' && D.entry)) { dicts[name]?.close(); delete dicts[name]; } // 요약만 만들려고 연 거면 닫음
@@ -826,7 +846,12 @@ function liteOf(name) {
     return dictLite[name] = lite;
   })().finally(() => delete liteLoading[name]);
 }
-const dictRow = subject => rows(dicts[S.dict], 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
+// 사전 종류별: 항목 하나 읽기, 풀이 HTML (theWord .twm = RTF, Bible Analyzer .dct = HTML)
+const isDct = name => dictKind[name] === 'dct';
+const dictRow = subject => rows(dicts[S.dict], isDct(S.dict)
+  ? 'select scode, dtext from Lexicon where scode = ?'
+  : 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
+const entryHtml = (name, s, data) => isDct(name) ? dctHtml(data) : linkStrong(toHtml(data), s[0]);
 // 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
 // (본문은 "אָב(1, 아브)  아버지 father  아브(명남)는…" 처럼 큰 공백으로 나뉨 → 제목은 앞의 두 덩어리, 나머지는 풀이)
 function dictParts(text) {
@@ -858,7 +883,7 @@ function renderDict(scrollTo) {
   if (D.entry) {
     const row = dictRow(D.entry), same = D.shown === D.entry;
     box.innerHTML = form + '<button class="linkish" data-dict-back>‹ 목록</button>' + (row
-      ? `<article class="entry"><h3>${esc(row[0])}</h3><div>${linkStrong(toHtml(row[1]), row[0][0])}</div></article>`
+      ? `<article class="entry"><h3>${esc(row[0])}</h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
       : `<p class="empty small">${esc(D.entry)} 항목이 없습니다.</p>`);
     box.scrollTop = same ? keep : 0; // 같은 항목을 다시 그릴 때(장 이동 등)는 읽던 위치 유지
     D.shown = D.entry;
@@ -873,7 +898,7 @@ function renderDict(scrollTo) {
     items = D.list.map(e => {
       const i = re ? e.text.indexOf(D.q) : -1;
       const snip = i > 0 ? ' · ' + (i > 40 ? '…' : '') + e.text.slice(Math.max(0, i - 40), i + D.q.length + 60) + '…' : '';
-      return { s: e.s, h: e.h, title: dictTitle(e.text), snip: re ? esc(snip).replace(re, m => `<mark>${m}</mark>`) : esc(snip) };
+      return { s: e.s, h: e.h, title: e.title ?? dictTitle(e.text), snip: re ? esc(snip).replace(re, m => `<mark>${m}</mark>`) : esc(snip) };
     });
     head = `<p class="hits-sum">“${esc(D.q)}” ${items.length}개 항목 <button class="linkish" data-dict-clear>전체 목록 보기</button></p>`;
   } else {
@@ -895,9 +920,15 @@ function renderDict(scrollTo) {
   }
 }
 
-const indexDict = (name, progress) => indexDb(dictText, name, dicts[name],
-  'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id order by t.rel_order',
-  progress, ([s], text, html) => ({ s, text, h: headword(html) })); // h = 원어 표제어 (예: אֱלֹהִים)
+// h = 원어 표제어 (예: אֱלֹהִים). Bible Analyzer 사전은 "원어^이름<br>뜻<br>풀이…" 라 앞의 두 줄을 제목으로
+const stripTags = s => s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+const indexDict = (name, progress) => isDct(name)
+  ? indexDb(dictText, name, dicts[name], 'select scode, dtext from Lexicon order by id', progress, ([s, raw], text) => {
+      const [h, ...rest] = (raw || '').split('^'), lines = rest.join('^').split(/<br\s*\/?>/i).map(stripTags).filter(Boolean);
+      return { s, text, h: h.trim(), title: lines.slice(0, 2).join(' '), body: lines.slice(2).join(' ') };
+    }, dctHtml)
+  : indexDb(dictText, name, dicts[name], 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id order by t.rel_order',
+      progress, ([s], text, html) => ({ s, text, h: headword(html) }));
 
 // 색인이 끝난 사전: 번호 → 항목, 원어 기본형 → 번호 후보 (히브리어/헬라어 따로)
 const dictById = {}, finders = {};
@@ -1011,7 +1042,7 @@ function wordPopAt(i, lemma = '') {
   const name = S.dict;
   openDict(name).then(() => {
     const row = dictRow(e.s), box = $('wordBody');
-    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = linkStrong(toHtml(row[1]), e.s[0]); placePop(pop); }
+    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = entryHtml(name, e.s, row[1]); placePop(pop); }
   }).catch(() => {});
 }
 
@@ -1104,14 +1135,14 @@ const htmlText = h => h.replace(/<br>/g, ' ').replace(/<[^>]+>/g, '')
   .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
 
 // 주석·사전 전체를 글자로 풀어 둠 (처음 한 번만, 수 초 걸림). sql의 마지막 열이 본문
-async function indexDb(cache, name, db, sql, progress, entry) {
+async function indexDb(cache, name, db, sql, progress, entry, render = toHtml) {
   if (cache[name]) return cache[name];
   const key = sql + name;
   return indexing[key] ||= (async () => {
     const total = rows(db, `select count(*) from (${sql})`, [])[0][0], st = db.prepare(sql), out = [];
     try {
       while (st.step()) {
-        const row = st.get(), html = toHtml(row.at(-1));
+        const row = st.get(), html = render(row.at(-1));
         out.push(entry(row, htmlText(html), html));
         if (out.length % 400 === 0) { progress(out.length / total); await new Promise(r => setTimeout(r)); }
       }

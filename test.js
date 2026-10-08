@@ -28,6 +28,28 @@ assert.strictEqual(plainVerse('본문에 표시가 없으면 (a 그대로 둠)')
 assert.match(verseHtml('In the beginning<RF>Or, at first<Rf> God'), /beginning<sup class="fn"[^>]*data-fn="Or, at first"[^>]*>1<\/sup> God/);
 assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In the beginning God');
 
+// 다른 앱 형식: Bible Analyzer 성경 HTML(ESV 각주) → theWord 태그, Bible Analyzer 사전 HTML
+{
+  const { bdbText, dctHtml } = require('./decode.js');
+  const esv = 'If you do well, will you not be accepted?<sup>①</sup> Its desire is for<sup>②</sup> you.”<br>→ <sup>①</sup>Hebrew <i>will there not be a lifting up</i> [of your face]? <sup>②</sup>Or <i>to</i>, or <i>toward</i> <a name=\'B:10 3:16\'>3:16';
+  assert.strictEqual(bdbText(esv), 'If you do well, will you not be accepted?<RF>Hebrew will there not be a lifting up [of your face]?<Rf> Its desire is for<RF>Or to, or toward 3:16<Rf> you.”');
+  assert.strictEqual(plainVerse(bdbText(esv)), 'If you do well, will you not be accepted? Its desire is for you.”');
+  assert.strictEqual(bdbText('[A Psalm of David.]<br>The LORD is my <i>shepherd</i>'), '[A Psalm of David.] The LORD is my <FI>shepherd<Fi>');
+  const h = dctHtml("ἀγάπη^<font color='#328AE1'>아가페</font><br><b>1.</b> 아가파오(<num>G25</num>)에서 <script>x</script>");
+  assert.match(h, /^<span class="grk">ἀγάπη<\/span> 아가페<br><b>1\.<\/b> 아가파오\(<a href="#" data-strong="G25">G25<\/a>\)에서 x$/);
+  assert.match(dctHtml('אֱלֹהִים^엘로아흐(H433, 하나님)'), /엘로아흐\(<a href="#" data-strong="H433">H433<\/a>, 하나님\)/); // 글자로 적힌 번호도 링크
+}
+
+// HebGrkKo 사전(선택: 네 번째 인자 .dct)과 bhs5t 기본형 연결
+if (process.argv[5]) {
+  const { lemmaFinder } = require('./decode.js');
+  const d = new DatabaseSync(process.argv[5], { readOnly: true });
+  const entries = d.prepare("select scode s, dtext from Lexicon where scode like 'H%'").all().map(r => ({ s: r.s, h: r.dtext.split('^')[0].trim() }));
+  const find = lemmaFinder(entries);
+  for (const [lemma, strong] of [['ברא', 'H1254'], ['אֱלֹהִים', 'H430'], ['אַהֲרֹן', 'H175'], ['יַעֲקֹב', 'H3290']]) assert(find(lemma).includes(strong), `${lemma} → ${strong}: ${find(lemma)}`);
+  console.log('dct ok');
+}
+
 // 검색어
 {
   const { parseQuery } = require('./decode.js');

@@ -368,6 +368,50 @@ function parseQuery(q) {
   };
 }
 
+/* ---------- 다른 앱 형식 ----------
+   Bible Analyzer 성경(.bdb): Bible(book, chapter, verse, btext), 본문은 HTML.
+   ESV처럼 "본문<sup>①</sup>…<br>→ <sup>①</sup>각주" 형식의 각주는 theWord 각주(<RF>…<Rf>)로 바꿔 같은 팝업을 씀 */
+function bdbText(t) {
+  t = t || '';
+  const at = t.search(/<br>\s*→/);
+  const notes = {};
+  if (at >= 0) {
+    for (const m of t.slice(at).matchAll(/<sup>([^<]+)<\/sup>([\s\S]*?)(?=<sup>|$)/g))
+      notes[m[1]] = m[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    t = t.slice(0, at);
+  }
+  return t
+    .replace(/<sup>([^<]+)<\/sup>/g, (all, k) => notes[k] ? `<RF>${notes[k]}<Rf>` : '')
+    .replace(/<i>/gi, '<FI>').replace(/<\/i>/gi, '<Fi>')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<(?!\/?(?:FI|Fi|RF|Rf)>)[^>]*>/g, '') // 그 밖의 HTML 태그는 지움
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// Bible Analyzer 사전(.dct): Lexicon(scode, dtext), dtext = "원어^HTML 풀이". 허용한 서식만 남기고 <num>G25</num>은 번호 링크로
+function dctHtml(dtext) {
+  const [head, ...rest] = (dtext || '').split('^');
+  const body = rest.join('^');
+  const lang = /[֐-׿]/.test(head) ? 'heb' : 'grk';
+  let out = '', inNum = false;
+  for (const part of body.split(/(<[^>]*>)/)) {
+    if (!part.startsWith('<')) {
+      const t = esc(part.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+      // <num>G25</num> 이든 글자로 적힌 "(H433, …)" 이든 번호는 누르면 그 항목으로
+      out += inNum ? t : t.replace(/\b([HG])(\d{1,5})(?!\d)/g, '<a href="#" data-strong="$1$2">$1$2</a>');
+      continue;
+    }
+    const tag = part.toLowerCase().match(/^<(\/?)(\w+)/);
+    if (!tag) continue;
+    if (tag[2] === 'br') out += '<br>';
+    else if (tag[2] === 'b' || tag[2] === 'i') out += `<${tag[1]}${tag[2]}>`;
+    else if (tag[2] === 'num') { inNum = !tag[1]; out += inNum ? '<a href="#" class="num">' : '</a>'; } // 아래에서 data-strong 채움
+  }
+  out = out.replace(/<a href="#" class="num">([HG]\d+)<\/a>/g, '<a href="#" data-strong="$1">$1</a>');
+  return `<span class="${lang}"${lang === 'heb' ? ' dir="rtl"' : ''}>${esc(head.trim())}</span> ${out}`;
+}
+
 // 교차 참조 한 줄("lnb nmc+1 …", 36진수) → [[시작 줄 번호, 범위 길이], …]
 const parseXrefs = line => (line || '').split(' ').filter(Boolean).map(x => { const [s, n] = x.split('+'); return [parseInt(s, 36), n ? parseInt(n, 36) : 0]; });
 
@@ -386,4 +430,4 @@ function parseEsv(t) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery };
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, parseEsv, EN, esvQuery, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml };
