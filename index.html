@@ -179,6 +179,9 @@
   .hit { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 8px; margin: 0 -8px; border-radius: 6px; font: calc(var(--fs) - 2px)/1.7 var(--read); }
   .hit:hover { background: var(--surface); }
   .hit .ref { font: 600 12px var(--sans); color: var(--accent); margin-right: 8px; }
+  .hit .o, .hit .k { display: block; } .hit .o.heb { font-size: 1.2em; } .hit .k { color: var(--muted); margin-top: 2px; }
+  .hit .tr, .hit .gl, .hit .fn { display: none; }
+  .hit .sh { color: var(--accent); background: var(--accent-soft); font-weight: 700; border-radius: 3px; padding: 0 2px; }
   .hit .sw { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 8px; }
   .note-text { white-space: pre-wrap; font-family: var(--sans); font-size: 14px; }
   .saved h4 { font: 600 13px var(--sans); color: var(--muted); margin: 28px 0 6px; }
@@ -857,7 +860,7 @@ function renderDict(scrollTo) {
   if (D.entry) {
     const row = dictRow(D.entry), same = D.shown === D.entry;
     box.innerHTML = form + '<button class="linkish" data-dict-back>‹ 목록</button>' + (row
-      ? `<article class="entry"><h3>${esc(row[0])}</h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
+      ? `<article class="entry"><h3>${esc(row[0])} <button class="btn sm" data-search-strong="${esc(row[0])}" title="이 번호가 나오는 성경 구절 찾기">성경에서 검색</button></h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
       : `<p class="empty small">${esc(D.entry)} 항목이 없습니다.</p>`);
     box.scrollTop = same ? keep : 0; // 같은 항목을 다시 그릴 때(장 이동 등)는 읽던 위치 유지
     D.shown = D.entry;
@@ -1008,7 +1011,7 @@ function wordPopAt(i, lemma = '') {
   const { title, body } = e;
   // 먼저 요약으로 바로 보여주고, 사전 파일을 열면 전체 풀이(사전과 같은 줄바꿈·서식)로 바꿈
   pop.innerHTML = `<div class="head"><span class="ref">${e.s}</span>${lexHtml(e.s, e.h)}
-    <button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button></div>` +
+    <button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button><button class="btn sm" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 찾기">성경에서 검색</button></div>` +
     (ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
       `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</details>` : '') +
     `<div class="body" id="wordBody"><p class="title">${esc(title)}</p>${esc(body)}…</div>`;
@@ -1033,6 +1036,8 @@ $('wordPop').onclick = e => {
   e.stopPropagation();
   const alt = e.target.closest('[data-alt]');
   if (alt) return wordPopAt(+alt.dataset.alt);
+  const ss = e.target.closest('[data-search-strong]');
+  if (ss) { closePops(); return searchStrong(ss.dataset.searchStrong); }
   const open = e.target.closest('[data-open]');
   if (open) { closePops(); S.tab = 'dict'; D.entry = open.dataset.open; D.list = null; renderComm(); return; }
   // 풀이 속 링크: 번호 참조는 팝업 안에서 그 항목으로, 성경 구절은 그 구절로
@@ -1049,6 +1054,7 @@ const reEsc = q => new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
 function search(q) {
   q = q.trim();
   if (!q) { hits = null; S.tab = 'comm'; return renderComm(); }
+  if (S.hideComm) { S.hideComm = false; save(); renderBible(); } // 결과가 나오는 칸을 숨겨 뒀으면 다시 열기
   const Q = parseQuery(q), prev = hits;
   hits = {
     q, Q, bible: null, comm: null, book: 0,
@@ -1061,6 +1067,9 @@ function search(q) {
   S.tab = 'search'; renderComm();
   runBibleSearch();
 }
+
+// 사전·단어 팝업의 "성경에서 검색": 위 검색창에 번호를 넣고 검색한 것과 같게
+const searchStrong = s => { $('q').value = s; search(s); };
 
 // 검색어 표시: 이미 "따옴표"가 있으면 그대로, 아니면 “ ”로 감쌈
 const qLabel = q => /"/.test(q) ? esc(q) : `“${esc(q)}”`;
@@ -1144,6 +1153,16 @@ async function searchComm() {
   if (S.tab === 'search') renderHits();
 }
 
+// 원어 번호 검색 결과의 원어 본문: 그 번호 단어만 강조하고, 누르면 사전이 아니라 그 절로 가도록 단어 속성은 뺌
+function hitOrigHtml(ver, i, num) {
+  const find = S.dict && dictLite[S.dict] ? finderOf(S.dict, num[0]) : null;
+  const html = verseHtml((needsTag(ver) ? taggedLine(ver, i) : bibles[ver][i]) || '')
+    .replace(/<span class="w"( data-strong="([^"]*)")?( data-lemma="([^"]*)")?[^>]*>/g, (_, a, ids, b, lemma) =>
+      (ids ? ids.split(',').includes(num) : lemma && find?.(lemma).includes(num)) ? '<span class="sh">' : '<span>');
+  return `<span class="o${isHeb(ver, i) ? ' heb" dir="rtl' : ''}">${html}</span>`;
+}
+const isHeb = (ver, i) => /[֐-׿]/.test(bibles[ver][i] || '');
+
 function renderHits() {
   const h = hits, mk = s => h.Q.re && !h.Q.strong ? esc(s).replace(h.Q.re, m => `<mark>${m}</mark>`) : esc(s);
   const inR = b => inRange(b, h.range);
@@ -1162,10 +1181,14 @@ function renderHits() {
     if (h.note) { $('comm').innerHTML = html + `<p class="hits-sum">${h.note}</p>`; return; }
     if (!locals.length) { $('comm').innerHTML = html + '<p class="hits-sum">성경 파일(.ont)을 추가하면 성경에서 찾을 수 있습니다.</p>'; return; }
     if (!h.bible) { $('comm').innerHTML = html + `<p class="progress">${qLabel(h.q)} 찾는 중…</p>`; return; }
-    // 원어 성경(BHS)에서 찾았으면 본문은 읽기 쉬운 번역본으로
+    // 원어 번호 검색: 원어 본문(찾는 단어 강조) + 아래에 개역개정(없으면 첫 번역본). 일반 검색: 고른 번역본
     const origOnly = n => bibles[n].rtl || needsTag(n);
-    const show = origOnly(h.ver) ? (allVersions().find(n => bibles[n] && !origOnly(n)) || h.ver) : h.ver;
-    plain[show] ||= bibles[show].map(plainVerse);
+    const kor = allVersions().find(n => bibles[n] && /개역개정/.test(n + nm(n))) || allVersions().find(n => bibles[n] && !origOnly(n));
+    const show = h.Q.strong ? kor : h.ver;
+    if (show) plain[show] ||= bibles[show].map(plainVerse);
+    const line = i => h.Q.strong
+      ? hitOrigHtml(h.ver, i, h.Q.strong) + (show && show !== h.ver ? `<span class="k">${esc(plain[show][i])}</span>` : '')
+      : mk(plain[show][i]);
     const byBook = {};
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
@@ -1173,7 +1196,7 @@ function renderHits() {
       (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
         .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
       (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
-      shown.slice(0, 500).map(i => `<button class="hit" data-i="${i}"><span class="ref">${refName(...REF[i])}</span>${mk(plain[show][i])}</button>`).join('') +
+      shown.slice(0, 500).map(i => `<button class="hit" data-i="${i}"><span class="ref">${refName(...REF[i])}</span>${line(i)}</button>`).join('') +
       (!bibleList.length ? '<p class="muted">여러 단어는 모두 들어 있는 절을, "따옴표"는 붙은 그대로, H430·G26은 원어 번호로 찾습니다.</p>' : '');
   } else if (!S.comm) {
     html += '<p class="hits-sum">주석 파일을 추가하면 주석에서도 찾을 수 있습니다.</p>';
@@ -1437,6 +1460,8 @@ $('comm').onsubmit = e => { if (e.target.id === 'dictForm') { e.preventDefault()
 $('comm').onclick = e => {
   const sc = e.target.closest('[data-scope]');
   if (sc) { hits.scope = sc.dataset.scope; return renderHits(); }
+  const ss = e.target.closest('[data-search-strong]');
+  if (ss) return searchStrong(ss.dataset.searchStrong);
   const sb = e.target.closest('[data-sbook]');
   if (sb) { hits.book = +sb.dataset.sbook === hits.book ? 0 : +sb.dataset.sbook; renderHits(); return $('comm').scrollTop = 0; }
   const dg = e.target.closest('[data-dict-go], [data-strong]');
