@@ -15,6 +15,13 @@ self.addEventListener('activate', e => {
 // 인터넷이 되면 항상 새 파일(업데이트가 바로 반영), 안 되면 보관본
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
+  // 고른 웹 글꼴(Google Fonts)은 한 번 받으면 보관해서 인터넷 없이도
+  if (e.request.method === 'GET' && /^fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) {
+    e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(r => {
+      const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r;
+    })));
+    return;
+  }
   if (e.request.method !== 'GET' || u.origin !== location.origin) return;
   if (!/(\/|\.(html|js|css|png|webmanifest))$/.test(u.pathname)) return; // 화면 파일만
   e.respondWith(

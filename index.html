@@ -46,7 +46,8 @@
   .btn.sm.icon { width: 28px; padding: 0; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
   .btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
-  .ref-btn { font-weight: 600; font-size: 15px; border-color: transparent; }
+  .ref-btn { font-weight: 600; font-size: 15px; }
+  .nav { display: flex; align-items: center; gap: 4px; flex: none; } /* ‹ 책 장 › 은 줄이 바뀌어도 함께 */
   .search { flex: 0 1 280px; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); margin-left: auto; }
   .search:focus, .btn:focus-visible, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .status { color: var(--muted); font-size: 12px; white-space: nowrap; }
@@ -247,13 +248,16 @@
 <div class="bar">
   <button class="btn" id="back" title="이전 위치로 (Alt+←)" disabled>뒤로</button>
   <button class="btn" id="fwd" title="다시 앞으로 (Alt+→)" disabled>앞으로</button>
-  <button class="btn icon" id="prev" title="이전 장 (←)" aria-label="이전 장">‹</button>
-  <button class="btn ref-btn" id="refBtn" aria-haspopup="dialog">요한복음 3장</button>
-  <button class="btn icon" id="next" title="다음 장 (→)" aria-label="다음 장">›</button>
+  <span class="nav">
+    <button class="btn icon" id="prev" title="이전 장 (←)" aria-label="이전 장">‹</button>
+    <button class="btn ref-btn" id="bookBtn" aria-haspopup="dialog" title="성경 책 고르기 (고르면 바로 장 고르기)">요한복음</button>
+    <button class="btn ref-btn" id="chapBtn" aria-haspopup="dialog" title="이 책의 장 고르기">3장</button>
+    <button class="btn icon" id="next" title="다음 장 (→)" aria-label="다음 장">›</button>
+  </span>
   <input class="search" id="q" type="search" placeholder="검색 ( / )" aria-label="성경·주석 검색" title="여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호">
   <button class="btn icon" id="smaller" title="글자 작게" aria-label="글자 작게" style="font-size:13px">가</button>
   <button class="btn icon" id="bigger" title="글자 크게" aria-label="글자 크게" style="font-size:17px">가</button>
-  <button class="btn" id="fontBtn" title="본문 글꼴 바꾸기">명조</button>
+  <select class="btn" id="fontSel" title="본문 글꼴" aria-label="본문 글꼴"></select>
   <button class="btn" id="presetBtn" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)">내 세팅</button>
   <button class="btn" id="menuBtn" aria-haspopup="menu">파일</button>
   <span class="status" id="status" role="status"></span>
@@ -478,7 +482,7 @@ function go(b, c, v, jump) {
   save();
   const recent = prefs.get('recent', []).filter(r => r.b !== b || r.c !== c);
   prefs.set('recent', [{ b, c }, ...recent].slice(0, 20));
-  $('refBtn').textContent = `${BOOKS[b - 1]} ${c}장`;
+  $('bookBtn').textContent = BOOKS[b - 1]; $('chapBtn').textContent = `${c}장`;
   renderBible(); renderComm();
   $('bible').scrollTop = 0;
   if (S.v) select(S.v); else { $('comm').scrollTop = $('comm2').scrollTop = 0; renderSelbar(); }
@@ -1294,7 +1298,9 @@ function pickerChapters(b) {
 }
 
 /* ---------- 이벤트 ---------- */
-$('refBtn').onclick = e => { e.stopPropagation(); pickerBooks(); openPop($('picker'), $('refBtn')); };
+// 책 버튼: 책을 고르면 바로 그 책의 장 목록으로. 장 버튼: 지금 책의 장 목록을 바로
+$('bookBtn').onclick = e => { e.stopPropagation(); pickerBooks(); openPop($('picker'), $('bookBtn')); };
+$('chapBtn').onclick = e => { e.stopPropagation(); pickerChapters(S.b); openPop($('picker'), $('chapBtn')); };
 $('picker').onclick = e => {
   e.stopPropagation();
   const t = e.target.closest('button'); if (!t) return;
@@ -1572,16 +1578,33 @@ document.onkeydown = e => {
 };
 
 // 글자 크기·글꼴
-let fs = prefs.get('fs', 17), serif = prefs.get('serif', true);
-const applyFont = () => {
-  document.documentElement.style.setProperty('--fs', fs + 'px');
-  document.documentElement.style.setProperty('--read', serif ? 'var(--serif)' : 'var(--sans)');
-  $('fontBtn').textContent = serif ? '명조' : '고딕';
-  prefs.set('fs', fs); prefs.set('serif', serif);
+// 본문 글꼴: 이름 → [보이는 이름, Google Fonts 이름(웹 글꼴이면), 대신 쓸 기본 글꼴]
+// 웹 글꼴은 고를 때만 받음 (설치형 앱은 한 번 받으면 인터넷 없이도 씀)
+const FONTS = {
+  myeongjo: ['기본 명조'], gothic: ['프리텐다드'],
+  noto: ['본명조', 'Noto Serif KR:wght@400;700', 'serif'],
+  nanumM: ['나눔명조', 'Nanum Myeongjo:wght@400;700', 'serif'],
+  gowunB: ['고운바탕', 'Gowun Batang:wght@400;700', 'serif'],
+  nanumG: ['나눔고딕', 'Nanum Gothic:wght@400;700', 'sans'],
+  gowunD: ['고운돋움', 'Gowun Dodum', 'sans'],
+  plex: ['IBM 플렉스', 'IBM Plex Sans KR:wght@400;600', 'sans'],
 };
+let fs = prefs.get('fs', 17), font = prefs.get('font', prefs.get('serif', true) ? 'myeongjo' : 'gothic');
+$('fontSel').innerHTML = Object.entries(FONTS).map(([k, [label]]) => `<option value="${k}">${label}</option>`).join('');
+const applyFont = () => {
+  if (!FONTS[font]) font = 'myeongjo';
+  const [, web, base] = FONTS[font], family = web?.split(':')[0];
+  if (web && !$('font-' + font)) document.head.append(Object.assign(document.createElement('link'),
+    { id: 'font-' + font, rel: 'stylesheet', href: `https://fonts.googleapis.com/css2?family=${web.replace(/ /g, '+')}&display=swap` }));
+  document.documentElement.style.setProperty('--fs', fs + 'px');
+  document.documentElement.style.setProperty('--read', web ? `"${family}", var(--${base})` : font === 'gothic' ? 'var(--sans)' : 'var(--serif)');
+  $('fontSel').value = font;
+  prefs.set('fs', fs); prefs.set('font', font);
+};
+const fontName = p => FONTS[p.font ?? (p.serif ? 'myeongjo' : 'gothic')]?.[0] || '';
 $('smaller').onclick = () => { fs = Math.max(13, fs - 1); applyFont(); };
 $('bigger').onclick = () => { fs = Math.min(26, fs + 1); applyFont(); };
-$('fontBtn').onclick = () => { serif = !serif; applyFont(); };
+$('fontSel').onchange = e => { font = e.target.value; applyFont(); e.target.blur(); };
 applyFont();
 checkNudge();
 
@@ -1622,12 +1645,12 @@ let presets = prefs.get('presets', [null, null]);
 const capture = () => ({
   versions: [...S.versions], comm: S.comm, comm2: S.comm2, split: S.split, hideComm: !!S.hideComm, dict: S.dict,
   tab: ['comm', 'dict', 'xref', 'saved'].includes(S.tab) ? S.tab : 'comm',
-  fs, serif, cols: { ...cols }, gloss, wordSide,
+  fs, font, cols: { ...cols }, gloss, wordSide,
 });
 const presetSummary = p => [
   p.versions.map(nm).join('+') || '성경 없음',
   p.hideComm ? '주석 숨김' : [p.comm, p.split && p.comm2].filter(Boolean).map(nm).join('+') || '주석 없음',
-  `글자 ${p.fs}`, p.serif ? '명조' : '고딕',
+  `글자 ${p.fs}`, fontName(p),
 ].join(' · ');
 function applyPreset(i) {
   const p = presets[i];
@@ -1639,7 +1662,7 @@ function applyPreset(i) {
   if (dictFiles[p.dict]) S.dict = p.dict;
   S.split = p.split && !!commFiles[S.comm2]; S.hideComm = p.hideComm;
   S.tab = p.tab === 'dict' && !S.dict ? 'comm' : p.tab;
-  fs = p.fs; serif = p.serif; applyFont();
+  fs = p.fs; font = p.font ?? (p.serif ? 'myeongjo' : 'gothic'); applyFont(); // 예전 세팅은 명조/고딕만
   cols = { ...COLS, ...p.cols }; applyCols(); prefs.set('cols', cols);
   gloss = p.gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss);
   wordSide = p.wordSide; prefs.set('wordSide', wordSide);
