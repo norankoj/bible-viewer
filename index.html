@@ -219,6 +219,16 @@
   .grid button { height: 32px; border: 0; border-radius: 6px; background: var(--bg); }
   .grid button:hover, .grid button.on { background: var(--accent-soft); color: var(--accent); }
   #picker .back { border: 0; background: none; color: var(--accent); padding: 0; margin-bottom: 12px; font-weight: 600; }
+  /* 드롭다운: 닫힌 모양 (화살표) + 마우스로 열면 앱 디자인 목록 #ddPop */
+  select.btn, .search-opts select { appearance: none; -webkit-appearance: none; padding-right: 28px; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a8f98' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-position: right 9px center !important; background-size: 12px !important; background-repeat: no-repeat !important; }
+  select:focus-visible, .search-opts select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #ddPop { padding: 4px; max-height: 320px; overflow-y: auto; }
+  #ddPop button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 6px; font-size: 13px; white-space: nowrap; }
+  #ddPop button:hover, #ddPop button:focus-visible { background: var(--bg); outline: none; }
+  #ddPop button.on { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
+  #ddPop button.on::after { content: '✓'; margin-left: auto; }
   #menu { width: 260px; padding: 6px; }
   #menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 6px; }
   #menu button:hover { background: var(--bg); }
@@ -1434,7 +1444,30 @@ $('noteSave').onclick = saveNote;
 $('noteCancel').onclick = closePops;
 $('noteDel').onclick = () => { $('noteText').value = ''; saveNote(); };
 $('noteText').onkeydown = e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveNote(); };
-document.addEventListener('click', closePops);
+document.addEventListener('click', e => e.target.closest?.('select') || closePops()); // 드롭다운을 연 클릭은 닫지 않음
+
+/* ---------- 드롭다운: 마우스로 누르면 브라우저 기본 목록 대신 앱 디자인 목록 (터치·키보드는 기본 그대로) ---------- */
+const ddPop = Object.assign(document.createElement('div'), { className: 'pop', id: 'ddPop', role: 'listbox' });
+document.body.append(ddPop);
+let ddSel = null;
+document.addEventListener('mousedown', e => {
+  const s = e.target.closest('select'); if (!s || e.button) return;
+  e.preventDefault();
+  if (ddPop.classList.contains('open') && ddSel === s) return closePops(); // 다시 누르면 닫기
+  ddSel = s;
+  ddPop.innerHTML = [...s.options].map((o, i) => `<button role="option" aria-selected="${o.selected}" data-i="${i}" class="${o.selected ? 'on' : ''}">${esc(o.textContent)}</button>`).join('');
+  ddPop.style.minWidth = s.offsetWidth + 'px';
+  openPop(ddPop, s); s.focus();
+  ddPop.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+});
+ddPop.onclick = e => {
+  e.stopPropagation();
+  const b = e.target.closest('[data-i]'); if (!b) return;
+  closePops();
+  if (ddSel.selectedIndex === +b.dataset.i) return;
+  ddSel.selectedIndex = +b.dataset.i;
+  ddSel.dispatchEvent(new Event('change', { bubbles: true }));
+};
 
 $('back').onclick = back;
 $('fwd').onclick = forward;
