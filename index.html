@@ -1701,7 +1701,7 @@ applyCols();
 
 /* ---------- 성경 배경 화면: 기본 커피 사진 / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
 const BG_DEFAULT = 'img/bg-coffee.jpg'; // Mike Kenneally, Unsplash
-let bg = { op: 15, blur: 0, mode: 'default', ...prefs.get('bg', {}) }, bgUrl = '';
+let bg = { op: 15, blur: 0, mode: 'none', ...prefs.get('bg', {}) }, bgUrl = ''; // 기본은 배경 없음 (여러 칸 대조·원어 본문과 겹치면 어지러움)
 function applyBg() {
   const L = $('bgLayer');
   L.hidden = !bgUrl;
@@ -1712,18 +1712,19 @@ function applyBg() {
   $('bgBlur').value = bg.blur; $('bgBlurV').textContent = bg.blur + 'px';
   $('bgDef').classList.toggle('on', bg.mode === 'default'); $('bgDel').classList.toggle('on', bg.mode === 'none');
 }
-function setBg(mode, src) {
+function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장 안 함)
   if (bgUrl.startsWith('blob:')) URL.revokeObjectURL(bgUrl);
-  bg.mode = mode; bgUrl = src; prefs.set('bg', bg);
+  bg.mode = mode; bgUrl = src;
+  if (!keep) prefs.set('bg', bg);
   $('bgLayer').style.backgroundImage = src ? `url("${src}")` : '';
   applyBg();
 }
 (async () => {
   if (bg.mode === 'custom') {
     const b = await idb('cache', 'readonly', s => s.get('bg')).catch(() => null);
-    if (b instanceof Blob) return setBg('custom', URL.createObjectURL(b));
+    if (b instanceof Blob) return setBg('custom', URL.createObjectURL(b), true);
   }
-  setBg(bg.mode === 'none' ? 'none' : 'default', bg.mode === 'none' ? '' : BG_DEFAULT); // 내 사진이 사라졌으면 기본 사진으로
+  setBg(bg.mode === 'default' ? 'default' : 'none', bg.mode === 'default' ? BG_DEFAULT : '', true); // 내 사진이 사라졌으면 배경 없음
 })();
 $('bgBtn').onclick = e => { e.stopPropagation(); openPop($('bgBox'), $('menuBtn')); };
 $('bgBox').onclick = e => e.stopPropagation();
