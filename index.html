@@ -37,7 +37,7 @@
   input[type=file] { display: none; }
 
   /* 상단 바 */
-  .bar { height: 56px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .bar { min-height: 56px; flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
   .btn { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); white-space: nowrap; transition: background .15s, transform .1s; }
   .btn:hover:not(:disabled) { background: var(--bg); }
   .btn:active:not(:disabled) { transform: translateY(1px); }
@@ -87,10 +87,24 @@
   .vn { font: 600 11px var(--sans); color: var(--accent); margin-right: 6px; vertical-align: 3px; }
   .red { color: var(--red); } .ot { color: var(--ot); }
   .ts { display: block; font: 600 13px var(--sans); color: var(--muted); margin: 14px 0 2px; }
-  .par { display: grid; grid-template-columns: 28px repeat(var(--n), minmax(0, 1fr)); column-gap: 20px; }
-  .par .head { position: sticky; top: -24px; background: var(--surface); padding: 6px 0 8px; font-weight: 600; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); margin-bottom: 8px; z-index: 1; }
+  /* 칸 사이 간격은 칸 안쪽 여백으로 (선택·하이라이트가 한 줄 띠로 이어지게) */
+  .par { display: grid; grid-template-columns: 28px repeat(var(--n), minmax(0, 1fr)); column-gap: 0; }
+  .par .head:not(:first-child) { padding-left: 10px; padding-right: 10px; }
+  /* 번역본 이름 줄: 칸마다 따로가 아니라 한 줄 띠 (subgrid로 아래 칸과 너비를 맞춤) */
+  .par .heads { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: sticky; top: -24px; z-index: 1; background: var(--surface); border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  .par .head { padding: 6px 0 8px; font-weight: 600; font-size: 12px; color: var(--muted); }
+  /* 배경 사진이 있을 때: 막대·이름 줄·선택·하이라이트를 반투명 유리처럼 (사진 위에 흰 상자가 뜨지 않게) */
+  #biblePane.has-bg { --glass: color-mix(in srgb, var(--surface) 62%, transparent); }
+  #biblePane.has-bg .tabs, #biblePane.has-bg .selbar, #biblePane.has-bg .par .heads { background: var(--glass); -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border-color: color-mix(in srgb, var(--line) 55%, transparent); }
+  #biblePane.has-bg .selbar .btn, #biblePane.has-bg .note-badge { background: var(--glass); }
+  #biblePane.has-bg .tab.on { background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
+  #biblePane.has-bg .verse.on:not([class*="hl-"]), #biblePane.has-bg .par .row.on:not([class*="hl-"]) > * { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
+  #biblePane.has-bg .verse.hl-yellow, #biblePane.has-bg .par .row.hl-yellow > * { background: color-mix(in srgb, var(--hl-yellow) 65%, transparent); }
+  #biblePane.has-bg .verse.hl-green, #biblePane.has-bg .par .row.hl-green > * { background: color-mix(in srgb, var(--hl-green) 65%, transparent); }
+  #biblePane.has-bg .verse.hl-blue, #biblePane.has-bg .par .row.hl-blue > * { background: color-mix(in srgb, var(--hl-blue) 65%, transparent); }
+  #biblePane.has-bg .verse.hl-pink, #biblePane.has-bg .par .row.hl-pink > * { background: color-mix(in srgb, var(--hl-pink) 65%, transparent); }
   .par .row { display: contents; }
-  .par .row > * { padding: 6px 0; font: var(--fs)/1.75 var(--read); cursor: pointer; user-select: none; }
+  .par .row > * { padding: 6px 10px; font: var(--fs)/1.75 var(--read); cursor: pointer; user-select: none; }
   .par .row > .vn { font: 600 11px/2.6 var(--sans); padding-left: 6px; }
   /* 선택: 왼쪽 막대 + (하이라이트가 없으면) 연한 배경 */
   .verse.on, .par .row.on > .vn { box-shadow: inset 3px 0 0 var(--accent); }
@@ -623,7 +637,7 @@ function renderBible() {
       return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${isHebLine(vs[0], v) ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
     }).join('') + notice;
   } else {
-    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}</span>`).join('')}` +
+    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><div class="heads"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}</span>`).join('')}</div>` +
       ids.map(v => {
         const m = verseMark(v);
         return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)}>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
@@ -657,7 +671,7 @@ function select(v, mode, click) {
     if (click) el.scrollIntoView({ block: 'nearest' });
     else { // ↓/↑·링크 이동: 절이 다 안 보이면 위쪽(번역본 이름 줄 아래)에 붙여서 이어지는 본문이 아래로 보이게
       const r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
-      const top = b.top + (box.querySelector('.par .head')?.offsetHeight || 0) + 8;
+      const top = b.top + (box.querySelector('.par .heads')?.offsetHeight || 0) + 8;
       if (r.top < top || r.bottom > b.bottom) box.scrollTop += r.top - top;
     }
   }
@@ -1701,10 +1715,11 @@ applyCols();
 
 /* ---------- 성경 배경 화면: 기본 커피 사진 / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
 const BG_DEFAULT = 'img/bg-coffee.jpg'; // Mike Kenneally, Unsplash
-let bg = { op: 15, blur: 0, mode: 'none', ...prefs.get('bg', {}) }, bgUrl = ''; // 기본은 배경 없음 (여러 칸 대조·원어 본문과 겹치면 어지러움)
+let bg = { op: 15, blur: 0, mode: 'default', ...prefs.get('bg', {}) }, bgUrl = '';
 function applyBg() {
   const L = $('bgLayer');
   L.hidden = !bgUrl;
+  $('biblePane').classList.toggle('has-bg', !!bgUrl);
   L.style.opacity = bg.op / 100;
   L.style.filter = bg.blur ? `blur(${bg.blur}px)` : '';
   L.style.transform = bg.blur ? 'scale(1.08)' : ''; // 흐리게 하면 가장자리가 비치지 않게 살짝 키움
@@ -1724,7 +1739,7 @@ function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장
     const b = await idb('cache', 'readonly', s => s.get('bg')).catch(() => null);
     if (b instanceof Blob) return setBg('custom', URL.createObjectURL(b), true);
   }
-  setBg(bg.mode === 'default' ? 'default' : 'none', bg.mode === 'default' ? BG_DEFAULT : '', true); // 내 사진이 사라졌으면 배경 없음
+  setBg(bg.mode === 'none' ? 'none' : 'default', bg.mode === 'none' ? '' : BG_DEFAULT, true); // 내 사진이 사라졌으면 기본 사진으로
 })();
 $('bgBtn').onclick = e => { e.stopPropagation(); openPop($('bgBox'), $('menuBtn')); };
 $('bgBox').onclick = e => e.stopPropagation();
