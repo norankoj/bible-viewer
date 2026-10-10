@@ -138,6 +138,17 @@
   .tab.drop-after { box-shadow: inset -3px 0 0 var(--accent); }
   /* 내 세팅 */
   #presetBox { width: min(380px, calc(100vw - 32px)); }
+  /* 성경 배경 화면: 칸 뒤에 사진 한 겹 (진하기 = opacity, 흐림 = blur) */
+  #biblePane { overflow: hidden; }
+  #biblePane > :not(.bg-layer) { position: relative; z-index: 1; }
+  .bg-layer { position: absolute; inset: 0; z-index: 0; background: center / cover no-repeat; pointer-events: none; }
+  .bg-layer[hidden] { display: none; }
+  #bgBox { width: min(340px, calc(100vw - 32px)); }
+  #bgBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
+  #bgBox .bg-acts { display: flex; gap: 8px; margin-bottom: 12px; }
+  #bgBox .bg-row { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-top: 8px; }
+  #bgBox .bg-row input { flex: 1; accent-color: var(--accent); }
+  #bgBox output { width: 40px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
   #presetBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 8px; }
   #presetBox .slot { display: flex; align-items: center; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
   #presetBox .slot div { flex: 1; min-width: 0; }
@@ -278,7 +289,8 @@
   <button class="btn sm" id="nudgeLater">나중에</button>
 </div>
 <main id="main">
-  <section class="pane">
+  <section class="pane" id="biblePane">
+    <div class="bg-layer" id="bgLayer" hidden></div>
     <div class="tabs" id="verTabs"></div>
     <div class="scroll" id="bible"></div>
     <div class="selbar" id="selbar" hidden></div>
@@ -299,6 +311,8 @@
 <div class="pop" id="menu" role="menu">
   <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석·사전을 한 번에 추가</small></button>
   <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword 성경, 주석, 사전</small></button>
+  <hr>
+  <button id="bgBtn">배경 화면<small>성경 뒤에 사진 깔기, 진하기·흐림 조절</small></button>
   <hr>
   <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
   <button id="importMarks">백업 불러오기</button>
@@ -321,6 +335,14 @@
 <div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
+<div class="pop" id="bgBox" role="dialog" aria-label="배경 화면">
+  <b>성경 배경 화면</b>
+  <p class="help">성경 본문 뒤에 사진을 깔 수 있습니다. 사진은 이 브라우저에만 저장됩니다.</p>
+  <div class="bg-acts"><button class="btn sm primary" id="bgPick">사진 고르기</button><button class="btn sm" id="bgDel">배경 지우기</button></div>
+  <label class="bg-row">진하기 <input type="range" id="bgOp" min="5" max="100" step="1"><output id="bgOpV"></output></label>
+  <label class="bg-row">흐림 <input type="range" id="bgBlur" min="0" max="20" step="1"><output id="bgBlurV"></output></label>
+</div>
+<input type="file" id="bgFile" accept="image/*" hidden>
 <div class="pop" id="tip"></div>
 <input type="file" id="files" multiple>
 <input type="file" id="folder" webkitdirectory multiple>
@@ -1328,7 +1350,8 @@ $('clearAll').onclick = async () => {
   closePops();
   if (!confirm('브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.')) return;
   await idb('files', 'readwrite', s => s.clear()).catch(() => {});
-  await idb('cache', 'readwrite', s => s.clear()).catch(() => {});
+  // 사전·주석 색인은 지우고 배경 사진은 남김
+  await idb('cache', 'readwrite', s => { const r = s.getAllKeys(); r.onsuccess = () => r.result.filter(k => k !== 'bg').forEach(k => s.delete(k)); return r; }).catch(() => {});
   location.reload();
 };
 $('files').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
@@ -1672,6 +1695,40 @@ document.querySelectorAll('.resizer').forEach(r => {
   r.ondblclick = () => { cols = { ...COLS }; applyCols(); prefs.set('cols', cols); };
 });
 applyCols();
+
+/* ---------- 성경 배경 화면: 사진은 브라우저 저장소(cache 'bg'), 진하기·흐림은 설정에 ---------- */
+let bg = { op: 20, blur: 0, ...prefs.get('bg', {}) }, bgUrl = '';
+function applyBg(blob) {
+  const L = $('bgLayer');
+  if (blob !== undefined) { // 새 사진(또는 지움)
+    if (bgUrl) URL.revokeObjectURL(bgUrl);
+    bgUrl = blob ? URL.createObjectURL(blob) : '';
+    L.style.backgroundImage = bgUrl ? `url("${bgUrl}")` : '';
+  }
+  L.hidden = !bgUrl;
+  L.style.opacity = bg.op / 100;
+  L.style.filter = bg.blur ? `blur(${bg.blur}px)` : '';
+  L.style.transform = bg.blur ? 'scale(1.08)' : ''; // 흐리게 하면 가장자리가 비치지 않게 살짝 키움
+  $('bgOp').value = bg.op; $('bgOpV').textContent = bg.op + '%';
+  $('bgBlur').value = bg.blur; $('bgBlurV').textContent = bg.blur + 'px';
+  $('bgDel').disabled = !bgUrl;
+}
+idb('cache', 'readonly', s => s.get('bg')).then(b => applyBg(b instanceof Blob ? b : null)).catch(() => applyBg(null));
+$('bgBtn').onclick = e => { e.stopPropagation(); openPop($('bgBox'), $('menuBtn')); };
+$('bgBox').onclick = e => e.stopPropagation();
+$('bgPick').onclick = () => $('bgFile').click();
+$('bgFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  if (!f.type.startsWith('image/')) return alert('사진 파일을 골라 주세요');
+  await idb('cache', 'readwrite', s => s.put(f, 'bg')).catch(() => flash('사진을 저장하지 못했습니다. 이번에만 보입니다'));
+  applyBg(f);
+};
+$('bgDel').onclick = async () => { await idb('cache', 'readwrite', s => s.delete('bg')).catch(() => {}); applyBg(null); };
+// 끌면서 바로 보이고, 놓으면 저장
+$('bgOp').oninput = e => { bg.op = +e.target.value; applyBg(); };
+$('bgBlur').oninput = e => { bg.blur = +e.target.value; applyBg(); };
+$('bgOp').onchange = $('bgBlur').onchange = () => prefs.set('bg', bg);
 
 /* ---------- 내 세팅 1·2: 보는 구성(번역본·주석·2단·사전·글꼴·칸 너비 등)을 저장해 두고 바꾸기 ---------- */
 let presets = prefs.get('presets', [null, null]);
