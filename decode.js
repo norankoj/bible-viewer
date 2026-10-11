@@ -50,6 +50,19 @@ const GRK = {
 const crossGreek = s => [...s].map(ch => GRK[ch] ?? ch).join('')
   .replace(/([̀-ͯ]+)([Α-Ω])/g, '$2$1') // 대문자 앞의 숨표·강세를 대문자 뒤로
   .normalize('NFC');
+// 같은 Graeca 글꼴이라도 \uF0xx(유니코드 사용자 영역)로 적힌 주석(매튜헨리)은 자판 배치가 다름:
+// ","=´ "."=` "="=῀ "|"=ι하첨자 "j"=ς "["=숨표+´. "v"는 단어 첫 모음 뒤면 숨표(ἐ), 그 밖엔 ´ (원문이 섞어 씀)
+const BW = { ...GRK, j: 'ς', ',': '́', '.': '̀', '=': '͂', '|': 'ͅ', '`': '̔', '[': '̓́', '{': '̔́' };
+const VOWEL = /[aehiouwAEHIOUW]/;
+const uniGreek = s => s.split(/(\s+)/).map(w => {
+  let out = '', lead = true; // lead: 아직 단어 첫 모음(이중모음)만 나옴
+  for (const ch of w) {
+    if (ch === 'v') { out += lead ? '̓' : '́'; lead = false; continue; }
+    if (!VOWEL.test(ch) && GRK[ch] && /[a-zA-Z]/.test(ch)) lead = false;
+    out += BW[ch] ?? ch;
+  }
+  return out;
+}).join('').replace(/([̀-ͯ]+)([Α-Ω])/g, '$2$1').normalize('NFC');
 // 글꼴 이름 → 변환 종류
 const crossKind = name => /HEBRAICA/i.test(name) ? 'heb' : /GRAECA/i.test(name) ? 'grk' : null;
 
@@ -63,7 +76,7 @@ function rtfToHtml(s) {
   for (const m of (s.match(/\{\\fonttbl[\s\S]*?\}\}/)?.[0] || '').matchAll(/\{\\f(\d+)[^ ;]* ([^;{}]*);\}/g)) fonts[m[1]] = crossKind(m[2]);
   const dec = new TextDecoder('euc-kr');
   const re = /\\(?:([a-zA-Z]+)(-?\d+)? ?|'([0-9a-fA-F]{2})|([\s\S]))/y;
-  let out = '', cur = '', close = '', bytes = [], stack = [], skipChars = 0;
+  let out = '', cur = '', close = '', bytes = [], uni = '', stack = [], skipChars = 0;
   let st = { b: 0, cf: 0, fs: 20, f: 0, uc: 1, link: null, href: null, skip: false, star: false, inst: null };
 
   const emit = (t, cls) => {
@@ -80,6 +93,7 @@ function rtfToHtml(s) {
     out += cls ? `<span class="${cls}"${cls === 'heb' ? ' dir="rtl"' : ''}>${esc(t)}</span>` : esc(t);
   };
   const flush = () => {
+    if (uni) { const [, pre, word, post] = uni.match(/^(\s*)([\s\S]*?)(\s*)$/); uni = ''; emit(pre); emit(uniGreek(word), 'grk'); emit(post); }
     if (!bytes.length) return;
     const b = bytes; bytes = [];
     const kind = fonts[st.f];
@@ -113,6 +127,11 @@ function rtfToHtml(s) {
     if (m[3]) { if (skipChars) skipChars--; else bytes.push(parseInt(m[3], 16)); continue; }
     // \\ \{ \} 는 글자 그대로: 원어 글꼴 단어(예: 하테프 파타흐 '}') 중간에서 끊기지 않게 같은 묶음에 넣음
     if (m[4] === '\\' || m[4] === '{' || m[4] === '}') { bytes.push(m[4].charCodeAt(0)); continue; }
+    // 헬라어 글꼴의 \uF0xx 글자: 한 단어로 모았다가 변환 (글자마다 끊지 않게)
+    if (m[1] === 'u' && fonts[st.f] === 'grk') {
+      const code = (+m[2] + 65536) % 65536;
+      if (code >= 0xF000 && code < 0xF100) { if (bytes.length) flush(); uni += String.fromCharCode(code - 0xF000); skipChars = st.uc; continue; }
+    }
     flush();
     if (m[4]) {
       const sym = m[4];

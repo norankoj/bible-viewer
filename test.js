@@ -90,6 +90,13 @@ assert.strictEqual(VERSES.flat().reduce((a, b) => a + b), 31102);
 assert.strictEqual(START[43][2] + 15, 26136);
 assert.strictEqual(verseHtml('<FR>a<Fr> <세계의 시작> <x>b'), '<span class="red">a</span> <b class="ts">세계의 시작</b> b');
 assert.strictEqual(verseHtml('<FR>a <FI>b'), '<span class="red">a <i>b</i></span>'); // 안 닫힌 태그
+// 매튜헨리: Graeca 글꼴 글자가 \uF0xx 로 (lo,goj evndia,qetoj = λόγος ἐνδιάθετος)
+{
+  const { rtfToHtml } = require('./decode.js');
+  const u = s => [...s].map(c => `\\u${0xF000 + c.charCodeAt(0)} ?`).join('');
+  const rtf = `{\\rtf1{\\fonttbl{\\f0\\fnil Arial;}{\\f2\\fnil\\fcharset2 Graeca;}}\\f2 ${u('lo,goj evndia,qetoj')}\\f0  - 말}`;
+  assert.match(rtfToHtml(rtf), /<span class="grk">λόγος ἐνδιάθετος<\/span>/);
+}
 // 강조·클릭은 단어에만: 앞 단어의 마켑(־), 단락 표시(פ), 케티브는 단어 밖
 assert.match(verseHtml('עַל<WH5921>־פְּנֵי<WH6440>'), /־<span class="w" data-strong="H6440">פְּנֵי<\/span>$/);
 assert.match(verseHtml("אֶחָֽד׃ פ <TRANS>ʔeḥˈāḏ<trans> <sub><font color='gray'>אֶחָד one</font></sub>"), /data-lemma="אֶחָד"[^>]*>אֶחָֽד׃<\/span> פ /);
