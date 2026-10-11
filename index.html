@@ -239,6 +239,15 @@
   .empty h2 { color: var(--fg); font-size: 18px; margin: 0 0 8px; }
   .empty .btn { margin: 16px 8px 0 0; }
   .empty.small { margin-top: 8vh; text-align: center; }
+  .welcome { margin-top: 4vh; text-align: center; }
+  .welcome-badge { display: block; width: clamp(120px, 22vh, 220px); margin: 0 auto 16px; opacity: .22; animation: welcome-in 1.4s ease-out both; }
+  .welcome > :not(.welcome-badge) { animation: welcome-text .8s .5s ease-out both; }
+  .welcome h2 { font-size: 20px; }
+  .welcome-sub { margin: 0 0 4px; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .02em; }
+  .welcome-note { font-size: 12px; }
+  @keyframes welcome-in { from { opacity: 0; transform: scale(.96); } to { opacity: .22; transform: none; } }
+  @keyframes welcome-text { from { opacity: 0; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) { .welcome-badge, .welcome > * { animation: none !important; } }
 
   /* 팝오버 */
   .pop { position: fixed; z-index: 20; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 16px; display: none; }
@@ -562,10 +571,14 @@ function step(d) {
 }
 
 /* ---------- 성경 ---------- */
-const welcome = `<div class="empty"><h2>성경과 주석을 추가하세요</h2>
-  <p><b>bible-viewer</b> 폴더를 통째로 고르면 그 안의 <b>성경</b>, <b>주석</b> 폴더를 한 번에 불러옵니다. 한 번 추가하면 다음부터는 자동으로 열립니다.</p>
-  <p>파일은 이 컴퓨터 안에서만 읽고 어디에도 보내지 않습니다.</p>
-  <button class="btn" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button></div>`;
+// 첫 화면 (성경·주석을 아직 안 불러왔을 때): 커피성경 배지를 흐리게 + 인사말
+const welcome = `<div class="empty welcome">
+  <img class="welcome-badge" src="icons/icon-512.png" alt="" aria-hidden="true">
+  <p class="welcome-sub">커피 한 잔과 함께하는 말씀 묵상</p>
+  <h2>커피성경에 오신 것을 환영합니다</h2>
+  <p>가지고 계신 성경과 주석 파일을 추가하면 바로 읽을 수 있어요.<br><b>bible-viewer</b> 폴더를 통째로 고르면 그 안의 <b>성경</b>, <b>주석</b>, <b>사전</b>을 한 번에 불러오고, 다음부터는 자동으로 열립니다.</p>
+  <p class="welcome-note">파일은 이 컴퓨터 안에서만 읽고 어디에도 보내지 않습니다.</p>
+  <button class="btn primary" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button></div>`;
 
 function verseMark(v) {
   const m = marks.get(`${S.b}.${S.c}.${v}`);
