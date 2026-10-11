@@ -1,7 +1,7 @@
 {
-  "name": "성경 뷰어",
-  "short_name": "성경",
-  "description": "성경 본문과 주석·원어 사전을 함께 보는 뷰어",
+  "name": "커피성경",
+  "short_name": "커피성경",
+  "description": "커피성경: 성경 본문과 주석·원어 사전을 함께 보는 뷰어",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",

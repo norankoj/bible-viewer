@@ -3,35 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>성경 뷰어</title>
+<title>커피성경</title>
+<!-- 색 설정을 화면 그리기 전에 (깜빡임 없게) -->
+<script>try { document.documentElement.dataset.accent = JSON.parse(localStorage.getItem('accent')) || 'green'; } catch {}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#035b36">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/pretendard.css">
 <style>
-  /* 강조색은 코발트 하나(하이라이트 4색은 사용자 표시용). 모서리: 컨트롤 6px, 팝오버 10px */
+  /* 강조색은 하나(파일 → 색 설정: 초록 기본 / 파랑 / 검정, <html data-accent>). 하이라이트 4색은 사용자 표시용. 모서리: 컨트롤 6px, 팝오버 10px */
   :root {
     --bg: #f6f7f9; --surface: #ffffff; --line: #e3e5ea; --fg: #1d2027; --muted: #646b7a;
-    --accent: #2c4aa8; --accent-soft: #e8edfa; --on-accent: #ffffff; --red: #b4232c; --ot: #4b5b78;
+    --accent: #035b36; --accent-soft: #e4f1ea; --on-accent: #ffffff; --red: #b4232c; --ot: #4b5b78;
     --hl-yellow: #fbefb4; --hl-green: #d7efd3; --hl-blue: #d7e4fa; --hl-pink: #f8dbe6;
     --shadow: 0 12px 32px rgb(29 32 39 / .12);
     --sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     --serif: "AppleMyungjo", "Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
     --read: var(--serif); --fs: 17px;
   }
+  :root[data-accent="blue"] { --accent: #2c4aa8; --accent-soft: #e8edfa; }
+  :root[data-accent="black"] { --accent: #1d2027; --accent-soft: #eceef1; }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #121317; --surface: #181a1f; --line: #2a2d35; --fg: #e4e6eb; --muted: #949aa8;
-      --accent: #8fa7ee; --accent-soft: #232a40; --on-accent: #121317; --red: #f0857f; --ot: #a9b6cf;
+      --accent: #5fc394; --accent-soft: #1b3328; --on-accent: #0f1512; --red: #f0857f; --ot: #a9b6cf;
       --hl-yellow: #48401c; --hl-green: #213b26; --hl-blue: #22314c; --hl-pink: #482532;
       --shadow: 0 12px 32px rgb(0 0 0 / .45);
     }
+    :root[data-accent="blue"] { --accent: #8fa7ee; --accent-soft: #232a40; }
+    :root[data-accent="black"] { --accent: #e4e6eb; --accent-soft: #2a2d35; }
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--sans); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
-  button, input, textarea { font: inherit; color: inherit; }
+  button, input, textarea, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
   button:disabled { cursor: default; opacity: .4; }
   input[type=file] { display: none; }
@@ -260,6 +266,12 @@
   #menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 6px; }
   #menu button:hover { background: var(--bg); }
   #menu small { display: block; color: var(--muted); }
+  #menu .accent-row { padding: 8px 10px; }
+  #menu .accent-row > span:first-child { display: block; margin-bottom: 6px; }
+  #menu .accent-sw { display: flex; gap: 6px; }
+  #menu .accent-sw button { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 4px 10px 4px 6px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; }
+  #menu .accent-sw button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; background: var(--accent-soft); }
+  #menu .accent-sw i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / .25); }
   #menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
   #tip { max-width: 380px; padding: 12px 14px; font: 14px/1.7 var(--read); pointer-events: none; }
   #tip b { font: 600 12px var(--sans); color: var(--accent); display: block; margin-bottom: 4px; }
@@ -328,6 +340,8 @@
   <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석·사전을 한 번에 추가</small></button>
   <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword 성경, 주석, 사전</small></button>
   <hr>
+  <div class="accent-row" role="group" aria-label="색 설정"><span>색 설정<small>버튼·선택·강조 색</small></span>
+    <span class="accent-sw"><button data-accent="green"><i style="background:#035b36"></i>초록</button><button data-accent="blue"><i style="background:#2c4aa8"></i>파랑</button><button data-accent="black"><i style="background:#1d2027"></i>검정</button></span></div>
   <button id="bgBtn">배경 화면<small>성경 뒤에 사진 깔기, 진하기·흐림 조절</small></button>
   <hr>
   <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
@@ -354,7 +368,7 @@
 <div class="pop" id="bgBox" role="dialog" aria-label="배경 화면">
   <b>성경 배경 화면</b>
   <p class="help">성경 본문 뒤에 사진을 깔 수 있습니다. 사진은 이 브라우저에만 저장됩니다.</p>
-  <div class="bg-acts"><button class="btn sm" data-bg="badge">커피성경 배지</button><button class="btn sm" data-bg="default">커피 사진</button><button class="btn sm" data-bg="none">배경 없음</button><button class="btn sm" id="bgPick" data-bg="custom">내 사진 고르기</button></div>
+  <div class="bg-acts"><button class="btn sm" data-bg="default">커피 사진</button><button class="btn sm" data-bg="none">배경 없음</button><button class="btn sm" id="bgPick" data-bg="custom">내 사진 고르기</button></div>
   <label class="bg-row">진하기 <input type="range" id="bgOp" min="5" max="100" step="1"><output id="bgOpV"></output></label>
   <label class="bg-row">흐림 <input type="range" id="bgBlur" min="0" max="20" step="1"><output id="bgBlurV"></output></label>
   <p class="credit">커피 사진: <a href="https://unsplash.com/photos/tNALoIZhqVM" target="_blank" rel="noopener">Mike Kenneally</a> · Unsplash</p>
@@ -1713,11 +1727,24 @@ document.querySelectorAll('.resizer').forEach(r => {
 });
 applyCols();
 
-/* ---------- 성경 배경 화면: 앱에 든 사진(커피, 커피성경 배지) / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
-// 사진마다 놓는 방식: 커피는 칸을 꽉 채우고, 둥근 배지는 잘리지 않게 가운데 워터마크로
+/* ---------- 색 설정: 초록(기본, 앱 아이콘 색) / 파랑 / 검정. 창 제목 막대 색도 함께 ---------- */
+const ACCENT_BAR = { green: '#035b36', blue: '#2c4aa8', black: '#1d2027' };
+function applyAccent(a) {
+  if (!ACCENT_BAR[a]) a = 'green';
+  document.documentElement.dataset.accent = a;
+  document.querySelector('meta[name="theme-color"]').content = ACCENT_BAR[a];
+  document.querySelectorAll('[data-accent]').forEach(b => b.tagName === 'BUTTON' && b.classList.toggle('on', b.dataset.accent === a));
+}
+applyAccent(prefs.get('accent', 'green'));
+document.querySelector('.accent-sw').onclick = e => {
+  e.stopPropagation(); // 메뉴는 열어 둔 채 바로 바뀌는 걸 보게
+  const a = e.target.closest('[data-accent]')?.dataset.accent; if (!a) return;
+  prefs.set('accent', a); applyAccent(a);
+};
+
+/* ---------- 성경 배경 화면: 앱에 든 커피 사진 / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
 const BG_PRESETS = {
   default: { src: 'img/bg-coffee.jpg', pos: 'center 70%', size: 'cover' }, // Mike Kenneally, Unsplash
-  badge: { src: 'img/bg-badge.webp', pos: 'center', size: 'min(75%, 560px) auto' },
 };
 const BG_FIT = { pos: 'center 70%', size: 'cover' }; // 내 사진
 let bg = { op: 15, blur: 0, mode: 'none', ...prefs.get('bg', {}) }, bgUrl = ''; // 처음엔 배경 없음
