@@ -1,7 +1,7 @@
 // 설치형 웹앱: 인터넷이 없어도 뷰어 화면이 열리도록 화면 파일만 보관.
 // (성경·주석·사전 데이터는 브라우저 저장소(IndexedDB)에 따로 있음)
 const CACHE = 'viewer-v2';
-const SHELL = ['./', 'index.html', 'decode.js', 'manifest.webmanifest', 'vendor/sql-wasm.js', 'vendor/sql-wasm-bin.js', 'vendor/pretendard.css', 'icons/icon-192.png', 'img/bg-coffee.jpg'];
+const SHELL = ['./', 'index.html', 'decode.js', 'manifest.webmanifest', 'vendor/sql-wasm.js', 'vendor/sql-wasm-bin.js', 'vendor/pretendard.css', 'icons/icon-192.png', 'img/bg-coffee.jpg', 'img/bg-badge.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
@@ -23,7 +23,7 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (e.request.method !== 'GET' || u.origin !== location.origin) return;
-  if (!/(\/|\.(html|js|css|png|jpg|webmanifest))$/.test(u.pathname)) return; // 화면 파일만
+  if (!/(\/|\.(html|js|css|png|jpg|webp|webmanifest))$/.test(u.pathname)) return; // 화면 파일만
   e.respondWith(
     fetch(e.request)
       .then(r => { if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); } return r; })

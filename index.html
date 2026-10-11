@@ -155,7 +155,7 @@
   /* 성경 배경 화면: 칸 뒤에 사진 한 겹 (진하기 = opacity, 흐림 = blur) */
   #biblePane { overflow: hidden; }
   #biblePane > :not(.bg-layer) { position: relative; z-index: 1; }
-  .bg-layer { position: absolute; inset: 0; z-index: 0; background: center 70% / cover no-repeat; pointer-events: none; }
+  .bg-layer { position: absolute; inset: 0; z-index: 0; background-repeat: no-repeat; pointer-events: none; }
   .bg-layer[hidden] { display: none; }
   #bgBox { width: min(340px, calc(100vw - 32px)); }
   #bgBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
@@ -354,7 +354,7 @@
 <div class="pop" id="bgBox" role="dialog" aria-label="배경 화면">
   <b>성경 배경 화면</b>
   <p class="help">성경 본문 뒤에 사진을 깔 수 있습니다. 사진은 이 브라우저에만 저장됩니다.</p>
-  <div class="bg-acts"><button class="btn sm primary" id="bgPick">내 사진 고르기</button><button class="btn sm" id="bgDef">커피 사진</button><button class="btn sm" id="bgDel">배경 없음</button></div>
+  <div class="bg-acts"><button class="btn sm" data-bg="badge">커피성경 배지</button><button class="btn sm" data-bg="default">커피 사진</button><button class="btn sm" data-bg="none">배경 없음</button><button class="btn sm" id="bgPick" data-bg="custom">내 사진 고르기</button></div>
   <label class="bg-row">진하기 <input type="range" id="bgOp" min="5" max="100" step="1"><output id="bgOpV"></output></label>
   <label class="bg-row">흐림 <input type="range" id="bgBlur" min="0" max="20" step="1"><output id="bgBlurV"></output></label>
   <p class="credit">커피 사진: <a href="https://unsplash.com/photos/tNALoIZhqVM" target="_blank" rel="noopener">Mike Kenneally</a> · Unsplash</p>
@@ -1713,9 +1713,14 @@ document.querySelectorAll('.resizer').forEach(r => {
 });
 applyCols();
 
-/* ---------- 성경 배경 화면: 기본 커피 사진 / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
-const BG_DEFAULT = 'img/bg-coffee.jpg'; // Mike Kenneally, Unsplash
-let bg = { op: 15, blur: 0, mode: 'none', ...prefs.get('bg', {}) }, bgUrl = ''; // 처음엔 배경 없음, 커피 사진은 골라서
+/* ---------- 성경 배경 화면: 앱에 든 사진(커피, 커피성경 배지) / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
+// 사진마다 놓는 방식: 커피는 칸을 꽉 채우고, 둥근 배지는 잘리지 않게 가운데 워터마크로
+const BG_PRESETS = {
+  default: { src: 'img/bg-coffee.jpg', pos: 'center 70%', size: 'cover' }, // Mike Kenneally, Unsplash
+  badge: { src: 'img/bg-badge.webp', pos: 'center', size: 'min(75%, 560px) auto' },
+};
+const BG_FIT = { pos: 'center 70%', size: 'cover' }; // 내 사진
+let bg = { op: 15, blur: 0, mode: 'none', ...prefs.get('bg', {}) }, bgUrl = ''; // 처음엔 배경 없음
 function applyBg() {
   const L = $('bgLayer');
   L.hidden = !bgUrl;
@@ -1725,13 +1730,15 @@ function applyBg() {
   L.style.transform = bg.blur ? 'scale(1.08)' : ''; // 흐리게 하면 가장자리가 비치지 않게 살짝 키움
   $('bgOp').value = bg.op; $('bgOpV').textContent = bg.op + '%';
   $('bgBlur').value = bg.blur; $('bgBlurV').textContent = bg.blur + 'px';
-  $('bgDef').classList.toggle('on', bg.mode === 'default'); $('bgDel').classList.toggle('on', bg.mode === 'none');
+  $('bgBox').querySelectorAll('[data-bg]').forEach(b => b.classList.toggle('on', b.dataset.bg === bg.mode));
 }
 function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장 안 함)
   if (bgUrl.startsWith('blob:')) URL.revokeObjectURL(bgUrl);
   bg.mode = mode; bgUrl = src;
   if (!keep) prefs.set('bg', bg);
-  $('bgLayer').style.backgroundImage = src ? `url("${src}")` : '';
+  const L = $('bgLayer'), fit = BG_PRESETS[mode] || BG_FIT;
+  L.style.backgroundImage = src ? `url("${src}")` : '';
+  L.style.backgroundPosition = fit.pos; L.style.backgroundSize = fit.size;
   applyBg();
 }
 (async () => {
@@ -1739,7 +1746,8 @@ function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장
     const b = await idb('cache', 'readonly', s => s.get('bg')).catch(() => null);
     if (b instanceof Blob) return setBg('custom', URL.createObjectURL(b), true);
   }
-  setBg(bg.mode === 'default' ? 'default' : 'none', bg.mode === 'default' ? BG_DEFAULT : '', true); // 내 사진이 사라졌으면 배경 없음
+  const p = BG_PRESETS[bg.mode]; // 내 사진이 사라졌으면 배경 없음
+  setBg(p ? bg.mode : 'none', p ? p.src : '', true);
 })();
 $('bgBtn').onclick = e => { e.stopPropagation(); openPop($('bgBox'), $('menuBtn')); };
 $('bgBox').onclick = e => e.stopPropagation();
@@ -1751,8 +1759,12 @@ $('bgFile').onchange = async e => {
   await idb('cache', 'readwrite', s => s.put(f, 'bg')).catch(() => flash('사진을 저장하지 못했습니다. 이번에만 보입니다'));
   setBg('custom', URL.createObjectURL(f));
 };
-$('bgDef').onclick = () => { idb('cache', 'readwrite', s => s.delete('bg')).catch(() => {}); setBg('default', BG_DEFAULT); };
-$('bgDel').onclick = () => { idb('cache', 'readwrite', s => s.delete('bg')).catch(() => {}); setBg('none', ''); };
+// 앱에 든 사진 / 배경 없음 (내 사진은 지움)
+$('bgBox').addEventListener('click', e => {
+  const m = e.target.closest('[data-bg]')?.dataset.bg; if (!m || m === 'custom') return;
+  idb('cache', 'readwrite', s => s.delete('bg')).catch(() => {});
+  setBg(m, BG_PRESETS[m]?.src || '');
+});
 // 끌면서 바로 보이고, 놓으면 저장
 $('bgOp').oninput = e => { bg.op = +e.target.value; applyBg(); };
 $('bgBlur').oninput = e => { bg.blur = +e.target.value; applyBg(); };
