@@ -192,7 +192,7 @@
   /* 하이라이트: 칸 전체가 아니라 글자 줄마다 형광펜처럼 (줄이 바뀌면 줄마다 따로) */
   .hl-yellow { --hl: var(--hl-yellow); } .hl-green { --hl: var(--hl-green); } .hl-blue { --hl: var(--hl-blue); } .hl-pink { --hl: var(--hl-pink); }
   .sw[class*="hl-"] { background: var(--hl); }
-  .verse[class*="hl-"] > span:not(.vn), .par .row[class*="hl-"] > span:not(.vn) > span { background: color-mix(in srgb, var(--hl) var(--hl-a, 100%), transparent); -webkit-box-decoration-break: clone; box-decoration-break: clone; border-radius: 3px; padding: 2px 1px; }
+  :is(.verse, .par .row)[class*="hl-"] .t { background: color-mix(in srgb, var(--hl) var(--hl-a, 100%), transparent); -webkit-box-decoration-break: clone; box-decoration-break: clone; border-radius: 3px; padding: 2px 1px; }
   /* 히브리어 원문(BHS 등): 오른쪽→왼쪽, 음역·기본형 뜻은 작게 */
   .heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", "Arial Hebrew", serif; }
   .verse.heb, .par .row > .heb { font-size: calc(var(--fs) * 1.25); line-height: 2.1; }
@@ -1028,13 +1028,13 @@ function renderBible() {
   if (vs.length === 1) {
     $('bible').innerHTML = title + ids.map(v => {
       const m = verseMark(v);
-      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${isHebLine(vs[0], v) ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span>${cellHtml(vs[0], v)}${m.badge}</p>`;
+      return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${isHebLine(vs[0], v) ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span><span class="t">${cellHtml(vs[0], v)}</span>${m.badge}</p>`;
     }).join('') + notice;
   } else {
     $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><div class="heads"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}</span>`).join('')}</div>` +
       ids.map(v => {
         const m = verseMark(v);
-        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)}>${cellHtml(x, v)}${i ? '' : m.badge}</span>`).join('')}</div>`;
+        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)}><span class="t">${cellHtml(x, v)}</span>${i ? '' : m.badge}</span>`).join('')}</div>`;
       }).join('') + '</div>' + notice;
   }
 }
