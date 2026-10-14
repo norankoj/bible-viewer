@@ -147,6 +147,11 @@
   :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-word-side]):not([data-hide-comm]):not([data-show-comm]):not([data-split])::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: -8px; height: 2px; border-radius: 2px; background: var(--accent); }
   .tabs { scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } /* 탭 줄은 밀어서 넘기고 스크롤바는 숨김 */
   .tabs .spacer { margin-left: auto; }
+  /* 탭이 넘치면 가려진 쪽 끝을 흐리게 (더 있다는 표시) */
+  .tabs.more-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); }
+  .tabs.more-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent); }
+  .tabs.more-l.more-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 48px calc(100% - 48px), transparent); mask-image: linear-gradient(to right, transparent, #000 48px calc(100% - 48px), transparent); }
+  #menu small.warn { color: var(--red); }
   .tabs .hint { color: var(--muted); font-size: 12px; align-self: center; white-space: nowrap; }
   .scroll { flex: 1; overflow-y: auto; padding: 28px 36px 112px; scroll-padding-bottom: 96px; }
 
@@ -226,6 +231,7 @@
   .ws-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
   .ws-chips b { font-weight: 600; font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--page); }
   .ws-acts { margin: 6px 0 4px; }
+  .ws-top { display: flex; align-items: center; gap: 8px; }
   .ws-h { font: 700 12px var(--sans); color: var(--muted); margin: 22px 0 8px; }
   .ws-occ { display: flex; gap: 10px; width: 100%; text-align: left; align-items: baseline; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--page); transition: border-color .15s; }
   .ws-occ:hover { border-color: var(--accent); }
@@ -281,10 +287,16 @@
   .ver-pick b { color: var(--accent); }
   body.no-bibles .ver-pick { display: none; }
   [data-design="classic"] .ver-pick { height: 30px; border-radius: var(--r); }
-  #verBox { width: min(280px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
-  #verBox label { display: flex; align-items: center; gap: 8px; padding: 7px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
-  #verBox label:hover { background: var(--bg); }
-  #verBox input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
+  :is(#verBox, #tabBox) { width: min(280px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+  :is(#verBox, #tabBox) label { display: flex; align-items: center; gap: 8px; padding: 7px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
+  :is(#verBox, #tabBox) label:hover { background: var(--bg); }
+  :is(#verBox, #tabBox) input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
+  #tabBox h4 { margin: 10px 0 2px; font-size: 12px; color: var(--muted); }
+  /* 오른쪽 칸 탭 줄 맨 앞 '주석 ▾': 탭을 옆으로 넘겨도 제자리에 */
+  .tab-pick { position: sticky; left: 0; z-index: 1; flex: none; height: 30px; margin-right: 6px; padding: 0 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; box-shadow: 8px 0 8px -4px var(--surface); }
+  .tab-pick:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
+  .tab-pick b { color: var(--accent); }
+  [data-design="classic"] .tab-pick { border-radius: var(--r); }
   #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   #manageBox label:hover { background: var(--bg); }
   #manageBox label small { margin-left: auto; color: var(--muted); }
@@ -497,6 +509,8 @@
     .search-wrap { flex: 1 1 110px; order: 1; }
     .search { height: 34px; }
     .page-head .tabs { flex: 1 1 100%; justify-content: flex-start; overflow-x: auto; order: 2; }
+    .ver-pick { order: 2; height: 30px; } /* 휴대폰: 둘째 줄 = 번역본 ▾ + 고른 번역본 */
+    .ver-pick:not([hidden]) + .tabs { flex-basis: 0; }
     .selbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     .selbar > *, .sel-ref { flex: none; white-space: nowrap; }
     #bible { padding-left: 16px; --stick: -18px; }
@@ -648,6 +662,7 @@
 <div class="pop" id="wordPop" role="dialog" aria-label="단어 뜻"></div>
 <div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
 <div class="pop" id="verBox" role="dialog" aria-label="번역본 고르기"></div>
+<div class="pop" id="tabBox" role="dialog" aria-label="탭 줄에 보일 주석·사전 고르기"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
 <div class="pop" id="fmtBox" role="dialog" aria-label="지원하는 파일 형식"></div>
@@ -972,12 +987,14 @@ function renderBible() {
   const names = allVersions();
   // 음역·뜻은 BHS 기본형 성경만, 단어 뜻 위치는 단어를 누를 수 있는 성경(원어·스트롱 번호)이면
   const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
-  $('verTabs').innerHTML = names.map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${esc(n)}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${esc(n)}" title="누르면 보기/끄기 · 끌어서 순서 바꾸기">${esc(nm(n))}</button>`).join('') +
+  // 고른 번역본만 알약으로 (더 고르기·빼기는 앞의 '번역본 ▾'). 누르면 빠짐
+  $('verTabs').innerHTML = (names.length > 1 ? S.versions : names).map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${esc(n)}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${esc(n)}" title="${names.length > 1 ? '누르면 빼기' : '누르면 보기/끄기'} · 끌어서 순서 바꾸기">${esc(nm(n))}</button>`).join('') +
     (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
     (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
-    (names.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
+    (S.versions.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">대조 보기 중</span>` : '') +
     (S.hideComm ? `<button class="tab on ${names.length > 1 || words ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>/${names.length} ▾`;
+  $('verPick').hidden = names.length < 2;
   if ($('verBox').classList.contains('open')) renderVerBox();
   const vs = S.versions;
   // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
@@ -1270,7 +1287,7 @@ async function syncMarks() {
 function queueMarkSync() {
   if (!driveOn() || !tokenOk()) return;
   clearTimeout(markTimer);
-  markTimer = setTimeout(() => driveBusy || syncMarks().catch(() => {}), 3000);
+  markTimer = setTimeout(() => driveBusy || syncMarks().then(() => driveErr(''), err => driveErr(err.message)), 3000);
 }
 // asked: 버튼으로 누른 것 (로그인 창을 띄워도 됨). 아니면 로그인이 살아 있을 때만 조용히
 async function driveSync(asked) {
@@ -1281,18 +1298,22 @@ async function driveSync(asked) {
     if (!d) { await getToken(); d = { folder: await driveFolder() }; prefs.set('drive', d); }
     await syncMarks();
     const n = await syncFiles(d.folder);
-    prefs.set('drive', { ...d, at: Date.now() }); renderDrive();
+    prefs.set('drive', { ...d, at: Date.now() }); driveErr('');
     if (asked) flash(n ? `드라이브에서 파일 ${n}개를 받았습니다` : '드라이브와 맞췄습니다');
-  } catch (err) { progress(); if (asked) alert(`구글 드라이브: ${err.message}`); }
+  } catch (err) { progress(); driveErr(err.message); if (asked) alert(`구글 드라이브: ${err.message}`); }
   finally { driveBusy = false; }
 }
+// 마지막 실패 이유는 파일 메뉴의 드라이브 버튼에 남김 (조용히 맞추다 실패해도 알 수 있게)
+function driveErr(msg) { prefs.set('driveErr', msg); renderDrive(); }
 function renderDrive() {
-  const d = GOOGLE_CLIENT_ID && prefs.get('drive', null);
+  const d = GOOGLE_CLIENT_ID && prefs.get('drive', null), err = prefs.get('driveErr', '');
+  const when = t => new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   document.body.classList.toggle('drive', !!GOOGLE_CLIENT_ID);
   $('driveBtn').hidden = !GOOGLE_CLIENT_ID; $('driveOff').hidden = !d;
-  $('driveBtn').innerHTML = d
-    ? `드라이브와 맞추기<small>새 파일·메모·책갈피 주고받기${d.at ? ` · 마지막 ${new Date(d.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}</small>`
-    : `구글 드라이브 연결<small>로그인하면 드라이브 '커피성경' 폴더의 파일과 메모를 어느 기기에서나</small>`;
+  $('driveBtn').innerHTML = !d ? `구글 드라이브 연결<small>로그인하면 드라이브 '커피성경' 폴더의 파일과 메모를 어느 기기에서나</small>`
+    : `드라이브와 맞추기<small${err ? ' class="warn"' : ''}>${err ? `맞추지 못했어요: ${esc(err)}`
+      : tokenOk() ? `연결됨 · 메모는 바로바로 맞춰요${d.at ? ` · 마지막 ${when(d.at)}` : ''}`
+      : `로그인 1시간이 지나 자동으로는 안 맞춰요. 누르면 다시 맞춰요${d.at ? ` · 마지막 ${when(d.at)}` : ''}`}</small>`;
 }
 
 /* ---------- 주석 ---------- */
@@ -1320,13 +1341,21 @@ function commHtml(name) {
     : `<p class="empty small">${esc(nm(name))}에는 ${BOOKS[b - 1]} ${c}장 주석이 없습니다.</p>`;
 }
 
+let tabHide = prefs.get('tabHide', []); // 탭 줄에서 뺀 주석·사전 ["comm:이름", "dict:이름"]
+const renderTabBox = () => $('tabBox').innerHTML = '<b>탭 줄에 보일 주석·사전</b><p class="help">체크한 것만 위 탭 줄에 보여요.</p>' +
+  [['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length).map(([k, t, ns]) => `<h4>${t}</h4>` +
+    ns.map(n => `<label><input type="checkbox" value="${k}:${esc(n)}" ${tabHide.includes(`${k}:${n}`) ? '' : 'checked'}>${esc(nm(n))}</label>`).join('')).join('');
 function renderComm() {
   closeUnusedComms(); // 2단 보기를 끄거나 주석을 바꾸면 안 보는 주석은 닫음
   const names = commNames();
   const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
   const drag = (kind, n) => `draggable="true" data-drag="${kind}:${esc(n)}" title="끌어서 순서 바꾸기"`;
-  $('comTabs').innerHTML = names.map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${esc(n)}" ${drag('comm', n)}`, esc(nm(n)))).join('') +
-    dictNames().map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${esc(n)}" ${drag('dict', n)}`, esc(nm(n)))).join('') +
+  // 탭 줄에는 체크해 둔 주석·사전만 (지금 보는 것은 늘 보임). 고르기는 맨 앞 '주석 ▾'
+  const shown = (k, n, on) => on || !tabHide.includes(`${k}:${n}`);
+  const all = names.length + dictNames().length, vis = names.filter(n => !tabHide.includes(`comm:${n}`)).length + dictNames().filter(n => !tabHide.includes(`dict:${n}`)).length;
+  $('comTabs').innerHTML = (all > 1 ? `<button class="tab-pick" data-tab-pick aria-haspopup="dialog" title="탭 줄에 보일 주석·사전 고르기">주석 <b>${vis}</b>/${all} ▾</button>` : '') +
+    names.filter(n => shown('comm', n, S.tab === 'comm' && S.comm === n)).map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${esc(n)}" ${drag('comm', n)}`, esc(nm(n)))).join('') +
+    dictNames().filter(n => shown('dict', n, S.tab === 'dict' && S.dict === n)).map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${esc(n)}" ${drag('dict', n)}`, esc(nm(n)))).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'xref', 'data-xref', '교차 참조') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
@@ -1564,7 +1593,7 @@ function wordPopAt(i, lemma = '') {
   const morph = (pop.dataset.morph || '').split(/[,\s]+/).filter(Boolean);
   // 단어 공부 노트: 번호 · 큰 원어 · 제목(발음·뜻) · 문법 칩 · 풀이 · 이 단어가 나오는 곳
   // 먼저 요약으로 바로 보여주고, 사전 파일을 열면 전체 풀이(사전과 같은 줄바꿈·서식)로 바꿈
-  pop.innerHTML = sheetClose + `<span class="ws-num">${e.s}</span>
+  pop.innerHTML = sheetClose + `<div class="ws-top"><span class="ws-num">${e.s}</span><button class="btn sm find" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 모두 찾기">검색</button></div>
     ${e.h ? `<div class="ws-word ${heb ? 'heb' : 'grk'}"${heb ? ' dir="rtl"' : ''}>${esc(e.h)}</div>` : ''}
     <div class="ws-title">${esc(title)}</div>
     ${morph.length ? `<div class="ws-chips">${morph.map(m => `<b>${esc(m)}</b>`).join('')}</div>` : ''}
@@ -1900,7 +1929,7 @@ $('picker').onclick = e => {
   else if (t.dataset.back !== undefined) pickerBooks();
   else if (t.dataset.chap) { closePops(); go(+t.dataset.b, +t.dataset.chap, 0, true); }
 };
-$('menuBtn').onclick = e => togglePop(e, $('menu'), $('menuBtn'));
+$('menuBtn').onclick = e => togglePop(e, $('menu'), $('menuBtn'), renderDrive);
 $('viewBtn').onclick = e => togglePop(e, $('viewBox'), $('viewBtn'));
 $('viewBox').onclick = e => e.stopPropagation();
 // 레일 바로가기: 오른쪽 칸을 원어 사전 / 교차 참조 / 보관함으로 (숨겨 둔 칸은 다시 열고, 같은 걸 또 누르면 주석으로)
@@ -2096,11 +2125,27 @@ const renderVerBox = () => $('verBox').innerHTML = '<b>번역본 고르기</b><p
 $('verPick').onclick = e => togglePop(e, $('verBox'), $('verPick'), renderVerBox);
 $('verBox').onclick = e => e.stopPropagation();
 $('verBox').onchange = e => toggleVer(e.target.value);
-// 탭 줄은 마우스 휠(위아래)로도 옆으로 넘김
-document.querySelectorAll('.tabs').forEach(el => el.addEventListener('wheel', e => {
-  if (e.deltaX || el.scrollWidth <= el.clientWidth) return;
-  el.scrollLeft += e.deltaY; e.preventDefault();
-}, { passive: false }));
+$('tabBox').onclick = e => e.stopPropagation();
+$('tabBox').onchange = e => {
+  const k = e.target.value;
+  tabHide = e.target.checked ? tabHide.filter(x => x !== k) : [...tabHide, k];
+  prefs.set('tabHide', tabHide); renderComm();
+  $('tabBox')._anchor = $('comTabs').querySelector('[data-tab-pick]'); // 다시 그린 버튼으로 (한 번 더 누르면 닫히게)
+};
+// 탭 줄은 마우스 휠(위아래)로도 옆으로 넘기고, 가려진 쪽 끝은 흐리게
+document.querySelectorAll('.tabs').forEach(el => {
+  el.addEventListener('wheel', e => {
+    if (e.deltaX || el.scrollWidth <= el.clientWidth) return;
+    el.scrollLeft += e.deltaY; e.preventDefault();
+  }, { passive: false });
+  const edge = () => {
+    el.classList.toggle('more-l', el.scrollLeft > 2);
+    el.classList.toggle('more-r', el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  };
+  el.addEventListener('scroll', edge, { passive: true });
+  new ResizeObserver(edge).observe(el);
+  new MutationObserver(edge).observe(el, { childList: true });
+});
 $('bible').onclick = e => {
   const nb = e.target.closest('[data-note]');
   if (nb) { e.stopPropagation(); select(+nb.dataset.note, undefined, true);return openNote(+nb.dataset.note, nb); }
@@ -2121,6 +2166,8 @@ $('selbar').onclick = e => {
   else if (t.dataset.act === 'clear') { sel.clear(); refreshBible(); }
 };
 $('comTabs').onclick = e => {
+  const pick = e.target.closest('[data-tab-pick]');
+  if (pick) return togglePop(e, $('tabBox'), pick, renderTabBox);
   const t = e.target.closest('.tab'); if (!t) return;
   if (t.dataset.comm) { S.comm = t.dataset.comm; S.tab = 'comm'; if (S.comm2 === S.comm) S.comm2 = commNames().find(n => n !== S.comm) || ''; }
   else if (t.dataset.dict) { S.dict = t.dataset.dict; S.tab = 'dict'; }
@@ -2459,10 +2506,10 @@ const TOUR = [
   { sel: ['.welcome .btn.primary', '.welcome .btn.primary + .btn'], title: '여기서 시작하세요', text: '성경·주석·사전 파일을 모아 둔 폴더를 <b>폴더 열기</b>로 고르면 한 번에 불러와요. 한 번 넣으면 다음부터 자동으로 열려요.' },
   { sel: ['.nav'], title: '성경 이동', text: '큰 제목의 <b>책 이름</b>을 누르면 성경을, <b>장</b>을 누르면 장을 골라요. ‹ › 또는 키보드 <b>← →</b>로 앞뒤 장, <b>↑ ↓</b>로 앞뒤 절로 움직여요.' },
   { sel: ['#back', '#fwd'], title: '뒤로 · 앞으로', text: '링크나 검색으로 건너뛴 뒤 원래 자리로 돌아가요. 단축키 <b>Alt+← / Alt+→</b>' },
-  { sel: ['#verTabs'], title: '번역본', text: '누르면 보기/끄기. <b>여러 개를 고르면 나란히 대조</b>해서 봐요. 탭을 끌어서 순서를 바꿀 수 있어요.' },
+  { sel: ['#verPick', '#verTabs'], title: '번역본', text: '<b>번역본 ▾</b>에서 체크하면 <b>여러 개를 나란히 대조</b>해서 봐요. 고른 번역본만 옆에 보이고, 끌어서 순서를 바꿀 수 있어요.' },
   { sel: ['#bible'], title: '본문', text: '절을 누르면 선택돼요. 아래에 뜨는 막대에서 <b>복사·하이라이트·메모·책갈피</b>를 할 수 있어요. 원어 성경에서는 <b>단어를 누르면 사전 뜻</b>이 떠요.' },
   { sel: ['[data-rail="dict"]', '[data-rail="xref"]', '[data-rail="saved"]'], title: '바로가기', text: '<b>원어 사전 · 교차 참조 · 보관함</b>을 오른쪽 칸에 바로 열어요. 한 번 더 누르면 주석으로 돌아가요.' },
-  { sel: ['#comTabs'], title: '오른쪽 칸', text: '<b>주석·원전분해·원어 사전·교차 참조·보관함</b>을 탭으로 바꿔 봐요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
+  { sel: ['#comTabs'], title: '오른쪽 칸', text: '<b>주석·원전분해·원어 사전·교차 참조·보관함</b>을 탭으로 바꿔 봐요. 맨 앞 <b>주석 ▾</b>에서 탭 줄에 보일 것을 골라요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
   { sel: ['#q'], title: '검색', text: '여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로, <b>H430·G26</b>은 원어 번호로 찾아요. 키보드 <b>/</b> 로 바로 검색창으로.' },
   { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기</b>를 줄이고 키우고, <b>글꼴</b>을 골라요. 기본은 프리텐다드예요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
