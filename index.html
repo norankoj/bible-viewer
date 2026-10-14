@@ -490,10 +490,19 @@ async function addFile(f) {
   fileInfo[name] = { key: f.name, size: f.size };
   const kind = f.name.match(/\.(ont|ot|nt)$/i)?.[1].toLowerCase();
   if (kind) { bibles[name] = parseOnt(new Uint8Array(await f.arrayBuffer()), kind); delete plain[name]; return; }
+  delete commKind[name]; // 같은 이름의 다른 파일로 바뀌었을 수 있음
   if (/\.sdb$/i.test(f.name)) {
-    const db = await sqlOpen(f);
-    const sample = (() => { try { return rows(db, 'select btext from Bible limit 20', []).flat().join(''); } finally { db.close(); } })();
-    if (!/\(기본\s*<W[HG]/.test(sample)) { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
+    // 원전분해인지 성경인지: 한 번 열어 본 결과를 기억 (55MB 같은 큰 파일을 앱 켤 때마다 다시 열지 않게)
+    const seen = prefs.get('sdbKind', {}), key = `${f.name}:${f.size}`;
+    if (!seen[key]) {
+      const db = await sqlOpen(f);
+      try {
+        if (!rows(db, "select 1 from sqlite_master where type='table' and name='Bible'", []).length) throw new Error('베들레헴 성경·원전분해 형식이 아닙니다');
+        seen[key] = /\(기본\s*<W[HG]/.test(rows(db, 'select btext from Bible limit 20', []).flat().join('')) ? 'ana' : 'bible';
+      } finally { db.close(); }
+      prefs.set('sdbKind', seen);
+    }
+    if (seen[key] === 'bible') { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
     commKind[name] = 'sdb'; // 원전분해
   } else if (/\.(bdb|mybible)$/i.test(f.name)) { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
   // 주석·사전은 여기서 열지 않음 (필요할 때 openComm/openDict). 종류는 이름으로, 모르면 열어서 표를 봄
@@ -1119,7 +1128,8 @@ function rankCandidates(ids, gloss, name) {
   return [...ids].sort((a, b) => score(b) - score(a) || a.slice(1) - b.slice(1));
 }
 
-async function showWord(w) {
+// popOnly: 원전분해처럼 주석 칸 안에서 누른 단어는 '옆 사전' 설정이어도 팝업으로 (보던 탭이 사전으로 바뀌지 않게)
+async function showWord(w, popOnly) {
   const pop = $('wordPop'), name = S.dict;
   const show = html => { pop.innerHTML = html; openPop(pop, w); }; // 다른 단어를 누르면 그 단어 옆으로
   if (!name) return show('<p class="muted">원어 사전 파일(.gbk.twm)을 추가하면 단어 뜻이 나옵니다.</p>');
@@ -1131,7 +1141,7 @@ async function showWord(w) {
     : rankCandidates(finderOf(name, /[֐-׿]/.test(lemma) ? 'H' : 'G')(lemma), w.dataset.gloss, name);
   pop.dataset.ids = ids.join(',');
   // 옆 사전 모드: 첫 후보를 사전 탭에 열고, 다른 후보는 "‹ 목록"에
-  if (wordSide && !S.hideComm && ids.length) { // 주석 칸을 숨겼으면 팝업으로
+  if (wordSide && !popOnly && !S.hideComm && ids.length) { // 주석 칸을 숨겼으면 팝업으로
     closePops();
     const info = byIdOf(name);
     D.q = lemma; D.entry = ids[0]; D.scroll = 0;
@@ -1522,6 +1532,7 @@ async function removeModules(items) {
     if (kind === 'comm') {
       comms[name]?.close(); delete comms[name]; delete commText[name]; delete commFiles[name];
       await idb('cache', 'readwrite', s => s.delete(commKey(name))).catch(() => {});
+      delete commKind[name];
     }
     if (kind === 'dict') {
       dicts[name]?.close(); delete dicts[name];
@@ -1699,7 +1710,7 @@ $('comm2').onclick = e => anaWord(e) || linkClick(e);
 // 원전분해의 스트롱 번호: 성경 단어를 누른 것처럼 그 자리에 사전 팝업
 function anaWord(e) {
   const a = e.target.closest('.ana [data-strong]'); if (!a) return false;
-  e.preventDefault(); e.stopPropagation(); showWord(a); return true;
+  e.preventDefault(); e.stopPropagation(); showWord(a, true); return true;
 }
 function linkClick(e) {
   const a = e.target.closest('a[data-ref]'); if (!a) return;
