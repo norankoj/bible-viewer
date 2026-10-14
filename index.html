@@ -257,6 +257,8 @@
   .welcome h2 { font-size: 20px; }
   .welcome-sub { margin: 0 0 4px; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .02em; }
   .welcome-note { font-size: 12px; }
+  .welcome-mean { margin: -2px 0 14px; font-size: 13px; }
+  .welcome-mean b { color: var(--accent); }
   .welcome-fmt { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
   /* 지원 형식 표 */
   .fmt { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; color: var(--fg); }
@@ -638,6 +640,7 @@ const welcome = `<div class="empty welcome">
   <img class="welcome-badge" src="icons/icon-512.png" alt="" aria-hidden="true">
   <p class="welcome-sub">커피 한 잔과 함께하는 말씀 묵상</p>
   <h2>커피성경에 오신 것을 환영합니다</h2>
+  <p class="welcome-mean">커피성경 = <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b> <span style="white-space:nowrap">(Community People's Bible)</span></p>
   <p>가지고 계신 성경과 주석 파일을 추가하면 바로 읽을 수 있어요.<br><b>bible-viewer</b> 폴더를 통째로 고르면 그 안의 <b>성경</b>, <b>주석</b>, <b>사전</b>을 한 번에 불러오고, 다음부터는 자동으로 열립니다.</p>
   <p class="welcome-note">파일은 이 컴퓨터 안에서만 읽고 어디에도 보내지 않습니다.</p>
   <button class="btn primary" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button>
