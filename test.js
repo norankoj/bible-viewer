@@ -48,6 +48,21 @@ assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In t
   assert.strictEqual(tagOriginal('בָּרָא אֱלֹהִים', origKey('אלהים') + ':' + (430).toString(36), 'H'), 'בָּרָא אֱלֹהִים<WH430>');
 }
 
+// 베들레헴 개역개정S(.sdb): 단어 뒤 스트롱 번호는 남기고 번호 없음(<WH0>)은 지움
+{
+  const { bdbText, verseHtml } = require('./decode.js');
+  assert.strictEqual(bdbText('빛이<WH216> 있으라<WH1961> 하시니<WH0> 다<WG 3956> 그<WG>'), '빛이<WH216> 있으라<WH1961> 하시니 다<WG3956> 그');
+  assert.match(verseHtml(bdbText('하나님이<WH430> 이르시되<WH559>')), /<span class="w" data-strong="H430">하나님이<\/span>/);
+}
+
+// 번호 때문에 쪼개진 띄어쓰기를 일반 본문에 맞춤 (글자가 조금 다른 판이어도 같은 부분은 맞춤)
+{
+  const { respace, plainVerse } = require('./decode.js');
+  assert.strictEqual(respace('태초에<WH7225> 천<WH8064> 지를<WH776> 창조하시니라<WH1254>', '태초에 천지를 창조하시니라'), '태초에<WH7225> 천<WH8064>지를<WH776> 창조하시니라<WH1254>');
+  assert.strictEqual(plainVerse(respace('세째<WH7992> 강의<WH5104> 이름은<WH8034> 힛데<WH2313> 겔이라', '셋째 강의 이름은 힛데겔이라')), '세째 강의 이름은 힛데겔이라');
+  assert.strictEqual(respace('그<WG846> 를<WG1519>', '전혀 다른 글'), '그<WG846> 를<WG1519>'); // 짝이 없으면 그대로
+}
+
 // 기기끼리 메모·책갈피 합치기
 {
   const { mergeMarks } = require('./decode.js');

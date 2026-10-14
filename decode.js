@@ -409,7 +409,8 @@ function bdbText(t) {
     .replace(/<sup>([^<]+)<\/sup>/g, (all, k) => notes[k] ? `<RF>${notes[k]}<Rf>` : '')
     .replace(/<i>/gi, '<FI>').replace(/<\/i>/gi, '<Fi>')
     .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<(?!\/?(?:FI|Fi|RF|Rf)>)[^>]*>/g, '') // 그 밖의 HTML 태그는 지움
+    .replace(/<W([HG]) +(\d)/g, '<W$1$2').replace(/<W[HG]0*>/g, '') // 띄어 쓴 번호는 붙이고, 번호 없음 표시(<WH0>, <WH>)는 지움 (베들레헴 개역개정S 등)
+    .replace(/<(?!\/?(?:FI|Fi|RF|Rf)>|W[HG]\d)[^>]*>/g, '') // 그 밖의 HTML 태그는 지움 (단어 뒤 스트롱 번호 <WH430>은 남김)
     .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ').trim();
 }
@@ -498,6 +499,45 @@ const anaHtml = btext => anaWords(btext).map(w => {
     (w.morph || w.gloss ? `<div class="aw-m">→ ${esc(w.morph)}${w.gloss ? ` : <b>${esc(w.gloss)}</b>` : ''}</div>` : '') + '</div>';
 }).join('');
 
+// 스트롱 번호를 붙이느라 쪼개진 띄어쓰기("천<WH8064> 지를<WH776>")를 같은 번역의 일반 성경 본문(ref, 꾸밈 없는 글)에 맞춤.
+// 띄어쓰기를 뺀 글자가 똑같을 때만 바꾸고, 번호는 앞 단어에 붙은 채로 둠 → "천<WH8064>지를<WH776>"
+// 문장부호는 비교에서 뺌 (번호 붙인 본문에는 쉼표가 빠진 곳이 많음). 글자가 다르면(판이 다른 본문) 그대로
+const PUNCT = /[\s,.;:!?·'"“”‘’()[\]…\-]/;
+const letters = s => [...s.replace(/<[^>]*>/g, '')].filter(c => !PUNCT.test(c)).join('');
+// 글자 목록과, 글자마다 뒤에 띄어쓰기가 오는지 (번호 태그는 건너뜀: "천<WH8064> 지를" 이면 '천' 뒤에 띄어쓰기)
+const spacing = s => {
+  const ch = [], gap = [];
+  for (const c of s.replace(/<[^>]*>/g, '')) if (/\s/.test(c)) { if (ch.length) gap[ch.length - 1] = true; } else if (!PUNCT.test(c)) { ch.push(c); gap.push(false); }
+  return { ch, gap };
+};
+function respace(tagged, ref) {
+  if (!ref || !tagged) return tagged;
+  const t = spacing(tagged), r = spacing(ref), n = t.ch.length, m = r.ch.length;
+  let at; // 번호 본문의 글자 k 가 ref 의 몇 번째 글자와 같은지 (-1: 판이 달라 짝이 없음 → 원래 띄어쓰기 그대로)
+  if (t.ch.join('') === r.ch.join('')) at = t.ch.map((_, k) => k);
+  else {
+    if (n * m > 4e5) return tagged;
+    // 최장 공통 부분열로 짝 맞추기 (판이 달라 몇 글자 다른 절: "세째/셋째", "실과/열매")
+    const L = new Uint16Array((n + 1) * (m + 1)), w = m + 1;
+    for (let a = n - 1; a >= 0; a--) for (let b = m - 1; b >= 0; b--)
+      L[a * w + b] = t.ch[a] === r.ch[b] ? L[(a + 1) * w + b + 1] + 1 : Math.max(L[(a + 1) * w + b], L[a * w + b + 1]);
+    at = new Array(n).fill(-1);
+    for (let a = 0, b = 0; a < n && b < m;)
+      if (t.ch[a] === r.ch[b]) at[a++] = b++;
+      else if (L[(a + 1) * w + b] >= L[a * w + b + 1]) a++; else b++;
+  }
+  const gap = at.map((j, k) => j >= 0 && (k + 1 >= n || at[k + 1] === j + 1) ? !!r.gap[j] : !!t.gap[k]);
+  let i = 0, pend = false, out = '';
+  for (const part of tagged.split(/(<[^>]*>)/))
+    if (part[0] === '<') out += part;
+    else for (const ch of part) {
+      if (/\s/.test(ch)) continue;
+      if (PUNCT.test(ch)) { out += ch; continue; } // 부호는 앞 글자에 붙임
+      out += (pend ? ' ' : '') + ch; pend = gap[i++];
+    }
+  return out;
+}
+
 // 두 기기의 메모·책갈피 합치기: 같은 항목은 나중에 고친 쪽(t), 지운 기록(del: {id: 지운 때})이 더 나중이면 지움
 function mergeMarks(a, aDel, b, bDel) {
   const del = { ...aDel };
@@ -508,4 +548,4 @@ function mergeMarks(a, aDel, b, bDel) {
   return { marks: [...out.values()], del };
 }
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal, anaWords, anaHtml, mergeMarks };
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal, anaWords, anaHtml, mergeMarks, respace, letters };

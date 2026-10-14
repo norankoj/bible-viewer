@@ -181,21 +181,18 @@
   #biblePane.has-bg .page-head, #biblePane.has-bg .par .heads { background: var(--glass); -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border-color: color-mix(in srgb, var(--line) 55%, transparent); }
   #biblePane.has-bg .note-badge { background: var(--glass); }
   #biblePane.has-bg .tab.on { background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
-  #biblePane.has-bg .verse.on:not([class*="hl-"]), #biblePane.has-bg .par .row.on:not([class*="hl-"]) > * { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
-  #biblePane.has-bg .verse.hl-yellow, #biblePane.has-bg .par .row.hl-yellow > * { background: color-mix(in srgb, var(--hl-yellow) 65%, transparent); }
-  #biblePane.has-bg .verse.hl-green, #biblePane.has-bg .par .row.hl-green > * { background: color-mix(in srgb, var(--hl-green) 65%, transparent); }
-  #biblePane.has-bg .verse.hl-blue, #biblePane.has-bg .par .row.hl-blue > * { background: color-mix(in srgb, var(--hl-blue) 65%, transparent); }
-  #biblePane.has-bg .verse.hl-pink, #biblePane.has-bg .par .row.hl-pink > * { background: color-mix(in srgb, var(--hl-pink) 65%, transparent); }
+  #biblePane.has-bg .verse.on, #biblePane.has-bg .par .row.on > * { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
+  #biblePane.has-bg :is(.verse, .par .row)[class*="hl-"] { --hl-a: 65%; }
   .par .row { display: contents; }
   .par .row > * { padding: 6px 10px; font: var(--fs)/1.75 var(--read); cursor: pointer; user-select: none; }
   .par .row > .vn { font: 600 11px/2.6 var(--sans); padding: 6px 0 6px 6px; white-space: nowrap; }
   .par { grid-template-columns: 34px repeat(var(--n), minmax(0, 1fr)); } /* 절 번호 칸: 세 자리(119편 176절)까지 한 줄 */
   /* 선택: 왼쪽 막대 + (하이라이트가 없으면) 연한 배경 */
-  .verse.on:not([class*="hl-"]), .par .row.on:not([class*="hl-"]) > * { background: var(--accent-soft); }
-  .hl-yellow, .verse.hl-yellow, .par .row.hl-yellow > * { background: var(--hl-yellow); }
-  .hl-green, .verse.hl-green, .par .row.hl-green > * { background: var(--hl-green); }
-  .hl-blue, .verse.hl-blue, .par .row.hl-blue > * { background: var(--hl-blue); }
-  .hl-pink, .verse.hl-pink, .par .row.hl-pink > * { background: var(--hl-pink); }
+  .verse.on, .par .row.on > * { background: var(--accent-soft); }
+  /* 하이라이트: 칸 전체가 아니라 글자 줄마다 형광펜처럼 (줄이 바뀌면 줄마다 따로) */
+  .hl-yellow { --hl: var(--hl-yellow); } .hl-green { --hl: var(--hl-green); } .hl-blue { --hl: var(--hl-blue); } .hl-pink { --hl: var(--hl-pink); }
+  .sw[class*="hl-"] { background: var(--hl); }
+  .verse[class*="hl-"] > span:not(.vn), .par .row[class*="hl-"] > span:not(.vn) > span { background: color-mix(in srgb, var(--hl) var(--hl-a, 100%), transparent); -webkit-box-decoration-break: clone; box-decoration-break: clone; border-radius: 3px; padding: 2px 1px; }
   /* 히브리어 원문(BHS 등): 오른쪽→왼쪽, 음역·기본형 뜻은 작게 */
   .heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", "Arial Hebrew", serif; }
   .verse.heb, .par .row > .heb { font-size: calc(var(--fs) * 1.25); line-height: 2.1; }
@@ -830,6 +827,22 @@ function closeUnusedComms() {
     if (n !== S.comm && !(S.split && n === S.comm2) && !busy.endsWith(n) && !busy.includes(n + '\n')) { comms[n].close(); delete comms[n]; }
 }
 
+// 스트롱 번호를 붙인 한국어 성경(베들레헴 개역개정S 등)은 번호 때문에 "천 지를"처럼 쪼개져 있음
+// → 같은 번역의 일반 성경(창 1:1·시 23:1·요 3:16 글자가 같은 것)이 있으면 그 띄어쓰기에 맞춤
+// ponytail: 켤 때마다 다시 맞춤(성경 하나에 0.6초쯤), 느려지면 결과를 cache 에 저장
+function respaceTagged() {
+  const tagged = b => b.tagged ??= b.some(l => /[가-힣]<W[HG]\d/.test(l));
+  const SAMPLE = [0, START[19][22], START[43][2] + 15];
+  for (const n of Object.keys(bibles)) {
+    const b = bibles[n];
+    if (b.spaced || !tagged(b)) continue;
+    const ref = Object.keys(bibles).find(r => r !== n && !tagged(bibles[r]) &&
+      SAMPLE.filter(i => b[i] && letters(b[i]) === letters(plainVerse(bibles[r][i]))).length >= 2);
+    if (!ref) continue; // 일반 성경이 나중에 들어오면 그때 맞춤
+    bibles[n] = Object.assign(b.map((t, i) => respace(t, plainVerse(bibles[ref][i]))), { spaced: true, tagged: true });
+    delete plain[n];
+  }
+}
 // picked: 파일 선택으로 직접 고른 것 (폴더에는 다른 파일도 섞여 있어 안 맞는 건 조용히 건너뜀)
 async function load(files, persist, picked) {
   // theWord가 암호화한 유료 모듈(.ontx, .ntx 등)은 열 수 없음
@@ -850,6 +863,7 @@ async function load(files, persist, picked) {
     } catch (err) { alert(`${f.name}: 읽을 수 없습니다 (${err.message})`); }
   }
   if (files.length) progress();
+  respaceTagged();
   const cn = commNames();
   S.versions = S.versions.filter(n => bibles[n]);
   if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
