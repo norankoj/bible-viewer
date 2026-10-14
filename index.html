@@ -257,6 +257,24 @@
   .welcome h2 { font-size: 20px; }
   .welcome-sub { margin: 0 0 4px; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .02em; }
   .welcome-note { font-size: 12px; }
+  .welcome-fmt { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
+  /* 지원 형식 표 */
+  .fmt { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; color: var(--fg); }
+  .fmt th, .fmt td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .fmt thead th { color: var(--muted); font-weight: 600; }
+  .fmt tbody th { font-weight: 600; white-space: nowrap; }
+  .fmt code { font: 12px ui-monospace, SFMono-Regular, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+  .fmt-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  /* 칸이 좁으면 표 대신 프로그램마다 한 묶음으로 */
+  .welcome-fmt, #fmtBox { container-type: inline-size; }
+  @container (max-width: 440px) {
+    .fmt thead { display: none; }
+    .fmt tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .fmt th, .fmt td { display: block; border: 0; padding: 2px 4px; }
+    .fmt td::before { content: attr(data-l); display: inline-block; width: 5.5em; color: var(--muted); }
+  }
+  #fmtBox { width: min(560px, calc(100vw - 32px)); }
+  #fmtBox > b { display: block; margin-bottom: 8px; }
   @keyframes welcome-in { from { opacity: 0; transform: scale(.96); } to { opacity: .22; transform: none; } }
   @keyframes welcome-text { from { opacity: 0; transform: translateY(6px); } }
   @media (prefers-reduced-motion: reduce) { .welcome-badge, .welcome > * { animation: none !important; } }
@@ -359,7 +377,8 @@
 <div class="pop" id="picker" role="dialog" aria-label="성경 책과 장 선택"></div>
 <div class="pop" id="menu" role="menu">
   <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석·사전을 한 번에 추가</small></button>
-  <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword 성경, 주석, 사전</small></button>
+  <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword·베들레헴 성경, 주석, 사전</small></button>
+  <button id="fmtBtn">지원하는 파일 형식<small>어떤 확장자를 넣을 수 있는지</small></button>
   <hr>
   <div class="accent-row" role="group" aria-label="색 설정"><span>색 설정<small>버튼·선택·강조 색</small></span>
     <span class="accent-sw"><button data-accent="green"><i style="background:#035b36"></i>초록</button><button data-accent="blue"><i style="background:#2c4aa8"></i>파랑</button><button data-accent="black"><i style="background:#1d2027"></i>검정</button></span></div>
@@ -386,6 +405,7 @@
 <div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
+<div class="pop" id="fmtBox" role="dialog" aria-label="지원하는 파일 형식"></div>
 <div class="pop" id="bgBox" role="dialog" aria-label="배경 화면">
   <b>성경 배경 화면</b>
   <p class="help">성경 본문 뒤에 사진을 깔 수 있습니다. 사진은 이 브라우저에만 저장됩니다.</p>
@@ -530,10 +550,14 @@ function closeUnusedComms() {
     if (n !== S.comm && !(S.split && n === S.comm2) && !busy.endsWith(n) && !busy.includes(n + '\n')) { comms[n].close(); delete comms[n]; }
 }
 
-async function load(files, persist) {
+// picked: 파일 선택으로 직접 고른 것 (폴더에는 다른 파일도 섞여 있어 안 맞는 건 조용히 건너뜀)
+async function load(files, persist, picked) {
   // theWord가 암호화한 유료 모듈(.ontx, .ntx 등)은 열 수 없음
-  const locked = files.filter(f => /\.(ont|ot|nt|twm)x$/i.test(f.name)).map(f => f.name);
+  const isLocked = f => /\.(ont|ot|nt|twm)x$/i.test(f.name);
+  const locked = files.filter(isLocked).map(f => f.name);
   if (locked.length) alert(`${locked.join(', ')}\n\n암호화된 theWord 모듈이라 열 수 없습니다. theWord 프로그램에서만 볼 수 있는 파일입니다.`);
+  const other = picked ? files.filter(f => !MODULE.test(f.name) && !isLocked(f)).map(f => f.name) : [];
+  if (other.length) alert(`${other.join(', ')}\n\n성경·주석·사전 파일이 아니라서 건너뛰었습니다. 넣을 수 있는 파일:\n\n${FORMATS_TEXT}`);
   files = files.filter(f => MODULE.test(f.name));
   // 저장 공간이 부족할 때 브라우저가 임의로 지우지 않도록 영구 저장 요청 (지원 안 하면 무시)
   if (persist && files.length) navigator.storage?.persist?.().catch(() => {});
@@ -590,6 +614,15 @@ function step(d) {
   if (b + d >= 1 && b + d <= 66) go(b + d, d > 0 ? 1 : VERSES[b + d - 1].length);
 }
 
+/* ---------- 넣을 수 있는 파일 형식 (첫 화면, 파일 → 지원하는 파일 형식, 안 맞는 파일 알림에 씀) ---------- */
+const FORMATS = `<table class="fmt"><thead><tr><th>프로그램</th><th>성경</th><th>주석</th><th>원어 사전</th></tr></thead><tbody>
+  <tr><th>theWord</th><td data-l="성경"><code>.ont</code> <code>.ot</code> <code>.nt</code></td><td data-l="주석"><code>.cmt.twm</code></td><td data-l="원어 사전"><code>.gbk.twm</code> <code>.dct.twm</code></td></tr>
+  <tr><th>Bible Analyzer</th><td data-l="성경"><code>.bdb</code></td><td data-l="주석">–</td><td data-l="원어 사전"><code>.dct</code></td></tr>
+  <tr><th>MySword</th><td data-l="성경"><code>.bbl.mybible</code></td><td data-l="주석">–</td><td data-l="원어 사전">–</td></tr>
+  <tr><th>베들레헴</th><td data-l="성경"><code>.sdb</code></td><td data-l="주석"><code>.sdb</code> 원전분해</td><td data-l="원어 사전">–</td></tr></tbody></table>
+  <p class="fmt-note">암호화된 유료 모듈(<code>.ontx</code> <code>.ntx</code> <code>.otx</code> 등)은 열 수 없습니다.</p>`;
+const FORMATS_TEXT = '성경: .ont .ot .nt .bdb .bbl.mybible .sdb\n주석: .cmt.twm .sdb(원전분해)\n원어 사전: .gbk.twm .dct.twm .dct';
+
 /* ---------- 성경 ---------- */
 // 첫 화면 (성경·주석을 아직 안 불러왔을 때): 커피성경 배지를 흐리게 + 인사말
 const welcome = `<div class="empty welcome">
@@ -598,7 +631,8 @@ const welcome = `<div class="empty welcome">
   <h2>커피성경에 오신 것을 환영합니다</h2>
   <p>가지고 계신 성경과 주석 파일을 추가하면 바로 읽을 수 있어요.<br><b>bible-viewer</b> 폴더를 통째로 고르면 그 안의 <b>성경</b>, <b>주석</b>, <b>사전</b>을 한 번에 불러오고, 다음부터는 자동으로 열립니다.</p>
   <p class="welcome-note">파일은 이 컴퓨터 안에서만 읽고 어디에도 보내지 않습니다.</p>
-  <button class="btn primary" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button></div>`;
+  <button class="btn primary" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button>
+  <div class="welcome-fmt"><p class="welcome-sub">넣을 수 있는 파일</p>${FORMATS}</div></div>`;
 
 function verseMark(v) {
   const m = marks.get(`${S.b}.${S.c}.${v}`);
@@ -1430,7 +1464,9 @@ $('clearAll').onclick = async () => {
   await idb('cache', 'readwrite', s => { const r = s.getAllKeys(); r.onsuccess = () => r.result.filter(k => k !== 'bg').forEach(k => s.delete(k)); return r; }).catch(() => {});
   location.reload();
 };
-$('files').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
+$('files').onchange = e => { load([...e.target.files], true, true); e.target.value = ''; };
+$('fmtBtn').onclick = e => { e.stopPropagation(); $('fmtBox').innerHTML = '<b>넣을 수 있는 파일</b>' + FORMATS; openPop($('fmtBox'), $('menuBtn')); };
+$('fmtBox').onclick = e => e.stopPropagation();
 $('folder').onchange = e => { load([...e.target.files], true); e.target.value = ''; };
 /* ---------- 탭 끌어서 순서 바꾸기 ---------- */
 let dragging = null; // "bible:개역개정" 처럼 종류:이름
