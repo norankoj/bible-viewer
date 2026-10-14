@@ -214,8 +214,8 @@
   /* 원어 단어 공부 노트 (번호·큰 원어·문법 칩·풀이·나오는 곳)
      새 디자인: 화면 오른쪽에 붙어 열림(휴대폰은 아래에서 올라옴) / 기존 디자인: 누른 단어 옆 팝업 */
   #wordPop { width: min(440px, calc(100vw - 32px)); max-height: 70vh; z-index: 25; padding: 18px 20px 20px; overflow-y: auto; overscroll-behavior: contain; }
-  :root:not([data-design="classic"]) #wordPop { inset: 0 0 0 auto !important; width: min(400px, 100vw); max-height: none !important; padding: 22px 24px 32px; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -28px 0 56px -28px rgb(10 25 18 / .4); }
-  :root:not([data-design="classic"]) #wordPop.open { animation: sheet-in .3s cubic-bezier(.16,1,.3,1); }
+  :root:not([data-design="classic"]):not([data-word="over"]) #wordPop { inset: 0 0 0 auto !important; width: min(400px, 100vw); max-height: none !important; padding: 22px 24px 32px; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -28px 0 56px -28px rgb(10 25 18 / .4); }
+  :root:not([data-design="classic"]):not([data-word="over"]) #wordPop.open { animation: sheet-in .3s cubic-bezier(.16,1,.3,1); }
   :root:not([data-design="classic"]) .ws-word { font-size: 46px; margin-top: 14px; }
   @keyframes sheet-in { from { opacity: 0; transform: translateX(28px); } }
   @keyframes sheet-up { from { opacity: 0; transform: translateY(32px); } }
@@ -228,8 +228,6 @@
   .ws-word.heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", serif; text-align: left; }
   .ws-word.grk { font-family: "Times New Roman", var(--serif); }
   .ws-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 14px; }
-  .ws-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
-  .ws-chips b { font-weight: 600; font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--page); }
   .ws-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .ws-h { font: 700 12px var(--sans); color: var(--muted); margin: 22px 0 8px; }
   .ws-occ { display: flex; gap: 10px; width: 100%; text-align: left; align-items: baseline; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--page); transition: border-color .15s; }
@@ -517,8 +515,8 @@
     .selbar > *, .sel-ref { flex: none; white-space: nowrap; }
     #bible { padding-left: 16px; --stick: -18px; }
     .chapter-num { left: auto; right: 6px; font-size: 92px; }
-    :root:not([data-design="classic"]) #wordPop { inset: auto 0 0 0 !important; width: 100%; max-height: 80vh !important; border-width: 1px 0 0; border-radius: 18px 18px 0 0; padding: 18px 20px calc(24px + env(safe-area-inset-bottom)); }
-    :root:not([data-design="classic"]) #wordPop.open { animation-name: sheet-up; }
+    :root:not([data-design="classic"]):not([data-word="over"]) #wordPop { inset: auto 0 0 0 !important; width: 100%; max-height: 80vh !important; border-width: 1px 0 0; border-radius: 18px 18px 0 0; padding: 18px 20px calc(24px + env(safe-area-inset-bottom)); }
+    :root:not([data-design="classic"]):not([data-word="over"]) #wordPop.open { animation-name: sheet-up; }
     main, main.split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 55% 45%; }
     main.split #pane2, [data-split], .resizer { display: none !important; }
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
@@ -1009,7 +1007,7 @@ function renderBible() {
   // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
   $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>`).join('') +
     (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
-    (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
+    (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지 (누를 때마다 바뀜)">단어 뜻: ${wordSide ? '옆 사전' : wordOver && !classic() ? '팝오버' : '팝업'}</button>` : '') +
     (S.versions.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">대조 보기 중</span>` : '') +
     (S.hideComm ? `<button class="tab on ${names.length > 1 || words ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>/${names.length} ▾`;
@@ -1597,7 +1595,6 @@ function rankCandidates(ids, gloss, name) {
 // popOnly: 원전분해처럼 주석 칸 안에서 누른 단어는 '옆 사전' 설정이어도 팝업으로 (보던 탭이 사전으로 바뀌지 않게)
 async function showWord(w, popOnly) {
   const pop = $('wordPop'), name = S.dict;
-  pop.dataset.morph = w.dataset.morph || ''; // 원전분해에서 누른 단어는 문법(품사·시제 등)도 함께
   const show = html => { pop.innerHTML = sheetClose + html; openPop(pop, w); }; // 오른쪽 단어 공부 노트
   if (!name) return show('<p class="muted">원어 사전 파일(.gbk.twm)을 추가하면 단어 뜻이 나옵니다.</p>');
   show('<p class="muted">사전 준비 중… (처음 한 번, 몇 초 걸립니다)</p>');
@@ -1628,13 +1625,11 @@ function wordPopAt(i, lemma = '') {
     return;
   }
   const { title, body } = e, heb = e.s[0] === 'H';
-  const morph = (pop.dataset.morph || '').split(/[,\s]+/).filter(Boolean);
-  // 단어 공부 노트: 번호 · 큰 원어 · 제목(발음·뜻) · 문법 칩 · 풀이 · 이 단어가 나오는 곳
-  // 먼저 요약으로 바로 보여주고, 사전 파일을 열면 전체 풀이(사전과 같은 줄바꿈·서식)로 바꿈
+  // 단어 공부 노트: 번호 · 큰 원어 · 제목(발음·뜻) · 풀이 · 이 단어가 나오는 곳
+  // 먼저 요약(제목)으로 바로 보여주고, 사전 파일을 열면 전체 풀이로 바꿈 (풀이 첫머리가 제목과 같아서 제목은 뺌)
   pop.innerHTML = sheetClose + `<div class="ws-top"><span class="ws-num">${e.s}</span><button class="btn sm find" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 모두 찾기">검색</button><button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button></div>
     ${e.h ? `<div class="ws-word ${heb ? 'heb' : 'grk'}"${heb ? ' dir="rtl"' : ''}>${esc(e.h)}</div>` : ''}
     <div class="ws-title">${esc(title)}</div>
-    ${morph.length ? `<div class="ws-chips">${morph.map(m => `<b>${esc(m)}</b>`).join('')}</div>` : ''}
     ${ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
       `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</details>` : ''}
     <div class="body" id="wordBody">${esc(body)}…</div>
@@ -1643,7 +1638,7 @@ function wordPopAt(i, lemma = '') {
   const name = S.dict;
   openDict(name).then(() => {
     const row = dictRow(e.s), box = $('wordBody');
-    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = entryHtml(name, e.s, row[1]); placePop(pop); }
+    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = entryHtml(name, e.s, row[1]); pop.querySelector('.ws-title')?.remove(); placePop(pop); }
   }).catch(() => {});
   wordOccurrences(e.s);
 }
@@ -1690,7 +1685,7 @@ $('wordPop').onclick = e => {
   if (open) { closePops(); S.tab = 'dict'; D.entry = open.dataset.open; D.list = null; renderComm(); return; }
   // 풀이 속 링크: 번호 참조는 팝업 안에서 그 항목으로, 성경 구절은 그 구절로
   const st = e.target.closest('[data-strong]');
-  if (st) { e.preventDefault(); $('wordPop').dataset.ids = st.dataset.strong; $('wordPop').dataset.morph = ''; return wordPopAt(0); }
+  if (st) { e.preventDefault(); $('wordPop').dataset.ids = st.dataset.strong; return wordPopAt(0); }
   const ref = e.target.closest('a[data-ref]');
   if (ref) { e.preventDefault(); closePops(); const [b, c, v] = parseRef(ref.dataset.ref); if (b) go(b, c, v, true); }
 };
@@ -1922,7 +1917,7 @@ function openPop(el, anchor) {
 function placePop(el) {
   if (!el.classList.contains('open') || !el._anchor?.isConnected) return;
   // 새 디자인의 단어 노트는 화면 오른쪽(휴대폰은 아래)에 고정, 기존 디자인은 단어 옆 팝업
-  if (el.id === 'wordPop' && document.documentElement.dataset.design !== 'classic') return;
+  if (el.id === 'wordPop' && document.documentElement.dataset.design !== 'classic' && !wordOver) return;
   el.style.maxHeight = ''; // CSS 기본 높이로 재고
   const r = el._anchor.getBoundingClientRect(), w = el.offsetWidth, gap = 6, edge = 8;
   // 왼쪽 레일 버튼에서 연 창은 레일 오른쪽에 (휴대폰처럼 레일이 아래 막대면 기존대로 위로)
@@ -2166,11 +2161,18 @@ $('back').onclick = back;
 $('fwd').onclick = forward;
 $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
-let gloss = prefs.get('gloss', true), wordSide = prefs.get('wordSide', false);
+let gloss = prefs.get('gloss', true), wordSide = prefs.get('wordSide', false), wordOver = prefs.get('wordOver', false);
+// 단어 뜻 보기: 팝업(새 디자인은 오른쪽 노트) → 팝오버(단어 옆 작은 창) → 옆 사전. 기존 디자인은 팝업이 곧 단어 옆 창이라 팝업 ↔ 옆 사전
+const classic = () => document.documentElement.dataset.design === 'classic';
+const setWordMode = (side, over) => { wordSide = side; wordOver = over; prefs.set('wordSide', side); prefs.set('wordOver', over); document.documentElement.dataset.word = over ? 'over' : ''; };
+document.documentElement.dataset.word = wordOver ? 'over' : '';
 document.body.classList.toggle('no-gloss', !gloss);
 $('verTabs').onclick = e => {
   if (e.target.closest('[data-show-comm]')) { S.hideComm = false; save(); renderComm(); renderBible(); if (S.v) syncComm(S.v); return; }
-  if (e.target.closest('[data-word-side]')) { wordSide = !wordSide; prefs.set('wordSide', wordSide); return renderBible(); }
+  if (e.target.closest('[data-word-side]')) {
+    if (wordSide) setWordMode(false, false); else if (wordOver || classic()) setWordMode(true, false); else setWordMode(false, true);
+    closePops(); return renderBible();
+  }
   if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
   const x = e.target.closest('[data-ver-x]'); if (x) toggleVer(x.dataset.verX);
 };
@@ -2507,7 +2509,7 @@ let presets = prefs.get('presets', [null, null]);
 const capture = () => ({
   versions: [...S.versions], comm: S.comm, comm2: S.comm2, split: S.split, hideComm: !!S.hideComm, dict: S.dict,
   tab: ['comm', 'dict', 'xref', 'saved'].includes(S.tab) ? S.tab : 'comm',
-  fs, font, cols: { ...cols }, gloss, wordSide,
+  fs, font, cols: { ...cols }, gloss, wordSide, wordOver,
 });
 const presetSummary = p => [
   p.versions.map(nm).join('+') || '성경 없음',
@@ -2527,7 +2529,7 @@ function applyPreset(i) {
   fs = p.fs; font = p.font ?? (p.serif ? 'myeongjo' : 'gothic'); applyFont(); // 예전 세팅은 명조/고딕만
   cols = { ...COLS, ...p.cols }; applyCols(); prefs.set('cols', cols);
   gloss = p.gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss);
-  wordSide = p.wordSide; prefs.set('wordSide', wordSide);
+  setWordMode(!!p.wordSide, !!p.wordOver);
   sortVersions(); save(); refreshBible(); renderComm(); if (S.v) syncComm(S.v);
   flash(`세팅 ${i + 1}로 바꿨습니다`);
 }

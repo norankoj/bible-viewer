@@ -495,7 +495,7 @@ function anaWords(btext) {
 const anaHtml = btext => anaWords(btext).map(w => {
   const lang = /[֐-׿]/.test(w.word) ? 'heb' : 'grk';
   return `<div class="aw"><bdi class="aw-w ${lang}">${esc(w.word)}</bdi>${w.ketiv ? ` <bdi class="kt">[${esc(w.ketiv)}]</bdi>` : ''}` +
-    (w.num || w.lemma ? ` <span class="aw-b">(기본 ${w.num ? `<a href="#" data-strong="${w.num}" data-morph="${esc(w.morph)}">${w.num}</a> ` : ''}${w.lemma ? `<bdi class="${lang}">${esc(w.lemma)}</bdi> ` : ''}${esc(w.say)})</span>` : '') +
+    (w.num || w.lemma ? ` <span class="aw-b">(기본 ${w.num ? `<a href="#" data-strong="${w.num}">${w.num}</a> ` : ''}${w.lemma ? `<bdi class="${lang}">${esc(w.lemma)}</bdi> ` : ''}${esc(w.say)})</span>` : '') +
     (w.morph || w.gloss ? `<div class="aw-m">→ ${esc(w.morph)}${w.gloss ? ` : <b>${esc(w.gloss)}</b>` : ''}</div>` : '') + '</div>';
 }).join('');
 
