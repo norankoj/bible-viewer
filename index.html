@@ -697,9 +697,9 @@ function step(d) {
 /* ---------- 넣을 수 있는 파일 형식 (첫 화면, 파일 → 지원하는 파일 형식, 안 맞는 파일 알림에 씀) ---------- */
 const FORMATS = `<table class="fmt"><thead><tr><th>프로그램</th><th>성경</th><th>주석</th><th>원어 사전</th></tr></thead><tbody>
   <tr><th>theWord</th><td data-l="성경"><code>.ont</code> <code>.ot</code> <code>.nt</code></td><td data-l="주석"><code>.cmt.twm</code></td><td data-l="원어 사전"><code>.gbk.twm</code> <code>.dct.twm</code></td></tr>
-  <tr><th>Bible Analyzer</th><td data-l="성경"><code>.bdb</code></td><td data-l="주석">–</td><td data-l="원어 사전"><code>.dct</code></td></tr>
-  <tr><th>MySword</th><td data-l="성경"><code>.bbl.mybible</code></td><td data-l="주석">–</td><td data-l="원어 사전">–</td></tr>
-  <tr><th>베들레헴</th><td data-l="성경"><code>.sdb</code></td><td data-l="주석"><code>.sdb</code> 원전분해</td><td data-l="원어 사전">–</td></tr></tbody></table>
+  <tr><th>Bible Analyzer</th><td data-l="성경"><code>.bdb</code></td><td data-l="주석">없음</td><td data-l="원어 사전"><code>.dct</code></td></tr>
+  <tr><th>MySword</th><td data-l="성경"><code>.bbl.mybible</code></td><td data-l="주석">없음</td><td data-l="원어 사전">없음</td></tr>
+  <tr><th>베들레헴</th><td data-l="성경"><code>.sdb</code></td><td data-l="주석"><code>.sdb</code> 원전분해</td><td data-l="원어 사전">없음</td></tr></tbody></table>
   <p class="fmt-note">암호화된 유료 모듈(<code>.ontx</code> <code>.ntx</code> <code>.otx</code> 등)은 열 수 없습니다.</p>`;
 const FORMATS_TEXT = '성경: .ont .ot .nt .bdb .bbl.mybible .sdb\n주석: .cmt.twm .sdb(원전분해)\n원어 사전: .gbk.twm .dct.twm .dct';
 
