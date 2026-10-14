@@ -9,6 +9,7 @@
 | theWord | `.ont` `.ot` `.nt` | `.cmt.twm` | `.gbk.twm` `.dct.twm` |
 | Bible Analyzer | `.bdb` | | `.dct` |
 | MySword | `.bbl.mybible` | | |
+| 베들레헴 | `.sdb` | `.sdb` 원전분해 (주석 칸 탭) | |
 
 ## 사용법
 

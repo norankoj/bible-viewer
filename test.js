@@ -97,6 +97,13 @@ assert.strictEqual(verseHtml('<FR>a <FI>b'), '<span class="red">a <i>b</i></span
   const rtf = `{\\rtf1{\\fonttbl{\\f0\\fnil Arial;}{\\f2\\fnil\\fcharset2 Graeca;}}\\f2 ${u('lo,goj evndia,qetoj')}\\f0  - 말}`;
   assert.match(rtfToHtml(rtf), /<span class="grk">λόγος ἐνδιάθετος<\/span>/);
 }
+// 베들레헴 원전분해(.sdb): 단어·번호·기본형·발음·문법·뜻, 케티브/케레
+{
+  const { anaWords } = require('./decode.js');
+  const [w1, w2] = anaWords('\r[בְּרֵאשִׁית] (기본 <WH7225> [רֵאשִׁית] 레쉬트)@전치사, 명사 여성 단수 # 태초에*\r[כ=וַיִּישֶׂם]] [ק=וַיּוּשַׂם] (기본 <WH3455> [יָשַׂם] 야삼)@와우 계속법 # _*');
+  assert.deepStrictEqual(w1, { word: 'בְּרֵאשִׁית', ketiv: '', num: 'H7225', lemma: 'רֵאשִׁית', say: '레쉬트', morph: '전치사, 명사 여성 단수', gloss: '태초에' });
+  assert.deepStrictEqual([w2.word, w2.ketiv, w2.num, w2.gloss], ['וַיּוּשַׂם', 'וַיִּישֶׂם', 'H3455', '']);
+}
 // 강조·클릭은 단어에만: 앞 단어의 마켑(־), 단락 표시(פ), 케티브는 단어 밖
 assert.match(verseHtml('עַל<WH5921>־פְּנֵי<WH6440>'), /־<span class="w" data-strong="H6440">פְּנֵי<\/span>$/);
 assert.match(verseHtml("אֶחָֽד׃ פ <TRANS>ʔeḥˈāḏ<trans> <sub><font color='gray'>אֶחָד one</font></sub>"), /data-lemma="אֶחָד"[^>]*>אֶחָֽד׃<\/span> פ /);

@@ -475,4 +475,27 @@ function tagOriginal(line, data, lang) {
 // 교차 참조 한 줄("lnb nmc+1 …", 36진수) → [[시작 줄 번호, 범위 길이], …]
 const parseXrefs = line => (line || '').split(' ').filter(Boolean).map(x => { const [s, n] = x.split('+'); return [parseInt(s, 36), n ? parseInt(n, 36) : 0]; });
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal };
+/* ---------- 베들레헴 원전분해(.sdb): 절마다 단어 한 줄씩 ----------
+   "[בְּרֵאשִׁית] (기본 <WH7225> [רֵאשִׁית] 레쉬트)@전치사, 명사 여성 단수 # 태초에*"
+   = 단어, 스트롱 번호, 기본형, 발음, 문법, 뜻. 케티브/케레는 "[כ=쓰인]] [ק=읽는] (기본 …" */
+function anaWords(btext) {
+  return (btext || '').split(/[\r\n]+/).map(l => l.trim()).filter(Boolean).map(l => {
+    let ketiv = '';
+    l = l.replace(/^\[כ=([^\]]*)\]\]?\s*\[?ק=([^\]]*)\]/, (_, k, q) => { ketiv = k; return `[${q}]`; });
+    const word = l.match(/^\[([^\]]*)\]/)?.[1] ?? l;
+    const base = l.match(/\(기본\s*<W([HG])+?(\d+)[a-z]?\)?>\s*(?:\[([^\]]*)\])?\s*([^)]*)\)/);
+    const num = base && +base[2] ? base[1] + +base[2] : '';
+    const rest = base ? l.slice(base.index + base[0].length) : '';
+    const [morph = '', gloss = ''] = rest.replace(/^\s*@?/, '').replace(/\*\s*$/, '').split('#').map(s => s.trim());
+    return { word, ketiv, num, lemma: base?.[3] || '', say: (base?.[4] || '').trim(), morph, gloss: gloss === '_' ? '' : gloss };
+  });
+}
+// 화면용: 원어(크게) (기본 번호 기본형 발음) / → 문법 : 뜻
+const anaHtml = btext => anaWords(btext).map(w => {
+  const lang = /[֐-׿]/.test(w.word) ? 'heb' : 'grk';
+  return `<div class="aw"><bdi class="aw-w ${lang}">${esc(w.word)}</bdi>${w.ketiv ? ` <bdi class="kt">[${esc(w.ketiv)}]</bdi>` : ''}` +
+    (w.num || w.lemma ? ` <span class="aw-b">(기본 ${w.num ? `<a href="#" data-strong="${w.num}">${w.num}</a> ` : ''}${w.lemma ? `<bdi class="${lang}">${esc(w.lemma)}</bdi> ` : ''}${esc(w.say)})</span>` : '') +
+    (w.morph || w.gloss ? `<div class="aw-m">→ ${esc(w.morph)}${w.gloss ? ` : <b>${esc(w.gloss)}</b>` : ''}</div>` : '') + '</div>';
+}).join('');
+
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal, anaWords, anaHtml };

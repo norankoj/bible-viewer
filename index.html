@@ -166,7 +166,8 @@
   #bgBox { width: min(340px, calc(100vw - 32px)); }
   #bgBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
   #bgBox .bg-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-  #bgBox .bg-acts .btn.on { border-color: var(--accent); color: var(--accent); }
+  #bgBox .bg-acts .btn.on, #bgBox [data-fit].on { border-color: var(--accent); color: var(--accent); }
+  #bgBox .bg-row input:disabled { opacity: .35; }
   #bgBox .credit { margin: 12px 0 0; font-size: 12px; color: var(--muted); } #bgBox .credit a { color: inherit; }
   #bgBox .bg-row { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-top: 8px; }
   #bgBox .bg-row input { flex: 1; accent-color: var(--accent); }
@@ -235,6 +236,17 @@
   .credit a { color: inherit; }
 
   /* 빈 화면 */
+  /* 원전분해 (베들레헴 .sdb): 원어 크게, (기본 번호 기본형 발음), 아래 줄에 → 문법 : 뜻 */
+  .ana .aw { margin: 0 0 10px; }
+  .ana .aw-w { font-size: 1.45em; line-height: 1.3; }
+  .ana .aw-w.heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", serif; font-size: 1.6em; }
+  .ana .aw-b { color: var(--muted); font-size: .92em; }
+  .ana .aw-b a { color: var(--accent); }
+  .ana .aw-b .heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", serif; font-size: 1.35em; color: var(--fg); }
+  .ana .aw-b .grk { font-size: 1.1em; color: var(--fg); }
+  .ana .aw-m { color: var(--muted); font-size: .92em; padding-left: 1em; }
+  .ana .aw-m b { color: var(--accent); font-weight: 500; }
+  .ana .kt { color: var(--muted); font-size: .85em; }
   .empty { max-width: 28em; margin: 12vh auto 0; color: var(--muted); }
   .empty h2 { color: var(--fg); font-size: 18px; margin: 0 0 8px; }
   .empty .btn { margin: 16px 8px 0 0; }
@@ -380,6 +392,8 @@
   <div class="bg-acts"><button class="btn sm" data-bg="default">커피 사진</button><button class="btn sm" data-bg="none">배경 없음</button><button class="btn sm" id="bgPick" data-bg="custom">내 사진 고르기</button></div>
   <label class="bg-row">진하기 <input type="range" id="bgOp" min="5" max="100" step="1"><output id="bgOpV"></output></label>
   <label class="bg-row">흐림 <input type="range" id="bgBlur" min="0" max="20" step="1"><output id="bgBlurV"></output></label>
+  <div class="bg-row">맞춤 <button class="btn sm" data-fit="cover" title="칸을 꽉 채움 (사진 일부가 잘릴 수 있음)">꽉 채우기</button><button class="btn sm" data-fit="contain" title="사진 전체가 보이게">전체 보이기</button></div>
+  <label class="bg-row">크기 <input type="range" id="bgSize" min="30" max="100" step="1" title="전체 보이기일 때 사진 크기"><output id="bgSizeV"></output></label>
   <p class="credit">커피 사진: <a href="https://unsplash.com/photos/tNALoIZhqVM" target="_blank" rel="noopener">Mike Kenneally</a> · Unsplash</p>
 </div>
 <input type="file" id="bgFile" accept="image/*" hidden>
@@ -441,7 +455,8 @@ function idb(store, mode, fn) {
 }
 
 // theWord(.ont .ot .nt .twm), Bible Analyzer(.bdb 성경, .dct 사전), MySword(.bbl.mybible 성경)
-const MODULE = /\.(ont|ot|nt|twm|bdb|mybible|dct)$/i;
+// 베들레헴(.sdb): 원전분해(단어마다 번호·문법·뜻)는 주석 칸 탭으로, 그 밖은 성경으로
+const MODULE = /\.(ont|ot|nt|twm|bdb|mybible|dct|sdb)$/i;
 // 불러온 파일: 이름 → { key: 저장소 열쇠(원래 파일 이름), size }  (낱개 지우기에 씀)
 const fileInfo = {};
 // 화면에 보이는 이름: 파일 관리에서 바꾼 이름 → 잘 알려진 모듈의 기본 이름 → 파일 이름.
@@ -450,14 +465,19 @@ const DEFAULT_NAMES = { 메튜: '매튜헨리', 호크마주석: '호크마', Ho
 let displayNames = prefs.get('names', {});
 const nm = n => displayNames[n] || DEFAULT_NAMES[n] || n;
 async function addFile(f) {
-  const name = f.name.replace(/(\.(cmt|gbk|dct|bbl))?\.(twm|ont|ot|nt|bdb|mybible|dct)$/i, '');
+  const name = f.name.replace(/(\.(cmt|gbk|dct|bbl))?\.(twm|ont|ot|nt|bdb|mybible|dct|sdb)$/i, '');
   if (/\.mybible$/i.test(f.name) && !/\.bbl\.mybible$/i.test(f.name)) throw new Error('MySword는 성경(.bbl.mybible)만 읽을 수 있습니다');
   fileInfo[name] = { key: f.name, size: f.size };
   const kind = f.name.match(/\.(ont|ot|nt)$/i)?.[1].toLowerCase();
   if (kind) { bibles[name] = parseOnt(new Uint8Array(await f.arrayBuffer()), kind); delete plain[name]; return; }
-  if (/\.(bdb|mybible)$/i.test(f.name)) { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
+  if (/\.sdb$/i.test(f.name)) {
+    const db = await sqlOpen(f);
+    const sample = (() => { try { return rows(db, 'select btext from Bible limit 20', []).flat().join(''); } finally { db.close(); } })();
+    if (!/\(기본\s*<W[HG]/.test(sample)) { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
+    commKind[name] = 'sdb'; // 원전분해
+  } else if (/\.(bdb|mybible)$/i.test(f.name)) { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
   // 주석·사전은 여기서 열지 않음 (필요할 때 openComm/openDict). 종류는 이름으로, 모르면 열어서 표를 봄
-  let type = /\.cmt\.twm$/i.test(f.name) ? 'comm' : /\.(gbk|dct)\.twm$|\.dct$/i.test(f.name) ? 'dict' : '';
+  let type = /\.cmt\.twm$|\.sdb$/i.test(f.name) ? 'comm' : /\.(gbk|dct)\.twm$|\.dct$/i.test(f.name) ? 'dict' : '';
   dictKind[name] = /\.dct$/i.test(f.name) ? 'dct' : 'twm'; // Bible Analyzer 사전은 표·서식이 다름
   if (!type) {
     const db = await sqlOpen(f), tables = rows(db, "select name from sqlite_master where type='table'", []).flat();
@@ -476,9 +496,9 @@ async function addFile(f) {
 }
 
 // Bible Analyzer(.bdb)·MySword(.bbl.mybible) 성경: 책·장·절 표를 읽어 theWord와 같은 31102절 배열로
-const dictKind = {};
+const dictKind = {}, commKind = {}; // commKind: 'sdb' = 베들레헴 원전분해 (그 밖은 theWord 주석)
 async function readSqlBible(f) {
-  const db = await sqlOpen(f), ba = /\.bdb$/i.test(f.name);
+  const db = await sqlOpen(f), ba = /\.(bdb|sdb)$/i.test(f.name); // Bible Analyzer·베들레헴: Bible(book, chapter, verse, btext)
   try {
     const out = new Array(31102).fill('');
     for (const [b, c, v, t] of rows(db, ba ? 'select book, chapter, verse, btext from Bible' : 'select Book, Chapter, Verse, Scripture from Bible', [])) {
@@ -846,6 +866,12 @@ function commHtml(name) {
     return `<p class="progress empty small">${esc(nm(name))} 여는 중…</p>`;
   }
   const { b, c } = S;
+  if (commKind[name] === 'sdb') { // 원전분해: 절마다 단어 분해
+    const list = rows(db, 'select verse, btext from Bible where book=? and chapter=? order by verse', [b, c]);
+    return list.length
+      ? list.map(([v, t]) => `<article class="entry ana" data-f="${v}" data-t="${v}"><h3>${BOOKS[b - 1]} ${c}:${v}</h3><div>${anaHtml(t)}</div></article>`).join('')
+      : `<p class="empty small">${esc(nm(name))}에는 ${BOOKS[b - 1]} ${c}장이 없습니다.</p>`;
+  }
   // TEXT로 받으면 UTF-8 디코딩에서 RVF 바이트가 깨지므로 blob으로 받음
   const list = rows(db, 'select r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) where r.bi=? and r.ci=? order by r.fvi, r.topic_id', [b, c]);
   return list.length
@@ -1218,9 +1244,12 @@ async function indexDb(cache, name, db, sql, progress, entry, render = toHtml) {
     } finally { st.free(); delete indexing[key]; } // 실패해도 다음 검색에서 다시 시도
   })();
 }
-const indexComm = (name, progress) => indexDb(commText, name, comms[name],
-  'select r.bi, r.ci, r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) order by r.bi, r.ci, r.fvi',
-  progress, ([b, c, f, t], text) => ({ b, c, f, t, text }));
+const indexComm = (name, progress) => commKind[name] === 'sdb'
+  ? indexDb(commText, name, comms[name], 'select book, chapter, verse, verse, btext from Bible order by book, chapter, verse',
+      progress, ([b, c, f, t], text) => ({ b, c, f, t, text }), anaHtml)
+  : indexDb(commText, name, comms[name],
+      'select r.bi, r.ci, r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) order by r.bi, r.ci, r.fvi',
+      progress, ([b, c, f, t], text) => ({ b, c, f, t, text }));
 
 // 주석 하나의 검색 색인. 큰 주석 파일은 하나씩만 열고 색인 뒤 바로 닫음 (메모리에 큰 파일이 둘 이상 안 올라가게).
 // 만든 색인은 브라우저에 보관 → 다음부터는 파일을 열지 않고 바로 (파일이 바뀌면 크기가 달라져 새로 만듦)
@@ -1598,6 +1627,7 @@ $('comm').onclick = e => {
   if (sc) { hits.scope = sc.dataset.scope; return renderHits(); }
   const ss = e.target.closest('[data-search-strong]');
   if (ss) return searchStrong(ss.dataset.searchStrong);
+  if (anaWord(e)) return;
   const cf = e.target.closest('[data-cf]');
   if (cf) { hits.cf = cf.dataset.cf; renderHits(); return $('comm').scrollTop = 0; }
   const sb = e.target.closest('[data-sbook]');
@@ -1626,7 +1656,12 @@ $('comm').onclick = e => {
   }
   linkClick(e);
 };
-$('comm2').onclick = linkClick;
+$('comm2').onclick = e => anaWord(e) || linkClick(e);
+// 원전분해의 스트롱 번호: 성경 단어를 누른 것처럼 그 자리에 사전 팝업
+function anaWord(e) {
+  const a = e.target.closest('.ana [data-strong]'); if (!a) return false;
+  e.preventDefault(); e.stopPropagation(); showWord(a); return true;
+}
 function linkClick(e) {
   const a = e.target.closest('a[data-ref]'); if (!a) return;
   e.preventDefault();
@@ -1760,25 +1795,30 @@ const BG_PRESETS = {
   default: { src: 'img/bg-coffee.jpg', pos: 'center 70%', size: 'cover' }, // Mike Kenneally, Unsplash
 };
 const BG_FIT = { pos: 'center 70%', size: 'cover' }; // 내 사진
-let bg = { op: 15, blur: 0, mode: 'none', ...prefs.get('bg', {}) }, bgUrl = ''; // 처음엔 배경 없음
+// fit: cover = 칸을 꽉 채움(사진 일부가 잘림) / contain = 사진 전체가 보이게. size: 전체 보이기일 때 크기(%)
+let bg = { op: 15, blur: 0, mode: 'none', fit: 'cover', size: 100, ...prefs.get('bg', {}) }, bgUrl = ''; // 처음엔 배경 없음
 function applyBg() {
-  const L = $('bgLayer');
+  const L = $('bgLayer'), p = BG_PRESETS[bg.mode] || BG_FIT, whole = bg.fit === 'contain';
   L.hidden = !bgUrl;
   $('biblePane').classList.toggle('has-bg', !!bgUrl);
   L.style.opacity = bg.op / 100;
   L.style.filter = bg.blur ? `blur(${bg.blur}px)` : '';
-  L.style.transform = bg.blur ? 'scale(1.08)' : ''; // 흐리게 하면 가장자리가 비치지 않게 살짝 키움
+  L.style.backgroundSize = whole ? 'contain' : p.size;
+  L.style.backgroundPosition = whole ? 'center' : p.pos;
+  // 크기는 칸 가운데를 기준으로 줄임. 흐리게 하면 가장자리가 비치지 않게 살짝 키움
+  const s = (whole ? bg.size / 100 : 1) * (bg.blur && !whole ? 1.08 : 1);
+  L.style.transform = s === 1 ? '' : `scale(${s})`;
   $('bgOp').value = bg.op; $('bgOpV').textContent = bg.op + '%';
   $('bgBlur').value = bg.blur; $('bgBlurV').textContent = bg.blur + 'px';
+  $('bgSize').value = bg.size; $('bgSizeV').textContent = bg.size + '%'; $('bgSize').disabled = !whole;
   $('bgBox').querySelectorAll('[data-bg]').forEach(b => b.classList.toggle('on', b.dataset.bg === bg.mode));
+  $('bgBox').querySelectorAll('[data-fit]').forEach(b => b.classList.toggle('on', b.dataset.fit === bg.fit));
 }
 function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장 안 함)
   if (bgUrl.startsWith('blob:')) URL.revokeObjectURL(bgUrl);
   bg.mode = mode; bgUrl = src;
   if (!keep) prefs.set('bg', bg);
-  const L = $('bgLayer'), fit = BG_PRESETS[mode] || BG_FIT;
-  L.style.backgroundImage = src ? `url("${src}")` : '';
-  L.style.backgroundPosition = fit.pos; L.style.backgroundSize = fit.size;
+  $('bgLayer').style.backgroundImage = src ? `url("${src}")` : '';
   applyBg();
 }
 (async () => {
@@ -1801,6 +1841,8 @@ $('bgFile').onchange = async e => {
 };
 // 앱에 든 사진 / 배경 없음 (내 사진은 지움)
 $('bgBox').addEventListener('click', e => {
+  const fit = e.target.closest('[data-fit]')?.dataset.fit;
+  if (fit) { bg.fit = fit; prefs.set('bg', bg); return applyBg(); }
   const m = e.target.closest('[data-bg]')?.dataset.bg; if (!m || m === 'custom') return;
   idb('cache', 'readwrite', s => s.delete('bg')).catch(() => {});
   setBg(m, BG_PRESETS[m]?.src || '');
@@ -1808,7 +1850,8 @@ $('bgBox').addEventListener('click', e => {
 // 끌면서 바로 보이고, 놓으면 저장
 $('bgOp').oninput = e => { bg.op = +e.target.value; applyBg(); };
 $('bgBlur').oninput = e => { bg.blur = +e.target.value; applyBg(); };
-$('bgOp').onchange = $('bgBlur').onchange = () => prefs.set('bg', bg);
+$('bgSize').oninput = e => { bg.size = +e.target.value; applyBg(); };
+$('bgOp').onchange = $('bgBlur').onchange = $('bgSize').onchange = () => prefs.set('bg', bg);
 
 /* ---------- 내 세팅 1·2: 보는 구성(번역본·주석·2단·사전·글꼴·칸 너비 등)을 저장해 두고 바꾸기 ---------- */
 let presets = prefs.get('presets', [null, null]);
