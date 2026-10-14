@@ -289,16 +289,40 @@
   #fmtBox > b { display: block; margin-bottom: 8px; }
   /* 사용법 둘러보기(코치마크): 화면을 어둡게 덮고 설명할 곳만 밝게 + 설명 카드 */
   .tour-block { position: fixed; inset: 0; z-index: 40; }
-  .tour-spot { position: fixed; z-index: 41; border-radius: 10px; box-shadow: 0 0 0 9999px rgb(10 12 16 / .58); outline: 2px solid var(--accent); outline-offset: 2px; pointer-events: none; transition: all .25s ease; }
-  .tour-spot.center { width: 0; height: 0; outline: 0; left: 50%; top: 40%; }
-  .tour-card { position: fixed; z-index: 42; width: min(340px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 16px 16px 12px; transition: top .25s ease, left .25s ease; }
-  .tour-card .tour-n { font: 600 12px var(--sans); color: var(--accent); }
-  .tour-card h3 { font-size: 16px; margin: 4px 0 6px; }
-  .tour-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
-  .tour-card p b { color: var(--fg); font-weight: 600; }
-  .tour-card .tour-acts { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
-  .tour-card .tour-acts .skip { margin-right: auto; border: 0; background: none; color: var(--muted); font-size: 13px; padding: 4px 2px; }
-  @media (prefers-reduced-motion: reduce) { .tour-spot, .tour-card { transition: none; } }
+  /* 비추는 곳: 바깥을 어둡게(그림자), 테두리는 강조색 고리 + 바뀔 때 한 번 퍼지는 고리(어디를 보는지 알려 줌) */
+  .tour-spot { position: fixed; z-index: 41; border-radius: 12px; pointer-events: none; transition: left .35s cubic-bezier(.16,1,.3,1), top .35s cubic-bezier(.16,1,.3,1), width .35s cubic-bezier(.16,1,.3,1), height .35s cubic-bezier(.16,1,.3,1);
+    box-shadow: 0 0 0 2px var(--accent), 0 0 0 9999px rgb(14 18 16 / .62); }
+  .tour-spot::after { content: ''; position: absolute; inset: -2px; border-radius: inherit; box-shadow: 0 0 0 2px var(--accent); opacity: 0; }
+  .tour-spot.ping::after { animation: tour-ping .9s .2s ease-out; }
+  .tour-spot.center { left: 50%; top: 42%; width: 0; height: 0; box-shadow: 0 0 0 9999px rgb(14 18 16 / .62); }
+  @keyframes tour-ping { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.08); } }
+  /* 설명 카드 */
+  .tour-card { word-break: keep-all; overflow-wrap: anywhere; } /* 한국어는 단어 중간에서 줄이 바뀌지 않게 */
+  .tour-card { position: fixed; z-index: 42; width: min(360px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px;
+    box-shadow: 0 1px 0 rgb(255 255 255 / .6) inset, 0 24px 48px -12px rgb(14 30 22 / .35); transition: top .35s cubic-bezier(.16,1,.3,1), left .35s cubic-bezier(.16,1,.3,1); }
+  @media (prefers-color-scheme: dark) { .tour-card { box-shadow: 0 24px 48px -12px rgb(0 0 0 / .6); } }
+  .tour-card.enter .tour-body { animation: tour-in .4s cubic-bezier(.16,1,.3,1); }
+  @keyframes tour-in { from { opacity: 0; transform: translateY(6px); } }
+  /* 비춘 곳을 가리키는 꼭지 (카드가 아래면 위쪽에, 위면 아래쪽에) */
+  .tour-card::before { content: ''; position: absolute; left: var(--cx, 32px); width: 12px; height: 12px; margin-left: -6px; background: var(--surface); border: 1px solid var(--line); transform: rotate(45deg); display: none; }
+  .tour-card[data-side="below"]::before { display: block; top: -7px; border-right: 0; border-bottom: 0; }
+  .tour-card[data-side="above"]::before { display: block; bottom: -7px; border-left: 0; border-top: 0; }
+  /* 진행: 단계 수만큼 짧은 막대, 지난 단계는 강조색 */
+  .tour-prog { display: flex; gap: 4px; margin-bottom: 14px; }
+  .tour-prog i { flex: 1; height: 3px; border-radius: 2px; background: var(--line); transition: background .3s; }
+  .tour-prog i.on { background: var(--accent); }
+  .tour-card .tour-logo { display: block; width: 56px; height: 56px; margin: 2px 0 12px; }
+  .tour-card h3 { font: 600 17px/1.35 var(--sans); margin: 0 0 6px; letter-spacing: -.01em; }
+  .tour-card p { margin: 0; color: var(--fg); opacity: .78; font-size: 14px; line-height: 1.65; }
+  .tour-card p b { opacity: 1; color: var(--accent); font-weight: 600; }
+  .tour-card .tour-acts { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+  .tour-card .tour-acts .skip { margin-right: auto; border: 0; background: none; color: var(--muted); font-size: 13px; padding: 6px 2px; }
+  .tour-card .tour-acts .skip:hover { color: var(--fg); }
+  .tour-card .tour-acts .btn { height: 34px; padding: 0 14px; }
+  .tour-card .tour-acts .btn.primary { padding: 0 16px; }
+  .tour-card .tour-keys { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .tour-card kbd { font: 11px var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg); }
+  @media (prefers-reduced-motion: reduce) { .tour-spot, .tour-card { transition: none; } .tour-spot.ping::after, .tour-card.enter .tour-body { animation: none; } }
   @keyframes welcome-in { from { opacity: 0; transform: scale(.96); } to { opacity: .22; transform: none; } }
   @keyframes welcome-text { from { opacity: 0; transform: translateY(6px); } }
   @media (prefers-reduced-motion: reduce) { .welcome-badge, .welcome > * { animation: none !important; } }
@@ -1997,7 +2021,7 @@ Promise.all([
 /* ---------- 사용법 둘러보기 (코치마크): 화면을 어둡게 하고 버튼·영역을 하나씩 비추며 설명 ----------
    sel: 비출 곳(여러 개면 합친 영역), 화면에 없으면 그 단계는 건너뜀. sel 없으면 가운데 카드 */
 const TOUR = [
-  { title: '커피성경에 오신 것을 환영합니다', text: '주요 버튼과 메뉴를 1분 만에 둘러볼게요. 언제든 <b>건너뛰기</b>로 그만둘 수 있고, 나중에 <b>파일 › 사용법 둘러보기</b>로 다시 볼 수 있어요.' },
+  { title: '커피성경에 오신 것을 환영합니다', text: '주요 버튼과 메뉴를 1분 만에 둘러볼게요. 언제든 <b>건너뛰기</b>로 그만둘 수 있어요.', keys: true },
   { sel: ['.welcome .btn.primary', '.welcome .btn.primary + .btn'], title: '여기서 시작하세요', text: '성경·주석·사전 파일을 모아 둔 폴더를 <b>폴더 열기</b>로 고르면 한 번에 불러와요. 한 번 넣으면 다음부터 자동으로 열려요.' },
   { sel: ['.nav'], title: '성경 이동', text: '<b>책</b> 버튼으로 성경을, <b>장</b> 버튼으로 장을 골라요. ‹ › 또는 키보드 <b>← →</b>로 앞뒤 장, <b>↑ ↓</b>로 앞뒤 절로 움직여요.' },
   { sel: ['#back', '#fwd'], title: '뒤로 · 앞으로', text: '링크나 검색으로 건너뛴 뒤 원래 자리로 돌아가요. 단축키 <b>Alt+← / Alt+→</b>' },
@@ -2008,7 +2032,7 @@ const TOUR = [
   { sel: ['#smaller', '#bigger', '#fontSel'], title: '글자 크기 · 글꼴', text: '<b>가 가</b>로 글자를 줄이고 키우고, 옆에서 글꼴을 골라요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
   { sel: ['#menuBtn'], title: '파일 메뉴', text: '성경·주석 추가, <b>색 설정, 배경 화면</b>, 메모 백업, <b>앱으로 설치</b>, 그리고 이 사용법 다시 보기가 여기 있어요.' },
-  { title: '준비 끝!', text: '커피 한 잔과 함께 말씀을 천천히 읽어 보세요. ☕' },
+  { title: '준비 끝', text: '커피 한 잔과 함께 말씀을 천천히 읽어 보세요. 이 안내는 <b>파일 › 사용법 둘러보기</b>에서 언제든 다시 볼 수 있어요.' },
 ];
 let tourAt = -1, tourEls = null;
 const tourTargets = st => (st.sel || []).map(s => document.querySelector(s)).filter(el => el && el.getClientRects().length && el.offsetWidth);
@@ -2041,28 +2065,34 @@ function tourShow() {
   const st = TOUR[tourAt], { spot, card } = tourEls, els = tourTargets(st), pad = 6;
   const shown = TOUR.filter(s => !s.sel || tourTargets(s).length), n = shown.indexOf(st) + 1;
   const last = !TOUR.slice(tourAt + 1).some(s => !s.sel || tourTargets(s).length);
-  card.innerHTML = `<div class="tour-n">${n} / ${shown.length}</div><h3>${st.title}</h3><p>${st.text}</p>
+  card.innerHTML = `<div class="tour-prog" role="progressbar" aria-valuemin="1" aria-valuemax="${shown.length}" aria-valuenow="${n}" aria-label="${n} / ${shown.length}">${shown.map((_, k) => `<i class="${k < n ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="tour-body">${!els.length ? '<img class="tour-logo" src="icons/icon-192.png" alt="">' : ''}<h3>${st.title}</h3><p>${st.text}</p>
+    ${st.keys ? '<div class="tour-keys"><kbd>←</kbd> <kbd>→</kbd> 로 넘기고 <kbd>Esc</kbd> 로 닫아요</div>' : ''}</div>
     <div class="tour-acts">${last ? '' : '<button class="skip" data-t="skip">건너뛰기</button>'}
-      ${n > 1 ? '<button class="btn sm" data-t="prev">이전</button>' : ''}
-      <button class="btn sm primary" data-t="${last ? 'done' : 'next'}" ${last ? 'style="margin-left:auto"' : ''}>${last ? '시작하기' : '다음'}</button></div>`;
+      ${n > 1 ? '<button class="btn" data-t="prev">이전</button>' : ''}
+      <button class="btn primary" data-t="${last ? 'done' : 'next'}" ${last ? 'style="margin-left:auto"' : ''}>${last ? '시작하기' : '다음 →'}</button></div>`;
+  card.classList.remove('enter'); void card.offsetWidth; card.classList.add('enter'); // 단계가 바뀌면 글이 살짝 올라오며 나타남
+  spot.classList.remove('ping'); void spot.offsetWidth;
   if (!els.length) { // 가운데 카드
-    spot.className = 'tour-spot center'; spot.removeAttribute('style');
-    card.style.left = (innerWidth - card.offsetWidth) / 2 + 'px'; card.style.top = Math.max(16, innerHeight * .4 - card.offsetHeight / 2) + 'px';
+    spot.className = 'tour-spot center'; spot.removeAttribute('style'); card.dataset.side = '';
+    card.style.left = (innerWidth - card.offsetWidth) / 2 + 'px'; card.style.top = Math.max(16, innerHeight * .42 - card.offsetHeight / 2) + 'px';
   } else {
     els[0].scrollIntoView({ block: 'nearest' });
     const rs = els.map(el => el.getBoundingClientRect());
     const r = { left: Math.min(...rs.map(x => x.left)), top: Math.min(...rs.map(x => x.top)), right: Math.max(...rs.map(x => x.right)), bottom: Math.max(...rs.map(x => x.bottom)) };
     // 아주 큰 영역(본문 칸 등)은 화면 안으로 자름
     r.top = Math.max(r.top, 8); r.bottom = Math.min(r.bottom, innerHeight - 8);
-    spot.className = 'tour-spot';
+    spot.className = 'tour-spot ping';
     Object.assign(spot.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.right - r.left + pad * 2 + 'px', height: r.bottom - r.top + pad * 2 + 'px' });
-    // 카드는 비춘 곳 아래(자리 없으면 위, 그것도 없으면 안쪽 아래)에, 화면 밖으로 안 나가게
-    const ch = card.offsetHeight, cw = card.offsetWidth, gap = 14;
-    let top = r.bottom + pad + gap;
-    if (top + ch > innerHeight - 8) top = r.top - pad - gap - ch;
-    if (top < 8) top = Math.min(innerHeight - ch - 16, r.bottom - ch - 16);
-    card.style.top = Math.max(8, top) + 'px';
-    card.style.left = Math.max(16, Math.min(r.left, innerWidth - cw - 16)) + 'px';
+    // 카드는 비춘 곳 아래(자리 없으면 위, 그것도 없으면 안쪽 아래)에, 화면 밖으로 안 나가게. 꼭지는 비춘 곳 가운데를 가리킴
+    const ch = card.offsetHeight, cw = card.offsetWidth, gap = 16;
+    let top = r.bottom + pad + gap, side = 'below';
+    if (top + ch > innerHeight - 8) { top = r.top - pad - gap - ch; side = 'above'; }
+    if (top < 8) { top = Math.min(innerHeight - ch - 16, r.bottom - ch - 16); side = ''; } // 큰 영역 안쪽에 겹칠 때는 꼭지 없음
+    const left = Math.max(16, Math.min(r.left, innerWidth - cw - 16));
+    card.style.top = Math.max(8, top) + 'px'; card.style.left = left + 'px';
+    card.dataset.side = side;
+    card.style.setProperty('--cx', Math.max(20, Math.min(cw - 20, (r.left + r.right) / 2 - left)) + 'px');
   }
   card.querySelector('[data-t="next"], [data-t="done"]').focus({ preventScroll: true });
 }
