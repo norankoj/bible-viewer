@@ -230,8 +230,7 @@
   .ws-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 14px; }
   .ws-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
   .ws-chips b { font-weight: 600; font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--page); }
-  .ws-acts { margin: 6px 0 4px; }
-  .ws-top { display: flex; align-items: center; gap: 8px; }
+  .ws-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .ws-h { font: 700 12px var(--sans); color: var(--muted); margin: 22px 0 8px; }
   .ws-occ { display: flex; gap: 10px; width: 100%; text-align: left; align-items: baseline; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--page); transition: border-color .15s; }
   .ws-occ:hover { border-color: var(--accent); }
@@ -1632,14 +1631,13 @@ function wordPopAt(i, lemma = '') {
   const morph = (pop.dataset.morph || '').split(/[,\s]+/).filter(Boolean);
   // 단어 공부 노트: 번호 · 큰 원어 · 제목(발음·뜻) · 문법 칩 · 풀이 · 이 단어가 나오는 곳
   // 먼저 요약으로 바로 보여주고, 사전 파일을 열면 전체 풀이(사전과 같은 줄바꿈·서식)로 바꿈
-  pop.innerHTML = sheetClose + `<div class="ws-top"><span class="ws-num">${e.s}</span><button class="btn sm find" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 모두 찾기">검색</button></div>
+  pop.innerHTML = sheetClose + `<div class="ws-top"><span class="ws-num">${e.s}</span><button class="btn sm find" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 모두 찾기">검색</button><button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button></div>
     ${e.h ? `<div class="ws-word ${heb ? 'heb' : 'grk'}"${heb ? ' dir="rtl"' : ''}>${esc(e.h)}</div>` : ''}
     <div class="ws-title">${esc(title)}</div>
     ${morph.length ? `<div class="ws-chips">${morph.map(m => `<b>${esc(m)}</b>`).join('')}</div>` : ''}
     ${ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
       `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</details>` : ''}
     <div class="body" id="wordBody">${esc(body)}…</div>
-    <div class="ws-acts"><button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button></div>
     <h5 class="ws-h">이 단어가 나오는 곳</h5><div id="wordOcc"><p class="muted">찾는 중…</p></div>`;
   pop.scrollTop = 0; placePop(pop);
   const name = S.dict;
