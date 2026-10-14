@@ -17,10 +17,12 @@
     --bg: #f6f7f9; --surface: #ffffff; --line: #e3e5ea; --fg: #1d2027; --muted: #646b7a;
     --accent: #035b36; --accent-soft: #e4f1ea; --on-accent: #ffffff; --red: #b4232c; --ot: #4b5b78;
     --hl-yellow: #fbefb4; --hl-green: #d7efd3; --hl-blue: #d7e4fa; --hl-pink: #f8dbe6;
-    --shadow: 0 12px 32px rgb(29 32 39 / .12);
+    --shadow: 0 1px 2px rgb(22 28 25 / .06), 0 18px 40px -10px rgb(22 28 25 / .22);
+    /* 모서리 규칙: 버튼·입력·탭 8px, 팝업·카드 12px, 칩 둥근 알약 */
+    --r: 8px; --r-lg: 12px;
     --sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     --serif: "AppleMyungjo", "Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
-    --read: var(--serif); --fs: 17px;
+    --read: var(--sans); --fs: 17px;
   }
   :root[data-accent="blue"] { --accent: #2c4aa8; --accent-soft: #e8edfa; } /* 예전 성경 뷰어 색 (창 제목 막대는 남색 #16213f) */
   :root[data-accent="black"] { --accent: #1d2027; --accent-soft: #eceef1; }
@@ -29,32 +31,39 @@
       --bg: #121317; --surface: #181a1f; --line: #2a2d35; --fg: #e4e6eb; --muted: #949aa8;
       --accent: #5fc394; --accent-soft: #1b3328; --on-accent: #0f1512; --red: #f0857f; --ot: #a9b6cf;
       --hl-yellow: #48401c; --hl-green: #213b26; --hl-blue: #22314c; --hl-pink: #482532;
-      --shadow: 0 12px 32px rgb(0 0 0 / .45);
+      --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 18px 44px -10px rgb(0 0 0 / .6);
     }
     :root[data-accent="blue"] { --accent: #8fa7ee; --accent-soft: #232a40; }
     :root[data-accent="black"] { --accent: #e4e6eb; --accent-soft: #2a2d35; }
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
-  body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--sans); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--sans); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: anywhere; }
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 40%, transparent) transparent; }
   button, input, textarea, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
   button:disabled { cursor: default; opacity: .4; }
   input[type=file] { display: none; }
 
   /* 상단 바 */
-  .bar { min-height: 56px; flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
-  .btn { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); white-space: nowrap; transition: background .15s, transform .1s; }
-  .btn:hover:not(:disabled) { background: var(--bg); }
-  .btn:active:not(:disabled) { transform: translateY(1px); }
-  .btn.icon { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
-  .btn.sm { height: 28px; padding: 0 10px; font-size: 13px; }
-  .btn.sm.icon { width: 28px; padding: 0; }
+  .bar { min-height: 60px; flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .btn { height: 34px; padding: 0 13px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font-weight: 500; white-space: nowrap; transition: background .15s, border-color .15s, transform .12s cubic-bezier(.16,1,.3,1); }
+  .btn:hover:not(:disabled) { background: var(--bg); border-color: color-mix(in srgb, var(--muted) 35%, var(--line)); }
+  .btn:active:not(:disabled) { transform: scale(.97); }
+  .btn.icon { width: 34px; padding: 0; font-size: 18px; line-height: 1; }
+  .btn.sm { height: 30px; padding: 0 11px; font-size: 13px; }
+  .btn.sm.icon { width: 30px; padding: 0; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
-  .ref-btn { font-weight: 600; font-size: 15px; }
-  .nav { display: flex; align-items: center; gap: 4px; flex: none; } /* ‹ 책 장 › 은 줄이 바뀌어도 함께 */
-  .search { flex: 0 1 280px; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); margin-left: auto; }
+  .btn.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); filter: brightness(1.1); }
+  /* ‹ 책 장 › : 한 덩어리 이동 막대 (줄이 바뀌어도 함께) */
+  .nav { display: flex; align-items: center; gap: 0; flex: none; padding: 2px; border: 1px solid var(--line); border-radius: calc(var(--r) + 3px); background: var(--surface); }
+  .nav .btn { border-color: transparent; height: 32px; }
+  .nav .btn:hover:not(:disabled) { border-color: transparent; }
+  .ref-btn { font-weight: 700; font-size: 15px; letter-spacing: -.01em; padding: 0 10px; }
+  #chapBtn { color: var(--accent); }
+  .search { flex: 0 1 300px; height: 34px; padding: 0 14px; border: 1px solid transparent; border-radius: calc(var(--r) + 2px); background: var(--bg); margin-left: auto; transition: background .15s, border-color .15s; }
+  .search:hover { border-color: var(--line); }
+  .search:focus { background: var(--surface); }
   .search:focus, .btn:focus-visible, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .status { color: var(--muted); font-size: 12px; white-space: nowrap; }
 
@@ -78,19 +87,23 @@
   .resizer:hover::after, .resizer.drag::after { background: var(--accent); }
   body.resizing { cursor: col-resize; user-select: none; }
   .pane + .pane { border-left: 1px solid var(--line); background: var(--bg); }
-  .tabs { flex: none; display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
-  .tab { height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--muted); white-space: nowrap; }
-  .tab:hover { color: var(--fg); }
+  .tabs { flex: none; display: flex; gap: 2px; padding: 0 14px; min-height: 46px; align-items: center; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { height: 30px; padding: 0 11px; border: 1px solid transparent; border-radius: var(--r); background: none; color: var(--muted); font-weight: 500; white-space: nowrap; transition: color .15s, background .15s; }
+  .tab:hover { color: var(--fg); background: color-mix(in srgb, var(--bg) 70%, transparent); }
   .tab.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  /* 칸 위 탭 줄: 고른 탭은 글씨 진하게 + 아래 강조색 밑줄 (채운 상자보다 본문을 덜 가림) */
+  .tabs > .tab:not(.spacer):not([data-word-side]):not([data-hide-comm]):not([data-show-comm]):not([data-split]) { position: relative; }
+  .tabs > .tab.on:not(.spacer):not([data-word-side]):not([data-hide-comm]):not([data-show-comm]):not([data-split]) { background: none; color: var(--fg); font-weight: 700; }
+  .tabs > .tab.on:not(.spacer):not([data-word-side]):not([data-hide-comm]):not([data-show-comm]):not([data-split])::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: -8px; height: 2px; border-radius: 2px; background: var(--accent); }
   .tabs .spacer { margin-left: auto; }
   .tabs .hint { color: var(--muted); font-size: 12px; align-self: center; white-space: nowrap; }
-  .scroll { flex: 1; overflow-y: auto; padding: 24px 32px 96px; }
+  .scroll { flex: 1; overflow-y: auto; padding: 28px 36px 112px; scroll-padding-bottom: 96px; }
 
   /* 성경 */
-  .chapter-title { font: 600 20px/1.3 var(--sans); margin: 0 0 16px; }
-  .verse { font: var(--fs)/1.85 var(--read); padding: 2px 8px; margin: 0 -8px 4px; border-radius: 6px; cursor: pointer; max-width: 42em; user-select: none; }
+  .chapter-title { font: 700 26px/1.25 var(--sans); letter-spacing: -.02em; margin: 2px 0 22px; }
+  .verse { font: var(--fs)/1.9 var(--read); padding: 4px 12px; margin: 0 -12px 2px; border-radius: 10px; cursor: pointer; max-width: 42em; user-select: none; transition: background .15s; }
   .verse:hover { background: var(--bg); }
-  .vn { font: 600 11px var(--sans); color: var(--accent); margin-right: 6px; vertical-align: 3px; }
+  .vn { font: 700 11px var(--sans); color: var(--accent); margin-right: 7px; vertical-align: 2px; font-variant-numeric: tabular-nums; opacity: .85; }
   .red { color: var(--red); } .ot { color: var(--ot); }
   .ts { display: block; font: 600 13px var(--sans); color: var(--muted); margin: 14px 0 2px; }
   /* 칸 사이 간격은 칸 안쪽 여백으로 (선택·하이라이트가 한 줄 띠로 이어지게) */
@@ -149,7 +162,7 @@
   #wordPop .body a[data-ref] { color: var(--accent); text-decoration: none; }
   #wordPop .alts { margin: 4px 0; font-size: 13px; }
   #wordPop .alts summary { color: var(--muted); cursor: pointer; padding: 4px 0; }
-  #wordPop .alts button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 4px 6px; border-radius: 6px; font-size: 13px; }
+  #wordPop .alts button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 4px 6px; border-radius: var(--r); font-size: 13px; }
   #wordPop .alts button:hover { background: var(--bg); }
   /* 탭 끌어서 순서 바꾸기 */
   .tab[draggable="true"] { cursor: grab; }
@@ -181,39 +194,44 @@
   #manageBox { width: min(400px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
   #manageBox h4 { font: 600 12px var(--sans); color: var(--muted); margin: 14px 0 4px; }
   #manageBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
-  #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: 6px; cursor: pointer; }
+  #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   #manageBox label:hover { background: var(--bg); }
   #manageBox label small { margin-left: auto; color: var(--muted); }
   #manageBox input[type=checkbox] { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
-  #manageBox .rename { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: none; }
+  #manageBox .rename { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid transparent; border-radius: var(--r); background: none; }
   #manageBox .rename:hover { border-color: var(--line); }
   #manageBox .rename:focus { border-color: var(--line); background: var(--bg); outline: 2px solid var(--accent); outline-offset: 1px; }
   #manageBox .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
   .dict-form { display: flex; gap: 8px; margin: 0 0 16px; }
-  .dict-form input { flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  .dict-form input { flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
   .dict-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .linkish { border: 0; background: none; color: var(--accent); padding: 0; margin: 0 0 12px; font-weight: 600; }
-  .note-badge { font: 600 11px var(--sans); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
+  .note-badge { font: 600 11px var(--sans); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: var(--r); padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
 
   /* 선택 작업 막대 */
-  .selbar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 16px; border-top: 1px solid var(--line); background: var(--surface); }
-  .selbar[hidden] { display: none; }
-  .sel-ref { font-weight: 600; margin-right: 6px; }
-  .swatches { display: flex; gap: 4px; align-items: center; margin: 0 6px; }
-  .sw { width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 6px; padding: 0; }
-  .sw:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+  /* 절을 고르면 성경 칸 아래쪽에 떠 있는 작업 막대 (본문을 덜 가리게) */
+  .selbar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px 8px 16px; background: var(--surface); }
+  #biblePane > .selbar { position: absolute; z-index: 3; left: 50%; bottom: 16px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
+    border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); animation: selbar-in .22s cubic-bezier(.16,1,.3,1); }
+  @keyframes selbar-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+  .selbar[hidden] { display: none !important; }
+  .sel-ref { font-weight: 700; margin-right: 6px; letter-spacing: -.01em; }
+  .swatches { display: flex; gap: 6px; align-items: center; margin: 0 6px; }
+  .sw { width: 22px; height: 22px; border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); border-radius: 50%; padding: 0; transition: transform .12s; }
+  .sw:hover { transform: scale(1.12); }
+  .selbar .btn[data-hl=""] { margin-left: 2px; }
 
   /* 주석 */
-  .entry { font: calc(var(--fs) - 1px)/1.85 var(--read); max-width: 44em; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+  .entry { font: calc(var(--fs) - 1px)/1.85 var(--read); max-width: 44em; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
   .entry:last-child { border-bottom: 0; }
-  .entry h3 { font: 600 13px var(--sans); color: var(--accent); margin: 0 0 8px -8px; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+  .entry h3 { font: 700 13px var(--sans); color: var(--accent); margin: 0 0 10px -10px; padding: 5px 10px; border-radius: 999px; display: inline-block; letter-spacing: -.005em; transition: background .2s; }
   .entry.on h3 { background: var(--accent-soft); }
   .entry a[data-ref] { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
 
   /* 검색 결과·보관함 목록 */
   .seg { display: flex; gap: 4px; margin: 0 0 16px; flex-wrap: wrap; }
   .hits-sum { color: var(--muted); margin: 0 0 12px; }
-  .hit { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 8px; margin: 0 -8px; border-radius: 6px; font: calc(var(--fs) - 2px)/1.7 var(--read); }
+  .hit { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 12px 12px; margin: 0 -12px; border-radius: 10px; font: calc(var(--fs) - 2px)/1.7 var(--read); transition: background .15s; }
   .hit:hover { background: var(--surface); }
   .hit .ref { font: 600 12px var(--sans); color: var(--accent); margin-right: 8px; }
   .hit .o, .hit .k { display: block; } .hit .o.heb { font-size: 1.2em; } .hit .k { color: var(--muted); margin-top: 2px; }
@@ -228,9 +246,9 @@
   .progress { color: var(--muted); }
   .credit { color: var(--muted); font-size: 12px; margin: 20px 0 0; }
   .search-opts { display: flex; flex-wrap: wrap; gap: 12px; margin: -6px 0 12px; font-size: 13px; color: var(--muted); }
-  .search-opts select { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); margin-left: 4px; }
+  .search-opts select { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--fg); margin-left: 4px; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
-  .chip { height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 12px; }
+  .chip { height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12px; font-weight: 500; }
   .chip:hover { background: var(--bg); }
   .chip.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
   .credit a { color: inherit; }
@@ -328,7 +346,7 @@
   @media (prefers-reduced-motion: reduce) { .welcome-badge, .welcome > * { animation: none !important; } }
 
   /* 팝오버 */
-  .pop { position: fixed; z-index: 20; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 16px; display: none; }
+  .pop { position: fixed; z-index: 20; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 16px; display: none; }
   .pop.open { display: block; animation: pop .14s ease-out; }
   @keyframes pop { from { opacity: 0; transform: translateY(-4px); } }
   @media (prefers-reduced-motion: reduce) { .pop.open { animation: none; } }
@@ -336,7 +354,7 @@
   #picker h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; }
   #picker h4 + .grid { margin-bottom: 16px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
-  .grid button { height: 32px; border: 0; border-radius: 6px; background: var(--bg); }
+  .grid button { height: 32px; border: 0; border-radius: var(--r); background: var(--bg); }
   .grid button:hover, .grid button.on { background: var(--accent-soft); color: var(--accent); }
   #picker .back { border: 0; background: none; color: var(--accent); padding: 0; margin-bottom: 12px; font-weight: 600; }
   /* 드롭다운: 닫힌 모양 (화살표) + 마우스로 열면 앱 디자인 목록 #ddPop */
@@ -345,12 +363,12 @@
     background-position: right 9px center !important; background-size: 12px !important; background-repeat: no-repeat !important; }
   select:focus-visible, .search-opts select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   #ddPop { padding: 4px; max-height: 320px; overflow-y: auto; }
-  #ddPop button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 6px; font-size: 13px; white-space: nowrap; }
+  #ddPop button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: var(--r); font-size: 13px; white-space: nowrap; }
   #ddPop button:hover, #ddPop button:focus-visible { background: var(--bg); outline: none; }
   #ddPop button.on { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
   #ddPop button.on::after { content: '✓'; margin-left: auto; }
-  #menu { width: 260px; padding: 6px; }
-  #menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 6px; }
+  #menu { width: 272px; padding: 6px; max-height: calc(100vh - 90px); overflow-y: auto; }
+  #menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: var(--r); }
   #menu button:hover { background: var(--bg); }
   #menu small { display: block; color: var(--muted); }
   #menu .accent-row { padding: 8px 10px; }
@@ -364,7 +382,7 @@
   #tip b { font: 600 12px var(--sans); color: var(--accent); display: block; margin-bottom: 4px; }
   #noteBox { width: min(380px, calc(100vw - 32px)); }
   #noteBox label { display: block; font-weight: 600; margin-bottom: 8px; }
-  #noteBox textarea { width: 100%; min-height: 140px; resize: vertical; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); line-height: 1.6; }
+  #noteBox textarea { width: 100%; min-height: 140px; resize: vertical; padding: 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); line-height: 1.6; }
   #noteBox .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
   #noteBox .actions .btn:first-child { margin-right: auto; }
   .muted { color: var(--muted); font-family: var(--sans); font-size: 13px; }
@@ -376,7 +394,11 @@
     main, main.split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 55% 45%; }
     main.split #pane2, [data-split], .resizer { display: none !important; }
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
-    .scroll { padding: 16px 16px 48px; }
+    .scroll { padding: 18px 16px 88px; }
+    .chapter-title { font-size: 22px; margin-bottom: 16px; }
+    /* 휴대폰은 성경 칸이 낮아서 떠 있는 막대가 절을 가림 → 아래에 붙여 둠 */
+    #biblePane > .selbar { position: relative; left: auto; bottom: auto; transform: none; width: auto; max-width: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; animation: none; padding: 8px 12px; }
+    .scroll { scroll-padding-bottom: 0; }
   }
 </style>
 </head>
@@ -1828,7 +1850,7 @@ document.onkeydown = e => {
 // 본문 글꼴: 이름 → [보이는 이름, Google Fonts 이름(웹 글꼴이면), 대신 쓸 기본 글꼴]
 // 웹 글꼴은 고를 때만 받음 (설치형 앱은 한 번 받으면 인터넷 없이도 씀)
 const FONTS = {
-  myeongjo: ['기본 명조'], gothic: ['프리텐다드'],
+  gothic: ['프리텐다드 (기본)'], myeongjo: ['기본 명조'],
   noto: ['본명조', 'Noto Serif KR:wght@400;700', 'serif'],
   nanumM: ['나눔명조', 'Nanum Myeongjo:wght@400;700', 'serif'],
   gowunB: ['고운바탕', 'Gowun Batang:wght@400;700', 'serif'],
@@ -1836,10 +1858,12 @@ const FONTS = {
   gowunD: ['고운돋움', 'Gowun Dodum', 'sans'],
   plex: ['IBM 플렉스', 'IBM Plex Sans KR:wght@400;600', 'sans'],
 };
-let fs = prefs.get('fs', 17), font = prefs.get('font', prefs.get('serif', true) ? 'myeongjo' : 'gothic');
+// 기본 글꼴은 프리텐다드. 예전 버전은 켤 때마다 '기본 명조'를 저장해서, 한 번만 프리텐다드로 바꿔 줌 (그 뒤 고른 글꼴은 그대로)
+if (!prefs.get('fontDefaultSans', false)) { prefs.set('font', 'gothic'); prefs.set('fontDefaultSans', true); }
+let fs = prefs.get('fs', 17), font = prefs.get('font', 'gothic');
 $('fontSel').innerHTML = Object.entries(FONTS).map(([k, [label]]) => `<option value="${k}">${label}</option>`).join('');
 const applyFont = () => {
-  if (!FONTS[font]) font = 'myeongjo';
+  if (!FONTS[font]) font = 'gothic';
   const [, web, base] = FONTS[font], family = web?.split(':')[0];
   if (web && !$('font-' + font)) document.head.append(Object.assign(document.createElement('link'),
     { id: 'font-' + font, rel: 'stylesheet', href: `https://fonts.googleapis.com/css2?family=${web.replace(/ /g, '+')}&display=swap` }));
