@@ -99,7 +99,7 @@
   .nb .ico { width: 18px; height: 18px; }
   .search-wrap { position: relative; flex: 0 0 210px; display: flex; align-items: center; color: var(--muted); }
   .search-wrap .ico { position: absolute; left: 12px; width: 16px; height: 16px; pointer-events: none; }
-  .search { width: 100%; height: 36px; padding: 0 14px 0 34px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
+  .search { width: 100%; height: 36px; padding: 0 14px 0 34px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
   .search:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   .search:focus, .btn:focus-visible, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   /* 번역본: 알약 모양 스위치 (고른 것은 짙게). 음역·뜻 등 나머지 버튼은 작은 글자 버튼 */
@@ -110,10 +110,13 @@
     :root:not([data-design="classic"]) :is(#comTabs, #comTabs2) { min-height: 64px; }
     :root:not([data-design="classic"]) .page-head { min-height: 64px; padding-bottom: 11px; border-bottom: 1px solid var(--line); } /* 오른쪽 칸 탭 줄 밑선과 같은 높이에 */
   }
-  #verTabs .tab[data-ver] { height: 32px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-weight: 600; }
+  #verTabs .tab[data-ver] { height: 32px; padding: 0 13px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font-weight: 600; }
   #verTabs .tab[data-ver]:hover { color: var(--fg); border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   #verTabs .tab[data-ver].on { background: var(--fg); border-color: var(--fg); color: var(--page); }
   #verTabs .tab:not([data-ver]) { font-size: 12.5px; }
+  #verTabs .tab[data-ver] { display: inline-flex; align-items: center; gap: 4px; flex: none; cursor: grab; }
+  .ver-x { width: 18px; height: 18px; margin-right: -6px; padding: 0; border: 0; border-radius: 3px; background: none; color: inherit; font-size: 15px; line-height: 1; opacity: .55; cursor: pointer; }
+  .ver-x:hover { opacity: 1; background: color-mix(in srgb, currentColor 18%, transparent); }
   #verTabs .spacer, #verTabs .hint { margin-left: 4px; }
 
   /* 백업 알림 */
@@ -223,13 +226,13 @@
   @media (prefers-reduced-motion: reduce) { #biblePane > .selbar { animation: none; } }
   .ws-close { float: right; width: 34px; height: 34px; margin: -6px -8px 0 0; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; }
   .ws-close:hover { background: var(--bg); color: var(--fg); }
-  .ws-num { display: inline-block; background: var(--accent); color: var(--on-accent); font: 700 12px/1 var(--sans); border-radius: 999px; padding: 6px 11px; letter-spacing: .01em; }
+  .ws-num { display: inline-block; background: var(--accent); color: var(--on-accent); font: 700 12px/1 var(--sans); border-radius: 4px; padding: 6px 11px; letter-spacing: .01em; }
   .ws-word { margin: 10px 0 2px; font-size: 38px; line-height: 1.15; color: var(--fg); }
   .ws-word.heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", serif; text-align: left; }
   .ws-word.grk { font-family: "Times New Roman", var(--serif); }
   .ws-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 14px; }
   .ws-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
-  .ws-chips b { font-weight: 600; font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--page); }
+  .ws-chips b { font-weight: 600; font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--page); }
   .ws-acts { margin: 6px 0 4px; }
   .ws-top { display: flex; align-items: center; gap: 8px; }
   .ws-h { font: 700 12px var(--sans); color: var(--muted); margin: 22px 0 8px; }
@@ -282,7 +285,7 @@
   #manageBox h4 { font: 600 12px var(--sans); color: var(--muted); margin: 14px 0 4px; }
   #manageBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
   /* 번역본 고르기: 탭 줄 앞 버튼 + 체크 목록 */
-  .ver-pick { flex: none; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; }
+  .ver-pick { flex: none; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; }
   .ver-pick:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   .ver-pick b { color: var(--accent); }
   body.no-bibles .ver-pick { display: none; }
@@ -293,10 +296,13 @@
   :is(#verBox, #tabBox) input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
   #tabBox h4 { margin: 10px 0 2px; font-size: 12px; color: var(--muted); }
   /* 오른쪽 칸 탭 줄 맨 앞 '주석 ▾': 탭을 옆으로 넘겨도 제자리에 */
-  .tab-pick { position: sticky; left: 0; z-index: 1; flex: none; height: 30px; margin-right: 6px; padding: 0 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; box-shadow: 8px 0 8px -4px var(--surface); }
+  .tab-pick { position: sticky; left: 0; z-index: 1; flex: none; height: 30px; margin-right: 6px; padding: 0 11px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; box-shadow: 8px 0 8px -4px var(--surface); }
   .tab-pick:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   .tab-pick b { color: var(--accent); }
   [data-design="classic"] .tab-pick { border-radius: var(--r); }
+  .drive-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .drive-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drive-row small { color: var(--muted); }
   #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   #manageBox label:hover { background: var(--bg); }
   #manageBox label small { margin-left: auto; color: var(--muted); }
@@ -331,7 +337,7 @@
   /* 주석 */
   .entry { font: calc(var(--fs) - 1px)/1.85 var(--read); max-width: 44em; padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
   .entry:last-child { border-bottom: 0; }
-  .entry h3 { font: 700 13px var(--sans); color: var(--accent); margin: 0 0 10px -10px; padding: 5px 10px; border-radius: 999px; display: inline-block; letter-spacing: -.005em; transition: background .2s; }
+  .entry h3 { font: 700 13px var(--sans); color: var(--accent); margin: 0 0 10px -10px; padding: 5px 10px; border-radius: 4px; display: inline-block; letter-spacing: -.005em; transition: background .2s; }
   .entry.on h3 { background: var(--accent-soft); }
   .entry a[data-ref] { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
 
@@ -355,7 +361,7 @@
   .search-opts { display: flex; flex-wrap: wrap; gap: 12px; margin: -6px 0 12px; font-size: 13px; color: var(--muted); }
   .search-opts select { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--fg); margin-left: 4px; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
-  .chip { height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12px; font-weight: 500; }
+  .chip { height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); font-size: 12px; font-weight: 500; }
   .chip:hover { background: var(--bg); }
   .chip.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
   .credit a { color: inherit; }
@@ -482,7 +488,7 @@
   #menu .accent-row { padding: 8px 10px; }
   #menu .accent-row > span:first-child { display: block; margin-bottom: 6px; }
   #menu .accent-sw { display: flex; gap: 6px; }
-  #menu .accent-sw button { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 4px 10px 4px 6px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; }
+  #menu .accent-sw button { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 4px 10px 4px 6px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; }
   #menu .accent-sw button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; background: var(--accent-soft); }
   #menu .accent-sw i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / .25); }
   #menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
@@ -987,8 +993,8 @@ function renderBible() {
   const names = allVersions();
   // 음역·뜻은 BHS 기본형 성경만, 단어 뜻 위치는 단어를 누를 수 있는 성경(원어·스트롱 번호)이면
   const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
-  // 고른 번역본만 알약으로 (더 고르기·빼기는 앞의 '번역본 ▾'). 누르면 빠짐
-  $('verTabs').innerHTML = (names.length > 1 ? S.versions : names).map(n => `<button class="tab ${S.versions.includes(n) ? 'on' : ''}" data-ver="${esc(n)}" aria-pressed="${S.versions.includes(n)}" draggable="true" data-drag="bible:${esc(n)}" title="${names.length > 1 ? '누르면 빼기' : '누르면 보기/끄기'} · 끌어서 순서 바꾸기">${esc(nm(n))}</button>`).join('') +
+  // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
+  $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>`).join('') +
     (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
     (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
     (S.versions.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">대조 보기 중</span>` : '') +
@@ -1230,13 +1236,41 @@ async function driveList(q, fields, spaces = 'drive') {
   } while (page);
   return out;
 }
-// 폴더 안(하위 폴더 포함)의 성경·주석·사전 파일
-async function driveFiles(id) {
+// 폴더 안(하위 폴더 포함)의 성경·주석·사전 파일. 바로가기는 원본을 따라감 → [{ id, name, size }]
+const FOLDER = 'application/vnd.google-apps.folder';
+async function driveFiles(id, seen = new Set()) {
+  if (seen.has(id)) return []; // 바로가기가 서로 가리켜도 한 번만
+  seen.add(id);
   const out = [];
-  for (const f of await driveList(`'${id}' in parents and trashed=false`, 'id,name,mimeType,size'))
-    if (f.mimeType === 'application/vnd.google-apps.folder') out.push(...await driveFiles(f.id));
-    else if (MODULE.test(f.name)) out.push(f);
+  for (const f of await driveList(`'${id}' in parents and trashed=false`, 'id,name,mimeType,size,shortcutDetails(targetId,targetMimeType)')) {
+    const t = f.shortcutDetails;
+    if (f.mimeType === FOLDER || t?.targetMimeType === FOLDER) out.push(...await driveFiles(t?.targetId || f.id, seen));
+    else if (MODULE.test(f.name)) out.push(t ? { id: t.targetId, name: f.name, size: 0 } : f);
+  }
+  // 바로가기는 크기를 몰라서 원본에서 확인
+  for (const f of out) if (!f.size) f.size = (await (await gfetch(`${DRIVE}/${f.id}?fields=size&supportsAllDrives=true`)).json()).size;
   return out;
+}
+// 드라이브 파일 목록(마지막 맞춤 때)과, 파일 관리에서 지워서 다시 받지 않을 것: 둘 다 "이름:크기" 열쇠
+const dKey = f => `${f.name}:${+f.size}`;
+let driveIdx = prefs.get('driveIdx', {}), driveSkip = prefs.get('driveSkip', {});
+// 받기: 하나씩 받아 바로 불러옴 (중간에 하나가 실패해도 나머지는 계속, 실패한 것은 모아서 알림)
+async function getDriveFiles(list) {
+  const total = list.reduce((a, f) => a + +f.size, 0) || 1, failed = [];
+  let sum = 0, n = 0;
+  for (const [i, f] of list.entries()) {
+    const label = `드라이브에서 받는 중 ${i + 1}/${list.length} · ${f.name} (${mb(+f.size)})`;
+    try {
+      // 받은 만큼 막대가 차오르게 조금씩 읽음
+      const reader = (await gfetch(`${DRIVE}/${f.id}?alt=media&supportsAllDrives=true`)).body.getReader(), parts = [];
+      for (let c; !(c = await reader.read()).done;) { parts.push(c.value); sum += c.value.length; progress(label, sum / total); }
+      await load([new File(parts, f.name)], true);
+      delete driveSkip[dKey(f)]; n++;
+    } catch (err) { failed.push(`${f.name} (${err.message})`); }
+  }
+  prefs.set('driveSkip', driveSkip); progress();
+  if (failed.length) throw new Error(`${n}개는 받았지만 ${failed.length}개를 받지 못했습니다: ${failed.join(', ')}`);
+  return n;
 }
 async function driveFolder() {
   const fs = await driveList("name='커피성경' and mimeType='application/vnd.google-apps.folder' and trashed=false", 'id,ownedByMe,owners(displayName)');
@@ -1246,22 +1280,13 @@ async function driveFolder() {
   if (!fs[n - 1]) throw new Error('폴더를 고르지 않았습니다');
   return fs[n - 1].id;
 }
-// 새로 생겼거나 바뀐(크기가 다른) 파일만 받음
+const haveKeys = () => new Set(Object.values(fileInfo).map(i => `${i.key}:${i.size}`));
+// 새로 생겼거나 바뀐(크기가 다른) 파일만 받음. 파일 관리에서 지운 것은 건너뜀 (파일 관리에서 다시 받을 수 있음)
 async function syncFiles(folder) {
-  const have = new Set(Object.values(fileInfo).map(i => `${i.key}:${i.size}`));
-  const need = (await driveFiles(folder)).filter(f => !have.has(`${f.name}:${+f.size}`));
-  const got = [], total = need.reduce((a, f) => a + +f.size, 0) || 1;
-  let sum = 0;
-  for (const [i, f] of need.entries()) {
-    const label = `드라이브에서 받는 중 ${i + 1}/${need.length} · ${f.name} (${mb(+f.size)})`;
-    // 받은 만큼 막대가 차오르게 조금씩 읽음
-    const reader = (await gfetch(`${DRIVE}/${f.id}?alt=media&supportsAllDrives=true`)).body.getReader(), parts = [];
-    for (let c; !(c = await reader.read()).done;) { parts.push(c.value); sum += c.value.length; progress(label, sum / total); }
-    got.push(new File(parts, f.name));
-  }
-  progress();
-  if (got.length) await load(got, true);
-  return got.length;
+  const list = await driveFiles(folder), have = haveKeys();
+  driveIdx = Object.fromEntries(list.map(f => [dKey(f), { id: f.id, name: f.name, size: +f.size }]));
+  prefs.set('driveIdx', driveIdx);
+  return getDriveFiles(list.filter(f => !have.has(dKey(f)) && !driveSkip[dKey(f)]));
 }
 async function syncMarks() {
   const [f] = await driveList("name='marks.json'", 'id', 'appDataFolder');
@@ -1958,6 +1983,7 @@ $('clearAll').onclick = async () => {
   closePops();
   if (!confirm('브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.')) return;
   await idb('files', 'readwrite', s => s.clear()).catch(() => {});
+  prefs.set('driveSkip', {}); // 모두 지우면 드라이브에서 처음부터 다시 받음
   // 사전·주석 색인은 지우고 배경 사진은 남김
   await idb('cache', 'readwrite', s => { const r = s.getAllKeys(); r.onsuccess = () => r.result.filter(k => k !== 'bg').forEach(k => s.delete(k)); return r; }).catch(() => {});
   location.reload();
@@ -2011,11 +2037,22 @@ function renderManage() {
         <input class="rename" data-rename="${esc(n)}" value="${esc(nm(n))}" placeholder="${esc(n)}" title="보이는 이름 (원래 파일: ${esc(n)})" aria-label="${esc(n)} 이름">
         <small>${fileInfo[n] ? mb(fileInfo[n].size) : ''}</small></label>`).join('')).join('')
       : '<p class="help">불러온 파일이 없습니다.</p>') +
+    driveOnlyHtml() +
     '<div class="actions"><button class="btn sm" id="manageClose">닫기</button><button class="btn sm primary" id="manageDel" disabled>선택한 파일 지우기</button></div>';
+}
+// 드라이브에는 있는데 이 브라우저에는 없는 파일 (지웠거나 아직 안 받은 것): 하나씩 받기
+function driveOnlyHtml() {
+  if (!driveOn()) return '';
+  const have = haveKeys(), list = Object.entries(driveIdx).filter(([k]) => !have.has(k));
+  return list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">지운 파일은 '드라이브와 맞추기'를 해도 다시 받지 않아요. 필요하면 여기서 받으세요.</p>` +
+    list.map(([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`).join('') : '';
 }
 async function removeModules(items) {
   for (const it of items) {
     const kind = kindOf(it), name = nameOf(it);
+    // 드라이브에서 받은 파일이면 다음 맞춤 때 다시 받지 않도록 기억
+    const k = fileInfo[name] && `${fileInfo[name].key}:${fileInfo[name].size}`;
+    if (k && driveIdx[k]) { driveSkip[k] = 1; prefs.set('driveSkip', driveSkip); }
     if (kind === 'bible') { delete bibles[name]; delete plain[name]; }
     if (kind === 'comm') {
       comms[name]?.close(); delete comms[name]; delete commText[name]; delete commFiles[name];
@@ -2048,6 +2085,16 @@ $('manageBox').onchange = e => {
 };
 $('manageBox').addEventListener('click', async e => {
   if (e.target.id === 'manageClose') return closePops();
+  const get = e.target.closest('[data-drive-get]');
+  if (get) {
+    if (driveBusy) return flash('드라이브와 맞추는 중입니다. 끝난 뒤 다시 눌러 주세요');
+    const f = driveIdx[get.dataset.driveGet];
+    driveBusy = true; get.disabled = true;
+    try { await getDriveFiles([f]); flash(`${f.name}을(를) 받았습니다`); }
+    catch (err) { alert(`구글 드라이브: ${err.message}`); }
+    finally { driveBusy = false; renderManage(); }
+    return;
+  }
   if (e.target.id !== 'manageDel') return;
   const items = [...$('manageBox').querySelectorAll('input:checked')].map(i => i.value);
   if (!items.length || !confirm(`${items.map(i => nm(nameOf(i))).join(', ')}\n\n${items.length}개 파일을 지울까요? 원본 파일은 그대로 남습니다.`)) return;
@@ -2113,7 +2160,7 @@ $('verTabs').onclick = e => {
   if (e.target.closest('[data-show-comm]')) { S.hideComm = false; save(); renderComm(); renderBible(); if (S.v) syncComm(S.v); return; }
   if (e.target.closest('[data-word-side]')) { wordSide = !wordSide; prefs.set('wordSide', wordSide); return renderBible(); }
   if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
-  const t = e.target.closest('[data-ver]'); if (t) toggleVer(t.dataset.ver);
+  const x = e.target.closest('[data-ver-x]'); if (x) toggleVer(x.dataset.verX);
 };
 function toggleVer(n) {
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
