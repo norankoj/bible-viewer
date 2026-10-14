@@ -258,6 +258,10 @@
   .welcome-sub { margin: 0 0 4px; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .02em; }
   .welcome-note { font-size: 12px; }
   .welcome-mean { margin: -2px 0 14px; font-size: 13px; }
+  .welcome-steps { text-align: left; margin: 12px auto 4px; padding: 12px 16px 12px 36px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font-size: 13px; line-height: 1.65; }
+  .welcome-steps li + li { margin-top: 6px; }
+  .welcome-steps li::marker { color: var(--accent); font-weight: 700; }
+  .welcome .welcome-note { margin-top: 14px; }
   .welcome-mean b { color: var(--accent); }
   .welcome-fmt { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
   /* 지원 형식 표 */
@@ -378,7 +382,7 @@
 
 <div class="pop" id="picker" role="dialog" aria-label="성경 책과 장 선택"></div>
 <div class="pop" id="menu" role="menu">
-  <button id="addFolder">폴더 열기<small>bible-viewer 폴더를 고르면 성경·주석·사전을 한 번에 추가</small></button>
+  <button id="addFolder">폴더 열기<small>성경·주석·사전 파일을 모아 둔 폴더를 고르면 한 번에 추가</small></button>
   <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword·베들레헴 성경, 주석, 사전</small></button>
   <button id="fmtBtn">지원하는 파일 형식<small>어떤 확장자를 넣을 수 있는지</small></button>
   <hr>
@@ -641,9 +645,15 @@ const welcome = `<div class="empty welcome">
   <p class="welcome-sub">커피 한 잔과 함께하는 말씀 묵상</p>
   <h2>커피성경에 오신 것을 환영합니다</h2>
   <p class="welcome-mean">커피성경 = <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b> <span style="white-space:nowrap">(Community People's Bible)</span></p>
-  <p>가지고 계신 성경과 주석 파일을 추가하면 바로 읽을 수 있어요.<br><b>bible-viewer</b> 폴더를 통째로 고르면 그 안의 <b>성경</b>, <b>주석</b>, <b>사전</b>을 한 번에 불러오고, 다음부터는 자동으로 열립니다.</p>
-  <p class="welcome-note">파일은 이 컴퓨터 안에서만 읽고 어디에도 보내지 않습니다.</p>
+  <p>가지고 계신 성경·주석·사전 파일을 추가하면 바로 읽을 수 있어요. 처음 한 번만 이렇게 준비하세요.</p>
+  <ol class="welcome-steps">
+    <li>컴퓨터에 <b>폴더를 하나 만드세요.</b> 이름은 아무거나 괜찮아요. (예: 문서 › <b>커피성경</b>)</li>
+    <li>가지고 있는 <b>성경·주석·사전 파일을 그 폴더에 모두 넣으세요.</b> 안에 <b>성경</b>, <b>주석</b>, <b>사전</b>처럼 폴더를 나눠도 됩니다.</li>
+    <li>아래 <b>폴더 열기</b>를 누르고 그 폴더를 고르세요. 안의 파일을 한 번에 불러오고, <b>다음부터는 자동으로 열립니다.</b></li>
+  </ol>
   <button class="btn primary" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button>
+  <p class="welcome-note">파일 몇 개만 넣으려면 <b>파일 선택</b>으로 골라도 됩니다(여러 개 한꺼번에 가능). 나중에 파일이 늘면 같은 폴더를 다시 열면 돼요.<br>
+    브라우저가 "업로드"할지 물어도 실제로는 인터넷에 올라가지 않아요. 파일은 이 컴퓨터 안에서만 읽습니다.</p>
   <div class="welcome-fmt"><p class="welcome-sub">넣을 수 있는 파일</p>${FORMATS}</div></div>`;
 
 function verseMark(v) {
