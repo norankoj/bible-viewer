@@ -83,6 +83,7 @@
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
   .btn.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); filter: brightness(1.1); }
   /* 책 한 쪽의 머리: 큰 "요한복음 3장" + ‹ › · 번역본(알약 스위치) · 검색 */
+  body.no-bibles .nav, body.no-bibles .search-wrap { display: none; }
   .page-head { flex: none; display: flex; flex-wrap: nowrap; align-items: center; gap: 10px 14px; padding: 16px 24px 12px 28px; }
   .nav { display: flex; align-items: center; gap: 2px; flex: none; }
   .ref-btn { border: 0; background: none; padding: 2px 4px; border-radius: var(--r); font: 800 24px/1.2 var(--sans); letter-spacing: -.035em; color: var(--fg); transition: background .15s; }
@@ -948,6 +949,8 @@ function renderBible() {
     (names.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
     (S.hideComm ? `<button class="tab on ${names.length > 1 || words ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
   const vs = S.versions;
+  // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
+  document.body.classList.toggle('no-bibles', !names.length);
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
   const { b, c } = S, n = VERSES[b - 1][c - 1];
   // 제목은 위 머리에 크게 있으니 본문에는 읽어 주기용으로만, 왼쪽 여백에 큰 장 번호를 흐리게 (지금 몇 장인지 한눈에)
