@@ -297,6 +297,20 @@
   .drive-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
   .drive-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .drive-row small { color: var(--muted); }
+  /* 커피성경 소개 (레일 로고 · 파일 메뉴) */
+  .rail-logo-btn { border: 0; padding: 0; background: none; border-radius: 50%; cursor: pointer; margin-bottom: 12px; }
+  .rail-logo-btn .rail-logo { margin-bottom: 0; display: block; transition: transform .15s; }
+  .rail-logo-btn:hover .rail-logo { transform: scale(1.06); }
+  #aboutBox { width: min(340px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; text-align: center; line-height: 1.65; }
+  .about-badge { width: 72px; height: 72px; border-radius: 50%; display: block; margin: 4px auto 10px; }
+  .about-name { display: block; font-size: 20px; letter-spacing: -.02em; }
+  .about-en { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; }
+  #aboutBox p { margin: 0 0 12px; font-size: 13.5px; }
+  .about-people { display: grid; grid-template-columns: auto auto; justify-content: center; gap: 4px 12px; margin: 0 0 14px; font-size: 14px; }
+  .about-people dt { color: var(--muted); }
+  .about-people dd { margin: 0; font-weight: 600; text-align: left; }
+  .about-coffee { padding: 12px; border-radius: var(--r); background: var(--accent-soft); color: var(--fg); margin: 0 !important; }
+  .about-coffee b { color: var(--accent); }
   #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   #manageBox label:hover { background: var(--bg); }
   #manageBox label small { margin-left: auto; color: var(--muted); }
@@ -501,7 +515,7 @@
     body { grid-template-columns: minmax(0, 1fr); }
     .app { height: auto; position: fixed; inset: 0 0 calc(60px + env(safe-area-inset-bottom)) 0; }
     .rail { position: fixed; left: 0; right: 0; bottom: 0; top: auto; height: calc(60px + env(safe-area-inset-bottom)); flex-direction: row; justify-content: space-around; gap: 0; padding: 4px 4px env(safe-area-inset-bottom); overflow-x: auto; }
-    .rail-logo, .rail-sep, .rail-gap { display: none; }
+    .rail-logo-btn, .rail-sep, .rail-gap { display: none; }
     .rb { flex: 1 1 0; width: auto; min-width: 44px; padding: 6px 0; }
     .status { bottom: calc(74px + env(safe-area-inset-bottom)); }
     .page-head { padding: 10px 14px 8px; gap: 8px; flex-wrap: wrap; }
@@ -536,7 +550,7 @@
   [data-design="classic"] body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   [data-design="classic"] .app { position: static; height: auto; min-height: 0; }
   [data-design="classic"] .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px; padding: 12px 20px; background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); overflow: visible; }
-  [data-design="classic"] .rail-logo, [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
+  [data-design="classic"] .rail-logo-btn, [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
   [data-design="classic"] .rail-gap { flex: 1; min-height: 0; }
   [data-design="classic"] .rb { width: auto; flex: none; height: 34px; padding: 0 13px; flex-direction: row; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font: 500 14px var(--sans); }
   [data-design="classic"] .rb:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
@@ -571,7 +585,7 @@
 <body>
 <!-- 왼쪽 레일(휴대폰은 아래 막대): 이동 기록 · 오른쪽 칸 바로가기 · 보기/세팅/파일 -->
 <nav class="rail" aria-label="주 메뉴">
-  <img class="rail-logo" src="icons/icon-192.png" alt="커피성경">
+  <button class="rail-logo-btn" id="aboutBtn" aria-haspopup="dialog" title="커피성경 소개"><img class="rail-logo" src="icons/icon-192.png" alt="커피성경 소개"></button>
   <button class="rb" id="back" data-icon="arrow-left" title="이전 위치로 (Alt+←)" disabled><span>뒤로</span></button>
   <button class="rb" id="fwd" data-icon="arrow-right" title="다시 앞으로 (Alt+→)" disabled><span>앞으로</span></button>
   <i class="rail-sep" aria-hidden="true"></i>
@@ -632,6 +646,7 @@
   <button id="addFolder">폴더 열기<small>성경·주석·사전 파일을 모아 둔 폴더를 고르면 한 번에 추가</small></button>
   <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword·베들레헴 성경, 주석, 사전</small></button>
   <button id="fmtBtn">지원하는 파일 형식<small>어떤 확장자를 넣을 수 있는지</small></button>
+  <button id="aboutMenu">커피성경 소개<small>만든 사람들, 커피 한 잔</small></button>
   <button id="tourBtn">사용법 둘러보기<small>버튼·메뉴를 하나씩 비추며 설명</small></button>
   <hr>
   <div class="accent-row" role="group" aria-label="디자인"><span>디자인<small>화면 모양 (기능은 같아요)</small></span>
@@ -662,6 +677,14 @@
 <div class="pop" id="wordPop" role="dialog" aria-label="단어 뜻"></div>
 <div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
 <div class="pop" id="verBox" role="dialog" aria-label="번역본 고르기"></div>
+<div class="pop" id="aboutBox" role="dialog" aria-label="커피성경 소개">
+  <img class="about-badge" src="icons/icon-192.png" alt="">
+  <b class="about-name">커피성경</b>
+  <p class="about-en">Community People's Bible</p>
+  <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
+  <dl class="about-people"><dt>기획</dt><dd>이성진 목사님</dd><dt>개발</dt><dd>노나연</dd></dl>
+  <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br>기획자와 개발자에게 <b>커피 한 잔씩</b> 사주세요!</p>
+</div>
 <div class="pop" id="tabBox" role="dialog" aria-label="탭 줄에 보일 주석·사전 고르기"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
@@ -1962,6 +1985,9 @@ $('picker').onclick = e => {
   else if (t.dataset.chap) { closePops(); go(+t.dataset.b, +t.dataset.chap, 0, true); }
 };
 $('menuBtn').onclick = e => togglePop(e, $('menu'), $('menuBtn'), renderDrive);
+$('aboutBtn').onclick = e => togglePop(e, $('aboutBox'), $('aboutBtn'));
+$('aboutMenu').onclick = e => { e.stopPropagation(); openPop($('aboutBox'), $('menuBtn')); };
+$('aboutBox').onclick = e => e.stopPropagation();
 $('viewBtn').onclick = e => togglePop(e, $('viewBox'), $('viewBtn'));
 $('viewBox').onclick = e => e.stopPropagation();
 // 레일 바로가기: 오른쪽 칸을 원어 사전 / 교차 참조 / 보관함으로 (숨겨 둔 칸은 다시 열고, 같은 걸 또 누르면 주석으로)
