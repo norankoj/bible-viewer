@@ -1404,8 +1404,11 @@ function pickerChapters(b) {
 
 /* ---------- 이벤트 ---------- */
 // 책 버튼: 책을 고르면 바로 그 책의 장 목록으로. 장 버튼: 지금 책의 장 목록을 바로
-$('bookBtn').onclick = e => { e.stopPropagation(); pickerBooks(); openPop($('picker'), $('bookBtn')); };
-$('chapBtn').onclick = e => { e.stopPropagation(); pickerChapters(S.b); openPop($('picker'), $('chapBtn')); };
+// 위 막대 버튼: 같은 버튼을 한 번 더 누르면 닫힘
+const isOpenFrom = (pop, btn) => pop.classList.contains('open') && pop._anchor === btn;
+const togglePop = (e, pop, btn, fill) => { e.stopPropagation(); if (isOpenFrom(pop, btn)) return closePops(); fill?.(); openPop(pop, btn); };
+$('bookBtn').onclick = e => togglePop(e, $('picker'), $('bookBtn'), pickerBooks);
+$('chapBtn').onclick = e => togglePop(e, $('picker'), $('chapBtn'), () => pickerChapters(S.b));
 $('picker').onclick = e => {
   e.stopPropagation();
   const t = e.target.closest('button'); if (!t) return;
@@ -1413,7 +1416,7 @@ $('picker').onclick = e => {
   else if (t.dataset.back !== undefined) pickerBooks();
   else if (t.dataset.chap) { closePops(); go(+t.dataset.b, +t.dataset.chap, 0, true); }
 };
-$('menuBtn').onclick = e => { e.stopPropagation(); openPop($('menu'), $('menuBtn')); };
+$('menuBtn').onclick = e => togglePop(e, $('menu'), $('menuBtn'));
 $('addFolder').onclick = () => { closePops(); $('folder').click(); };
 $('addFiles').onclick = () => { closePops(); $('files').click(); };
 $('exportMarks').onclick = () => { closePops(); marks.size ? exportMarks() : alert('아직 저장한 메모·하이라이트·책갈피가 없습니다.'); };
@@ -1888,7 +1891,7 @@ function renderPresets() {
       <button class="btn sm" data-psave="${i}">지금 상태 저장</button>
       <button class="btn sm primary" data-papply="${i}" ${presets[i] ? '' : 'disabled'}>불러오기</button></div>`).join('');
 }
-$('presetBtn').onclick = e => { e.stopPropagation(); renderPresets(); openPop($('presetBox'), $('presetBtn')); };
+$('presetBtn').onclick = e => togglePop(e, $('presetBox'), $('presetBtn'), renderPresets);
 $('presetBox').onclick = e => {
   e.stopPropagation();
   const t = e.target.closest('button'); if (!t) return;
