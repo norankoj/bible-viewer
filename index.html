@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>커피성경 (Community People's Bible)</title>
 <!-- 색 설정을 화면 그리기 전에 (깜빡임 없게) -->
-<script>try { document.documentElement.dataset.accent = JSON.parse(localStorage.getItem('accent')) || 'green'; } catch {}</script>
+<script>try { const d = document.documentElement; d.dataset.accent = JSON.parse(localStorage.getItem('accent')) || 'green'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; } catch {}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#035b36">
 <link rel="icon" href="icons/icon-192.png">
@@ -141,7 +141,7 @@
   /* 성경 */
   .chapter-title { font: 700 26px/1.25 var(--sans); letter-spacing: -.02em; margin: 2px 0 22px; }
   .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
-  #bible { position: relative; padding-left: 88px; }
+  #bible { position: relative; padding-left: 88px; --stick: -28px; } /* 번역본 이름 줄이 칸 맨 위에 딱 붙게 (= 위쪽 여백만큼 위로) */
   .chapter-num { position: absolute; left: 4px; top: 0; z-index: 0; pointer-events: none; font: 800 132px/1 var(--sans); letter-spacing: -.07em; color: var(--accent); opacity: .08; user-select: none; }
   #bible > :not(.chapter-num) { position: relative; z-index: 1; }
   .verse { font: var(--fs)/1.9 var(--read); padding: 4px 12px; margin: 0 -12px 2px; border-radius: 10px; cursor: pointer; max-width: 42em; user-select: none; transition: background .15s; }
@@ -153,8 +153,9 @@
   .par { display: grid; grid-template-columns: 28px repeat(var(--n), minmax(0, 1fr)); column-gap: 0; }
   .par .head:not(:first-child) { padding-left: 10px; padding-right: 10px; }
   /* 번역본 이름 줄: 칸마다 따로가 아니라 한 줄 띠 (subgrid로 아래 칸과 너비를 맞춤) */
-  .par .heads { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: sticky; top: -24px; z-index: 1; background: var(--surface); border-bottom: 1px solid var(--line); margin-bottom: 8px; }
-  .par .head { padding: 6px 0 8px; font-weight: 600; font-size: 12px; color: var(--muted); }
+  .par .heads { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; position: sticky; top: var(--stick, 0px); z-index: 2; margin: 0 0 10px; border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--page) 88%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .par .head { padding: 10px 0 9px; font: 700 12px/1.2 var(--sans); letter-spacing: .01em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* 배경 사진이 있을 때: 막대·이름 줄·선택·하이라이트를 반투명 유리처럼 (사진 위에 흰 상자가 뜨지 않게) */
   #biblePane.has-bg { --glass: color-mix(in srgb, var(--surface) 62%, transparent); }
   #biblePane.has-bg .page-head, #biblePane.has-bg .par .heads { background: var(--glass); -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border-color: color-mix(in srgb, var(--line) 55%, transparent); }
@@ -167,9 +168,9 @@
   #biblePane.has-bg .verse.hl-pink, #biblePane.has-bg .par .row.hl-pink > * { background: color-mix(in srgb, var(--hl-pink) 65%, transparent); }
   .par .row { display: contents; }
   .par .row > * { padding: 6px 10px; font: var(--fs)/1.75 var(--read); cursor: pointer; user-select: none; }
-  .par .row > .vn { font: 600 11px/2.6 var(--sans); padding-left: 6px; }
+  .par .row > .vn { font: 600 11px/2.6 var(--sans); padding: 6px 0 6px 6px; white-space: nowrap; }
+  .par { grid-template-columns: 34px repeat(var(--n), minmax(0, 1fr)); } /* 절 번호 칸: 세 자리(119편 176절)까지 한 줄 */
   /* 선택: 왼쪽 막대 + (하이라이트가 없으면) 연한 배경 */
-  .verse.on, .par .row.on > .vn { box-shadow: inset 3px 0 0 var(--accent); }
   .verse.on:not([class*="hl-"]), .par .row.on:not([class*="hl-"]) > * { background: var(--accent-soft); }
   .hl-yellow, .verse.hl-yellow, .par .row.hl-yellow > * { background: var(--hl-yellow); }
   .hl-green, .verse.hl-green, .par .row.hl-green > * { background: var(--hl-green); }
@@ -178,7 +179,6 @@
   /* 히브리어 원문(BHS 등): 오른쪽→왼쪽, 음역·기본형 뜻은 작게 */
   .heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", "Arial Hebrew", serif; }
   .verse.heb, .par .row > .heb { font-size: calc(var(--fs) * 1.25); line-height: 2.1; }
-  .verse.heb.on { box-shadow: inset -3px 0 0 var(--accent); }
   .tr, .gl { font: .58em var(--sans); unicode-bidi: isolate; direction: ltr; margin: 0 3px; }
   .tr { color: var(--accent); font-style: italic; }
   .gl { color: var(--muted); }
@@ -194,16 +194,20 @@
   .w:hover { background: var(--accent-soft); color: var(--accent); }
   .lex.heb { font-size: 1.3em; } .lex.grk { font-family: var(--serif); font-size: 1.1em; }
   /* 원어 팝업: 머리(번호·원어·버튼)는 고정, 풀이는 사전 탭과 같은 서식으로 스크롤 */
-  /* 원어 단어 공부 노트: 화면 오른쪽에 붙어 열림 (휴대폰은 아래에서 올라옴) */
-  #wordPop { position: fixed; inset: 0 0 0 auto !important; width: min(400px, 100vw); max-height: none !important; z-index: 25; padding: 22px 24px 32px; border-radius: 0; border-width: 0 0 0 1px; overflow-y: auto; overscroll-behavior: contain; box-shadow: -28px 0 56px -28px rgb(10 25 18 / .4); }
-  #wordPop.open { animation: sheet-in .3s cubic-bezier(.16,1,.3,1); }
+  /* 원어 단어 공부 노트 (번호·큰 원어·문법 칩·풀이·나오는 곳)
+     새 디자인: 화면 오른쪽에 붙어 열림(휴대폰은 아래에서 올라옴) / 기존 디자인: 누른 단어 옆 팝업 */
+  #wordPop { width: min(440px, calc(100vw - 32px)); max-height: 70vh; z-index: 25; padding: 18px 20px 20px; overflow-y: auto; overscroll-behavior: contain; }
+  :root:not([data-design="classic"]) #wordPop { inset: 0 0 0 auto !important; width: min(400px, 100vw); max-height: none !important; padding: 22px 24px 32px; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -28px 0 56px -28px rgb(10 25 18 / .4); }
+  :root:not([data-design="classic"]) #wordPop.open { animation: sheet-in .3s cubic-bezier(.16,1,.3,1); }
+  :root:not([data-design="classic"]) .ws-word { font-size: 46px; margin-top: 14px; }
   @keyframes sheet-in { from { opacity: 0; transform: translateX(28px); } }
   @keyframes sheet-up { from { opacity: 0; transform: translateY(32px); } }
-  @media (prefers-reduced-motion: reduce) { #wordPop.open, #biblePane > .selbar { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { #wordPop.open { animation: none !important; } }
+  @media (prefers-reduced-motion: reduce) { #biblePane > .selbar { animation: none; } }
   .ws-close { float: right; width: 34px; height: 34px; margin: -6px -8px 0 0; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; }
   .ws-close:hover { background: var(--bg); color: var(--fg); }
   .ws-num { display: inline-block; background: var(--accent); color: var(--on-accent); font: 700 12px/1 var(--sans); border-radius: 999px; padding: 6px 11px; letter-spacing: .01em; }
-  .ws-word { margin: 14px 0 4px; font-size: 46px; line-height: 1.15; color: var(--fg); }
+  .ws-word { margin: 10px 0 2px; font-size: 38px; line-height: 1.15; color: var(--fg); }
   .ws-word.heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", serif; text-align: left; }
   .ws-word.grk { font-family: "Times New Roman", var(--serif); }
   .ws-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 14px; }
@@ -472,10 +476,10 @@
     .page-head .tabs { flex: 1 1 100%; justify-content: flex-start; overflow-x: auto; order: 2; }
     .selbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     .selbar > *, .sel-ref { flex: none; white-space: nowrap; }
-    #bible { padding-left: 16px; }
+    #bible { padding-left: 16px; --stick: -18px; }
     .chapter-num { left: auto; right: 6px; font-size: 92px; }
-    #wordPop { inset: auto 0 0 0 !important; width: 100%; max-height: 80vh !important; border-width: 1px 0 0; border-radius: 18px 18px 0 0; padding: 18px 20px calc(24px + env(safe-area-inset-bottom)); }
-    #wordPop.open { animation-name: sheet-up; }
+    :root:not([data-design="classic"]) #wordPop { inset: auto 0 0 0 !important; width: 100%; max-height: 80vh !important; border-width: 1px 0 0; border-radius: 18px 18px 0 0; padding: 18px 20px calc(24px + env(safe-area-inset-bottom)); }
+    :root:not([data-design="classic"]) #wordPop.open { animation-name: sheet-up; }
     main, main.split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 55% 45%; }
     main.split #pane2, [data-split], .resizer { display: none !important; }
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
@@ -484,6 +488,43 @@
     /* 휴대폰은 성경 칸이 낮아서 떠 있는 막대가 절을 가림 → 아래에 붙여 둠 */
     #biblePane > .selbar { position: relative; left: auto; bottom: auto; transform: none; width: auto; max-width: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; animation: none; padding: 8px 12px; }
     .scroll { scroll-padding-bottom: 0; }
+  }
+
+  /* ---------- 기존 디자인 (파일 → 디자인 → 기존 디자인): 같은 화면 뼈대를 예전 모양으로 ----------
+     위쪽 글자 버튼 줄, 흰 바탕·회색 톤, 밑줄 탭, 본문 안 장 제목, 흰 떠 있는 작업 막대 */
+  :root[data-design="classic"] { --bg: #f6f7f9; --page: #ffffff; --surface: #ffffff; --line: #e3e5ea; --fg: #1d2027; --muted: #646b7a; --dock: #ffffff; --dock-fg: #1d2027; }
+  @media (prefers-color-scheme: dark) {
+    :root[data-design="classic"] { --bg: #121317; --page: #181a1f; --surface: #181a1f; --line: #2a2d35; --fg: #e4e6eb; --muted: #949aa8; --dock: #181a1f; --dock-fg: #e4e6eb; }
+  }
+  [data-design="classic"] body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  [data-design="classic"] .app { position: static; height: auto; min-height: 0; }
+  [data-design="classic"] .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px; padding: 12px 20px; background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); overflow: visible; }
+  [data-design="classic"] .rail-logo, [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
+  [data-design="classic"] .rail-gap { flex: 1; min-height: 0; }
+  [data-design="classic"] .rb { width: auto; flex: none; height: 34px; padding: 0 13px; flex-direction: row; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font: 500 14px var(--sans); }
+  [data-design="classic"] .rb:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
+  [data-design="classic"] .rb.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  [data-design="classic"] .rb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  [data-design="classic"] .page-head { padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  [data-design="classic"] .nav { padding: 2px; border: 1px solid var(--line); border-radius: calc(var(--r) + 3px); }
+  [data-design="classic"] .ref-btn { font-size: 15px; font-weight: 700; letter-spacing: -.01em; padding: 4px 10px; }
+  [data-design="classic"] .search { border-radius: calc(var(--r) + 2px); background: var(--bg); border-color: transparent; }
+  [data-design="classic"] #verTabs .tab[data-ver] { height: 30px; border-color: transparent; border-radius: var(--r); background: none; font-weight: 500; }
+  [data-design="classic"] #verTabs .tab[data-ver].on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
+  [data-design="classic"] .chapter-num { display: none; }
+  [data-design="classic"] .chapter-title.sr-only { position: static !important; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; margin: 2px 0 22px; }
+  [data-design="classic"] #bible { padding-left: 36px; }
+  [data-design="classic"] #biblePane > .selbar { border: 1px solid var(--line); box-shadow: var(--shadow); }
+  [data-design="classic"] .selbar .btn { background: var(--surface); border-color: var(--line); }
+  [data-design="classic"] .selbar .btn:hover:not(:disabled) { background: var(--bg); }
+  [data-design="classic"] .selbar .sw { border-color: color-mix(in srgb, var(--fg) 12%, transparent); }
+  [data-design="classic"] .ws-word { font-size: 30px; }
+  @media (max-width: 760px) {
+    [data-design="classic"] .rail { padding: 8px 16px; position: static; }
+    [data-design="classic"] .rb { height: 32px; padding: 0 10px; font-size: 13px; }
+    [data-design="classic"] #bible { padding-left: 16px; }
+    [data-design="classic"] .status { bottom: 22px; }
+    [data-design="classic"] #biblePane > .selbar { border: 0; border-top: 1px solid var(--line); box-shadow: none; }
   }
 </style>
 </head>
@@ -552,6 +593,8 @@
   <button id="fmtBtn">지원하는 파일 형식<small>어떤 확장자를 넣을 수 있는지</small></button>
   <button id="tourBtn">사용법 둘러보기<small>버튼·메뉴를 하나씩 비추며 설명</small></button>
   <hr>
+  <div class="accent-row" role="group" aria-label="디자인"><span>디자인<small>화면 모양 (기능은 같아요)</small></span>
+    <span class="accent-sw" id="designSw"><button data-design="new">새 디자인</button><button data-design="classic">기존 디자인</button></span></div>
   <div class="accent-row" role="group" aria-label="색 설정"><span>색 설정<small>버튼·선택·강조 색</small></span>
     <span class="accent-sw"><button data-accent="green"><i style="background:#035b36"></i>초록</button><button data-accent="blue"><i style="background:#2c4aa8"></i>파랑</button><button data-accent="black"><i style="background:#1d2027"></i>검정</button></span></div>
   <button id="bgBtn">배경 화면<small>성경 뒤에 사진 깔기, 진하기·흐림 조절</small></button>
@@ -1362,11 +1405,11 @@ function wordPopAt(i, lemma = '') {
     <div class="body" id="wordBody">${esc(body)}…</div>
     <div class="ws-acts"><button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button></div>
     <h5 class="ws-h">이 단어가 나오는 곳</h5><div id="wordOcc"><p class="muted">찾는 중…</p></div>`;
-  pop.scrollTop = 0;
+  pop.scrollTop = 0; placePop(pop);
   const name = S.dict;
   openDict(name).then(() => {
     const row = dictRow(e.s), box = $('wordBody');
-    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) box.innerHTML = entryHtml(name, e.s, row[1]);
+    if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = entryHtml(name, e.s, row[1]); placePop(pop); }
   }).catch(() => {});
   wordOccurrences(e.s);
 }
@@ -1388,6 +1431,7 @@ async function wordOccurrences(num) {
     ? list.slice(0, 3).map(i => `<button class="ws-occ" data-go="${REF[i].join('.')}"><b>${refName(...REF[i])}</b><span>${esc(plain[kor][i])}</span></button>`).join('') +
       `<button class="ws-all" data-search-strong="${num}">${list.length}절 모두 보기 ${icon('arrow-right')}</button>`
     : '<p class="muted">찾지 못했어요.</p>';
+  placePop($('wordPop'));
 }
 
 // 각주 위첨자 → 작은 창 (마우스를 올리면 브라우저 말풍선으로도 보임)
@@ -1642,7 +1686,9 @@ function openPop(el, anchor) {
 // 팝업이 화면 밖으로 나가지 않게: 아래 자리가 되면 아래, 아니면 위, 둘 다 부족하면 화면 안에 맞춤.
 // 내용이 나중에 채워져 길어지면(원어 전체 풀이 등) 다시 부름
 function placePop(el) {
-  if (!el.classList.contains('open') || !el._anchor?.isConnected || el.id === 'wordPop') return; // 단어 노트는 화면 오른쪽(휴대폰은 아래)에 고정
+  if (!el.classList.contains('open') || !el._anchor?.isConnected) return;
+  // 새 디자인의 단어 노트는 화면 오른쪽(휴대폰은 아래)에 고정, 기존 디자인은 단어 옆 팝업
+  if (el.id === 'wordPop' && document.documentElement.dataset.design !== 'classic') return;
   el.style.maxHeight = ''; // CSS 기본 높이로 재고
   const r = el._anchor.getBoundingClientRect(), w = el.offsetWidth, gap = 6, edge = 8;
   // 왼쪽 레일 버튼에서 연 창은 레일 오른쪽에 (휴대폰처럼 레일이 아래 막대면 기존대로 위로)
@@ -2077,7 +2123,20 @@ function applyAccent(a) {
   document.querySelectorAll('[data-accent]').forEach(b => b.tagName === 'BUTTON' && b.classList.toggle('on', b.dataset.accent === a));
 }
 applyAccent(prefs.get('accent', 'green'));
-document.querySelector('.accent-sw').onclick = e => {
+// 디자인: 새 디자인(기본) / 기존 디자인. 화면 모양만 바뀌고 기능은 같음
+function applyDesign(d) {
+  if (d !== 'classic') d = 'new';
+  document.documentElement.dataset.design = d;
+  document.querySelectorAll('#designSw [data-design]').forEach(b => b.classList.toggle('on', b.dataset.design === d));
+}
+applyDesign(prefs.get('design', 'new'));
+$('designSw').onclick = e => {
+  e.stopPropagation();
+  const d = e.target.closest('[data-design]')?.dataset.design; if (!d) return;
+  prefs.set('design', d); applyDesign(d); closePops();
+  if (S.v) select(S.v); // 칸 모양이 바뀌었으니 고른 절이 보이게
+};
+document.querySelector('.accent-sw:not(#designSw)').onclick = e => {
   e.stopPropagation(); // 메뉴는 열어 둔 채 바로 바뀌는 걸 보게
   const a = e.target.closest('[data-accent]')?.dataset.accent; if (!a) return;
   prefs.set('accent', a); applyAccent(a);
@@ -2205,7 +2264,7 @@ const TOUR = [
   { title: '커피성경에 오신 것을 환영합니다', text: '주요 버튼과 메뉴를 1분 만에 둘러볼게요. 언제든 <b>건너뛰기</b>로 그만둘 수 있어요.', keys: true },
   { sel: ['.welcome .btn.primary', '.welcome .btn.primary + .btn'], title: '여기서 시작하세요', text: '성경·주석·사전 파일을 모아 둔 폴더를 <b>폴더 열기</b>로 고르면 한 번에 불러와요. 한 번 넣으면 다음부터 자동으로 열려요.' },
   { sel: ['.nav'], title: '성경 이동', text: '큰 제목의 <b>책 이름</b>을 누르면 성경을, <b>장</b>을 누르면 장을 골라요. ‹ › 또는 키보드 <b>← →</b>로 앞뒤 장, <b>↑ ↓</b>로 앞뒤 절로 움직여요.' },
-  { sel: ['#back', '#fwd'], title: '뒤로 · 앞으로', text: '왼쪽 레일 맨 위. 링크나 검색으로 건너뛴 뒤 원래 자리로 돌아가요. 단축키 <b>Alt+← / Alt+→</b>' },
+  { sel: ['#back', '#fwd'], title: '뒤로 · 앞으로', text: '링크나 검색으로 건너뛴 뒤 원래 자리로 돌아가요. 단축키 <b>Alt+← / Alt+→</b>' },
   { sel: ['#verTabs'], title: '번역본', text: '누르면 보기/끄기. <b>여러 개를 고르면 나란히 대조</b>해서 봐요. 탭을 끌어서 순서를 바꿀 수 있어요.' },
   { sel: ['#bible'], title: '본문', text: '절을 누르면 선택돼요. 아래에 뜨는 막대에서 <b>복사·하이라이트·메모·책갈피</b>를 할 수 있어요. 원어 성경에서는 <b>단어를 누르면 사전 뜻</b>이 떠요.' },
   { sel: ['[data-rail="dict"]', '[data-rail="xref"]', '[data-rail="saved"]'], title: '바로가기', text: '<b>원어 사전 · 교차 참조 · 보관함</b>을 오른쪽 칸에 바로 열어요. 한 번 더 누르면 주석으로 돌아가요.' },
