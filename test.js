@@ -48,6 +48,22 @@ assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In t
   assert.strictEqual(tagOriginal('בָּרָא אֱלֹהִים', origKey('אלהים') + ':' + (430).toString(36), 'H'), 'בָּרָא אֱלֹהִים<WH430>');
 }
 
+// 기기끼리 메모·책갈피 합치기
+{
+  const { mergeMarks } = require('./decode.js');
+  const r = mergeMarks(
+    [{ id: 'a', note: '옛 메모', t: 1 }, { id: 'b', t: 5 }, { id: 'c', t: 9 }],
+    { d: 6 },
+    [{ id: 'a', note: '새 메모', t: 2 }, { id: 'd', t: 4 }, { id: 'c', t: 3 }, { id: 'e', t: 1 }],
+    { b: 7, e: 0 });
+  const by = Object.fromEntries(r.marks.map(m => [m.id, m]));
+  assert.strictEqual(by.a.note, '새 메모'); // 나중에 고친 쪽
+  assert(!by.b && !by.d);                   // 다른 기기에서 나중에 지운 것은 지움
+  assert.strictEqual(by.c.t, 9);            // 이쪽이 더 새것
+  assert(by.e);                             // 지운 뒤 다시 만든 것은 남김
+  assert.deepStrictEqual(r.del, { d: 6, b: 7, e: 0 });
+}
+
 // HebGrkKo 사전(선택: 네 번째 인자 .dct)과 bhs5t 기본형 연결
 if (process.argv[5]) {
   const { lemmaFinder } = require('./decode.js');

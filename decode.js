@@ -498,4 +498,14 @@ const anaHtml = btext => anaWords(btext).map(w => {
     (w.morph || w.gloss ? `<div class="aw-m">→ ${esc(w.morph)}${w.gloss ? ` : <b>${esc(w.gloss)}</b>` : ''}</div>` : '') + '</div>';
 }).join('');
 
-if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal, anaWords, anaHtml };
+// 두 기기의 메모·책갈피 합치기: 같은 항목은 나중에 고친 쪽(t), 지운 기록(del: {id: 지운 때})이 더 나중이면 지움
+function mergeMarks(a, aDel, b, bDel) {
+  const del = { ...aDel };
+  for (const [id, t] of Object.entries(bDel || {})) if (!(del[id] >= t)) del[id] = t;
+  const out = new Map();
+  for (const m of [...a, ...b]) { const o = out.get(m.id); if (!o || (m.t || 0) > (o.t || 0)) out.set(m.id, m); }
+  for (const [id, m] of out) if (del[id] >= (m.t || 0)) out.delete(id);
+  return { marks: [...out.values()], del };
+}
+
+if (typeof module !== 'undefined') module.exports = { toHtml, rtfToHtml, rvfToHtml, parseRef, VERSES, START, parseOnt, verseHtml, plainVerse, crossHebrew, crossGreek, headword, lemmaKey, lemmaFinder, parseXrefs, parseQuery, bdbText, dctHtml, origKey, tagOriginal, anaWords, anaHtml, mergeMarks };

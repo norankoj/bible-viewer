@@ -74,6 +74,11 @@
   /* 알림(불러오는 중·복사했습니다 등): 화면 아래 가운데에 잠깐 */
   .status { position: fixed; z-index: 45; left: 50%; bottom: 22px; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 9px 16px; border-radius: 999px; background: var(--dock); color: var(--dock-fg); font-size: 13px; font-weight: 500; box-shadow: var(--shadow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
   .status:empty { display: none; }
+  .status.prog { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; width: min(440px, calc(100vw - 32px)); padding: 12px 16px 14px; border-radius: 14px; }
+  .status.prog span { overflow: hidden; text-overflow: ellipsis; }
+  .status.prog b { font-variant-numeric: tabular-nums; }
+  .status.prog i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--dock-fg) 22%, transparent); overflow: hidden; }
+  .status.prog i::after { content: ''; display: block; height: 100%; width: calc(var(--p) * 100%); border-radius: inherit; background: var(--dock-fg); transition: width .2s; }
   .btn { height: 34px; padding: 0 13px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font-weight: 500; white-space: nowrap; transition: background .15s, border-color .15s, transform .12s cubic-bezier(.16,1,.3,1); }
   .btn:hover:not(:disabled) { background: var(--bg); border-color: color-mix(in srgb, var(--muted) 35%, var(--line)); }
   .btn:active:not(:disabled) { transform: scale(.97); }
@@ -98,7 +103,13 @@
   .search:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   .search:focus, .btn:focus-visible, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   /* 번역본: 알약 모양 스위치 (고른 것은 짙게). 음역·뜻 등 나머지 버튼은 작은 글자 버튼 */
-  .page-head .tabs { flex: 1 1 auto; min-width: 0; border: 0; padding: 0; min-height: 0; justify-content: flex-end; gap: 6px; }
+  /* safe: 번역본이 넘치면 오른쪽 맞춤을 풀어 첫 탭부터 보이고 밀어서 봄 (그냥 flex-end면 왼쪽이 잘려 못 봄) */
+  .page-head .tabs { flex: 1 1 auto; min-width: 0; border: 0; padding: 0; min-height: 0; justify-content: safe flex-end; gap: 6px; }
+  /* 오른쪽 칸 탭 줄 높이를 성경 칸 머리와 맞춤 (본문이 같은 높이에서 시작) */
+  @media (min-width: 761px) {
+    :root:not([data-design="classic"]) :is(#comTabs, #comTabs2) { min-height: 64px; }
+    :root:not([data-design="classic"]) .page-head { min-height: 64px; padding-bottom: 11px; border-bottom: 1px solid var(--line); } /* 오른쪽 칸 탭 줄 밑선과 같은 높이에 */
+  }
   #verTabs .tab[data-ver] { height: 32px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-weight: 600; }
   #verTabs .tab[data-ver]:hover { color: var(--fg); border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   #verTabs .tab[data-ver].on { background: var(--fg); border-color: var(--fg); color: var(--page); }
@@ -264,6 +275,16 @@
   #manageBox { width: min(400px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
   #manageBox h4 { font: 600 12px var(--sans); color: var(--muted); margin: 14px 0 4px; }
   #manageBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+  /* 번역본 고르기: 탭 줄 앞 버튼 + 체크 목록 */
+  .ver-pick { flex: none; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; }
+  .ver-pick:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
+  .ver-pick b { color: var(--accent); }
+  body.no-bibles .ver-pick { display: none; }
+  [data-design="classic"] .ver-pick { height: 30px; border-radius: var(--r); }
+  #verBox { width: min(280px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+  #verBox label { display: flex; align-items: center; gap: 8px; padding: 7px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
+  #verBox label:hover { background: var(--bg); }
+  #verBox input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
   #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   #manageBox label:hover { background: var(--bg); }
   #manageBox label small { margin-left: auto; color: var(--muted); }
@@ -361,6 +382,7 @@
   .welcome-tips li + li { margin-top: 4px; }
   .welcome-tips b { color: var(--fg); font-weight: 600; }
   .welcome-mean b { color: var(--accent); }
+  body:not(.drive) .drive-only { display: none; }
   .welcome-fmt { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
   /* 지원 형식 표 */
   .fmt { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; color: var(--fg); }
@@ -512,7 +534,7 @@
   [data-design="classic"] .search { border-radius: calc(var(--r) + 2px); background: var(--bg); border-color: transparent; }
   [data-design="classic"] .rail .search-wrap { flex: 0 1 280px; }
   [data-design="classic"] .page-head .tabs { justify-content: flex-start; }
-  [data-design="classic"] .page-head { padding: 6px 16px; }
+  [data-design="classic"] .page-head { padding: 6px 16px; min-height: 46px; } /* 오른쪽 칸 탭 줄과 같은 높이 */
   [data-design="classic"] #verTabs .tab[data-ver] { height: 30px; border-color: transparent; border-radius: var(--r); background: none; font-weight: 500; }
   [data-design="classic"] #verTabs .tab[data-ver].on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
   [data-design="classic"] .chapter-num { display: none; }
@@ -571,6 +593,7 @@
         <button class="ref-btn" id="chapBtn" aria-haspopup="dialog" title="이 책의 장 고르기">3장</button>
         <button class="nb" id="next" data-icon="chevron-right" title="다음 장 (→)" aria-label="다음 장"></button>
       </span>
+      <button class="ver-pick" id="verPick" aria-haspopup="dialog" title="번역본 골라 보기 (체크한 것을 나란히 대조)"></button>
       <div class="tabs" id="verTabs"></div>
       <label class="search-wrap" data-icon="search"><input class="search" id="q" type="search" placeholder="검색 ( / )" aria-label="성경·주석 검색" title="여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호"></label>
     </header>
@@ -605,6 +628,8 @@
   <hr>
   <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
   <button id="importMarks">백업 불러오기</button>
+  <button id="driveBtn" hidden></button>
+  <button id="driveOff" hidden>구글 드라이브 연결 끊기<small>받아 둔 파일과 메모는 이 브라우저에 그대로 남습니다</small></button>
   <hr>
   <button id="installBtn">앱으로 설치<small>바탕화면 아이콘, 독립 창, 인터넷 없이도 열림</small></button>
   <hr>
@@ -622,6 +647,7 @@
 </div>
 <div class="pop" id="wordPop" role="dialog" aria-label="단어 뜻"></div>
 <div class="pop" id="manageBox" role="dialog" aria-label="파일 관리"></div>
+<div class="pop" id="verBox" role="dialog" aria-label="번역본 고르기"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
 <div class="pop" id="fmtBox" role="dialog" aria-label="지원하는 파일 형식"></div>
@@ -662,6 +688,7 @@ const prefs = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 try { localStorage.removeItem('esvKey'); } catch {} // 예전 ESV 연결 기능에서 넣은 키 지움
+const markDel = prefs.get('markDel', {}); // 지운 메모·책갈피 {id: 지운 때}: 드라이브로 맞출 때 다른 기기에서도 지우도록
 const S = { b: 43, c: 3, v: 0, versions: [], comm: '', comm2: '', dict: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
 const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, dict: S.dict, split: S.split, hideComm: S.hideComm });
 
@@ -794,13 +821,14 @@ async function load(files, persist, picked) {
   // 저장 공간이 부족할 때 브라우저가 임의로 지우지 않도록 영구 저장 요청 (지원 안 하면 무시)
   if (persist && files.length) navigator.storage?.persist?.().catch(() => {});
   for (const [i, f] of files.entries()) {
-    $('status').textContent = `불러오는 중 ${i + 1}/${files.length} · ${f.name}`;
+    progress(`불러오는 중 ${i + 1}/${files.length} · ${f.name}`, i / files.length);
+    await new Promise(r => setTimeout(r)); // 막대가 그려질 틈
     try {
       await addFile(f);
       if (persist) await idb('files', 'readwrite', s => s.put(f, f.name)).catch(() => {});
     } catch (err) { alert(`${f.name}: 읽을 수 없습니다 (${err.message})`); }
   }
-  $('status').textContent = '';
+  if (files.length) progress();
   const cn = commNames();
   S.versions = S.versions.filter(n => bibles[n]);
   if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
@@ -868,8 +896,9 @@ const welcome = `<div class="empty welcome">
     <li><b>성경·주석·사전 파일을 그 폴더에 넣으세요</b><span>성경, 주석, 사전처럼 폴더를 나눠도 돼요.</span></li>
     <li><b>아래 '폴더 열기'로 그 폴더를 고르세요</b><span>다음부터는 자동으로 열려요.</span></li>
   </ol>
-  <button class="btn primary" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button>
+  <button class="btn primary" onclick="$('folder').click()">폴더 열기</button><button class="btn" onclick="$('files').click()">파일 선택</button><button class="btn drive-only" onclick="driveSync(true)">구글 드라이브에서</button>
   <ul class="welcome-tips">
+    <li class="drive-only"><b>구글 드라이브에서</b>: 드라이브에 <b>커피성경</b> 폴더를 만들고 파일을 넣어 두면, 어느 기기에서나 로그인만으로 불러와요</li>
     <li>몇 개만 넣으려면 <b>파일 선택</b> (여러 개 한꺼번에 가능)</li>
     <li>파일이 늘면 같은 폴더를 다시 열면 돼요</li>
     <li>"업로드" 확인 창이 떠도 인터넷에 올라가지 않아요. 파일은 이 컴퓨터 안에서만 읽어요</li>
@@ -948,6 +977,8 @@ function renderBible() {
     (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지">단어 뜻: ${wordSide ? '옆 사전' : '팝업'}</button>` : '') +
     (names.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">${S.versions.length > 1 ? '대조 보기 중' : '여러 개 고르면 대조'}</span>` : '') +
     (S.hideComm ? `<button class="tab on ${names.length > 1 || words ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
+  $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>/${names.length} ▾`;
+  if ($('verBox').classList.contains('open')) renderVerBox();
   const vs = S.versions;
   // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
   document.body.classList.toggle('no-bibles', !names.length);
@@ -1046,7 +1077,14 @@ async function copySel() {
   flash(`${label} 복사했습니다`);
 }
 let flashTimer;
-function flash(msg) { $('status').textContent = msg; clearTimeout(flashTimer); flashTimer = setTimeout(() => $('status').textContent = '', 2500); }
+// 오래 걸리는 일은 아래 알림을 진행 막대로 (frac: 0~1). 인자 없이 부르면 지움
+function progress(text, frac) {
+  const s = $('status');
+  s.classList.toggle('prog', !!text);
+  if (!text) return s.textContent = '';
+  s.innerHTML = `<span>${esc(text)}</span><b>${Math.floor(frac * 100)}%</b><i style="--p:${frac}"></i>`;
+}
+function flash(msg) { $('status').classList.remove('prog'); $('status').textContent = msg; clearTimeout(flashTimer); flashTimer = setTimeout(() => $('status').textContent = '', 2500); }
 
 /* ---------- 하이라이트·메모·책갈피 ---------- */
 /* ---------- 백업 알림: 백업 안 한 변경이 10개 쌓이거나 7일이 지나면 ---------- */
@@ -1074,7 +1112,8 @@ function putMark(m) {
   markDirty();
   m.t = Date.now();
   const empty = !m.bm && !m.color && !m.note;
-  if (empty) marks.delete(m.id); else marks.set(m.id, m);
+  if (empty) { marks.delete(m.id); markDel[m.id] = m.t; } else { marks.set(m.id, m); delete markDel[m.id]; }
+  prefs.set('markDel', markDel); queueMarkSync();
   idb('marks', 'readwrite', s => empty ? s.delete(m.id) : s.put(m)).catch(() => flash('저장하지 못했습니다. 브라우저 저장소가 막혀 있습니다'));
 }
 function setVerse(v, patch) {
@@ -1084,7 +1123,7 @@ function setVerse(v, patch) {
 }
 function toggleBookmark() {
   const vs = sorted(), id = `bm:${S.b}.${S.c}.${vs[0]}-${vs.at(-1)}`;
-  if (marks.has(id)) { marks.delete(id); markDirty(); idb('marks', 'readwrite', s => s.delete(id)).catch(() => {}); flash('책갈피를 해제했습니다'); }
+  if (marks.has(id)) { putMark({ id }); flash('책갈피를 해제했습니다'); } // 빈 항목 = 지움
   else { putMark({ id, bm: true, b: S.b, c: S.c, v: vs[0], v2: vs.at(-1) }); flash('책갈피에 추가했습니다'); }
   renderSelbar();
   if (S.tab === 'saved') renderComm();
@@ -1128,9 +1167,132 @@ async function importMarks(file) {
     for (const m of ok) Object.keys(m).forEach(k => m[k] === undefined && delete m[k]);
     await idb('marks', 'readwrite', s => { ok.forEach(m => s.put(m)); return s; });
     ok.forEach(m => marks.set(m.id, m));
-    refreshBible();
+    queueMarkSync(); refreshBible();
     alert(`${ok.length}개를 불러왔습니다${list.length > ok.length ? ` (${list.length - ok.length}개는 형식이 맞지 않아 건너뜀)` : ''}.`);
   } catch (err) { alert(`백업을 불러오지 못했습니다: ${err.message}`); }
+}
+
+/* ---------- 구글 드라이브: 로그인하면 드라이브 '커피성경' 폴더의 파일을 받아 오고, 메모·책갈피를 기기끼리 맞춤 ----------
+   파일은 각자 드라이브(또는 함께 사는 가족이 공유한 폴더)에서만 받음. 메모는 드라이브의 앱 전용 숨은 공간(appDataFolder)에.
+   로그인 토큰은 1시간짜리라, 지난 뒤에는 '드라이브와 맞추기'를 눌러야 다시 맞춤 (받아 둔 파일·메모는 그대로 열림) */
+const GOOGLE_CLIENT_ID = '531246483239-9so51p33u3mdo80erjhb6ochm48c2f2g.apps.googleusercontent.com'; // Google Cloud > 사용자 인증 정보 > OAuth 클라이언트 ID (공개돼도 되는 값). 비우면 메뉴에 안 보임
+const DRIVE = 'https://www.googleapis.com/drive/v3/files', UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
+const SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/drive.appdata'];
+let gToken = prefs.get('gtoken', null), tokenClient, tokenDone, driveBusy = false, markTimer;
+const tokenOk = () => gToken?.exp > Date.now() + 60e3;
+const driveOn = () => !!(GOOGLE_CLIENT_ID && prefs.get('drive', null));
+const loadGis = () => window.google?.accounts?.oauth2 ? Promise.resolve() : new Promise((ok, no) => document.head.append(Object.assign(
+  document.createElement('script'), { src: 'https://accounts.google.com/gsi/client', onload: ok, onerror: () => no(new Error('구글 로그인을 불러오지 못했습니다. 인터넷 연결을 확인하세요')) })));
+async function getToken() {
+  if (tokenOk()) return gToken.v;
+  await loadGis();
+  tokenClient ||= google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID, scope: SCOPES.join(' '),
+    callback: r => tokenDone(r), error_callback: e => tokenDone({ error: e.type === 'popup_closed' ? '로그인 창을 닫았습니다' : e.type === 'popup_failed_to_open' ? '로그인 창이 막혔습니다. 팝업을 허용해 주세요' : e.type }),
+  });
+  const r = await new Promise(ok => { tokenDone = ok; tokenClient.requestAccessToken({ prompt: '' }); });
+  if (r.error) throw new Error(r.error);
+  if (!google.accounts.oauth2.hasGrantedAllScopes(r, ...SCOPES)) throw new Error('드라이브 권한을 모두 체크해야 쓸 수 있습니다');
+  gToken = { v: r.access_token, exp: Date.now() + r.expires_in * 1000 }; prefs.set('gtoken', gToken);
+  return gToken.v;
+}
+async function gfetch(url, opt = {}) {
+  const r = await fetch(url, { ...opt, headers: { ...opt.headers, Authorization: `Bearer ${await getToken()}` } });
+  if (r.status === 401) { gToken = null; prefs.set('gtoken', null); }
+  if (!r.ok) throw new Error(r.status === 404 ? '드라이브 폴더를 찾을 수 없습니다. 연결을 끊고 다시 연결해 보세요' : `드라이브 오류 (${r.status})`);
+  return r;
+}
+async function driveList(q, fields, spaces = 'drive') {
+  const out = []; let page;
+  do {
+    const p = new URLSearchParams({ q, spaces, fields: `nextPageToken,files(${fields})`, pageSize: 1000 });
+    if (spaces === 'drive') p.set('corpora', 'allDrives'), p.set('supportsAllDrives', true), p.set('includeItemsFromAllDrives', true); // 회사·학교 '공유 드라이브'도
+    if (page) p.set('pageToken', page);
+    const r = await (await gfetch(`${DRIVE}?${p}`)).json();
+    out.push(...r.files); page = r.nextPageToken;
+  } while (page);
+  return out;
+}
+// 폴더 안(하위 폴더 포함)의 성경·주석·사전 파일
+async function driveFiles(id) {
+  const out = [];
+  for (const f of await driveList(`'${id}' in parents and trashed=false`, 'id,name,mimeType,size'))
+    if (f.mimeType === 'application/vnd.google-apps.folder') out.push(...await driveFiles(f.id));
+    else if (MODULE.test(f.name)) out.push(f);
+  return out;
+}
+async function driveFolder() {
+  const fs = await driveList("name='커피성경' and mimeType='application/vnd.google-apps.folder' and trashed=false", 'id,ownedByMe,owners(displayName)');
+  if (!fs.length) throw new Error("드라이브에 '커피성경' 폴더가 없습니다. 폴더를 만들고 성경·주석·사전 파일을 넣은 뒤 다시 눌러 주세요");
+  if (fs.length === 1) return fs[0].id;
+  const n = +prompt(`'커피성경' 폴더가 여러 개입니다. 쓸 폴더의 번호를 적어 주세요.\n\n${fs.map((f, i) => `${i + 1}. ${f.ownedByMe ? '내 드라이브' : `${f.owners?.[0]?.displayName || '다른 사람'}이 공유한 폴더`}`).join('\n')}`, '1');
+  if (!fs[n - 1]) throw new Error('폴더를 고르지 않았습니다');
+  return fs[n - 1].id;
+}
+// 새로 생겼거나 바뀐(크기가 다른) 파일만 받음
+async function syncFiles(folder) {
+  const have = new Set(Object.values(fileInfo).map(i => `${i.key}:${i.size}`));
+  const need = (await driveFiles(folder)).filter(f => !have.has(`${f.name}:${+f.size}`));
+  const got = [], total = need.reduce((a, f) => a + +f.size, 0) || 1;
+  let sum = 0;
+  for (const [i, f] of need.entries()) {
+    const label = `드라이브에서 받는 중 ${i + 1}/${need.length} · ${f.name} (${mb(+f.size)})`;
+    // 받은 만큼 막대가 차오르게 조금씩 읽음
+    const reader = (await gfetch(`${DRIVE}/${f.id}?alt=media&supportsAllDrives=true`)).body.getReader(), parts = [];
+    for (let c; !(c = await reader.read()).done;) { parts.push(c.value); sum += c.value.length; progress(label, sum / total); }
+    got.push(new File(parts, f.name));
+  }
+  progress();
+  if (got.length) await load(got, true);
+  return got.length;
+}
+async function syncMarks() {
+  const [f] = await driveList("name='marks.json'", 'id', 'appDataFolder');
+  const remote = f ? await (await gfetch(`${DRIVE}/${f.id}?alt=media`)).json() : {};
+  // 받은 뒤 바로(기다림 없이) 합쳐서 그 사이 고친 메모가 빠지지 않게
+  const r = mergeMarks([...marks.values()], markDel, (remote.marks || []).filter(validMark), remote.del);
+  const keep = new Set(r.marks.map(m => m.id)), gone = [...marks.keys()].filter(id => !keep.has(id));
+  marks.clear(); r.marks.forEach(m => marks.set(m.id, m));
+  Object.assign(markDel, r.del); prefs.set('markDel', markDel);
+  refreshBible(); if (S.tab === 'saved') renderComm();
+  await idb('marks', 'readwrite', s => { gone.forEach(id => s.delete(id)); r.marks.forEach(m => s.put(m)); return s; }).catch(() => {});
+  const body = new Blob([JSON.stringify({ app: 'bible-viewer', version: 1, marks: r.marks, del: r.del })], { type: 'application/json' });
+  if (f) await gfetch(`${UPLOAD}/${f.id}?uploadType=media`, { method: 'PATCH', body });
+  else {
+    const fd = new FormData();
+    fd.append('meta', new Blob([JSON.stringify({ name: 'marks.json', parents: ['appDataFolder'] })], { type: 'application/json' }));
+    fd.append('file', body);
+    await gfetch(`${UPLOAD}?uploadType=multipart`, { method: 'POST', body: fd });
+  }
+  prefs.set('backup', { dirty: 0, since: 0, nudgeAt: 10, snoozeUntil: 0 }); checkNudge(); // 드라이브가 백업 역할
+}
+// 메모를 고치면 몇 초 뒤 드라이브에도 (로그인이 살아 있을 때만)
+function queueMarkSync() {
+  if (!driveOn() || !tokenOk()) return;
+  clearTimeout(markTimer);
+  markTimer = setTimeout(() => driveBusy || syncMarks().catch(() => {}), 3000);
+}
+// asked: 버튼으로 누른 것 (로그인 창을 띄워도 됨). 아니면 로그인이 살아 있을 때만 조용히
+async function driveSync(asked) {
+  if (driveBusy || (!asked && !tokenOk())) return;
+  driveBusy = true;
+  try {
+    let d = prefs.get('drive', null);
+    if (!d) { await getToken(); d = { folder: await driveFolder() }; prefs.set('drive', d); }
+    await syncMarks();
+    const n = await syncFiles(d.folder);
+    prefs.set('drive', { ...d, at: Date.now() }); renderDrive();
+    if (asked) flash(n ? `드라이브에서 파일 ${n}개를 받았습니다` : '드라이브와 맞췄습니다');
+  } catch (err) { progress(); if (asked) alert(`구글 드라이브: ${err.message}`); }
+  finally { driveBusy = false; }
+}
+function renderDrive() {
+  const d = GOOGLE_CLIENT_ID && prefs.get('drive', null);
+  document.body.classList.toggle('drive', !!GOOGLE_CLIENT_ID);
+  $('driveBtn').hidden = !GOOGLE_CLIENT_ID; $('driveOff').hidden = !d;
+  $('driveBtn').innerHTML = d
+    ? `드라이브와 맞추기<small>새 파일·메모·책갈피 주고받기${d.at ? ` · 마지막 ${new Date(d.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}</small>`
+    : `구글 드라이브 연결<small>로그인하면 드라이브 '커피성경' 폴더의 파일과 메모를 어느 기기에서나</small>`;
 }
 
 /* ---------- 주석 ---------- */
@@ -1755,7 +1917,14 @@ $('addFolder').onclick = () => { closePops(); $('folder').click(); };
 $('addFiles').onclick = () => { closePops(); $('files').click(); };
 $('exportMarks').onclick = () => { closePops(); marks.size ? exportMarks() : alert('아직 저장한 메모·하이라이트·책갈피가 없습니다.'); };
 $('importMarks').onclick = () => { closePops(); $('importFile').click(); };
-$('importFile').onchange = e => { if (e.target.files[0]) importMarks(e.target.files[0]); e.target.value = ''; };
+$('driveBtn').onclick = () => { closePops(); driveSync(true); };
+$('driveOff').onclick = () => {
+  closePops();
+  if (!confirm('구글 드라이브 연결을 끊을까요? 받아 둔 파일과 메모·책갈피는 이 브라우저에 그대로 남습니다.')) return;
+  if (gToken) window.google?.accounts?.oauth2?.revoke(gToken.v);
+  gToken = null; prefs.set('gtoken', null); prefs.set('drive', null); renderDrive(); flash('드라이브 연결을 끊었습니다');
+};
+$('importFile').onchange =e => { if (e.target.files[0]) importMarks(e.target.files[0]); e.target.value = ''; };
 $('clearAll').onclick = async () => {
   closePops();
   if (!confirm('브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.')) return;
@@ -1915,11 +2084,23 @@ $('verTabs').onclick = e => {
   if (e.target.closest('[data-show-comm]')) { S.hideComm = false; save(); renderComm(); renderBible(); if (S.v) syncComm(S.v); return; }
   if (e.target.closest('[data-word-side]')) { wordSide = !wordSide; prefs.set('wordSide', wordSide); return renderBible(); }
   if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
-  const t = e.target.closest('[data-ver]'); if (!t) return;
-  const n = t.dataset.ver;
+  const t = e.target.closest('[data-ver]'); if (t) toggleVer(t.dataset.ver);
+};
+function toggleVer(n) {
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
   sortVersions(); save(); refreshBible();
-};
+}
+// 번역본이 많을 때: 체크 목록으로 고르기
+const renderVerBox = () => $('verBox').innerHTML = '<b>번역본 고르기</b><p class="help">체크한 번역본을 나란히 대조해서 봐요.</p>' +
+  allVersions().map(n => `<label><input type="checkbox" value="${esc(n)}" ${S.versions.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('');
+$('verPick').onclick = e => togglePop(e, $('verBox'), $('verPick'), renderVerBox);
+$('verBox').onclick = e => e.stopPropagation();
+$('verBox').onchange = e => toggleVer(e.target.value);
+// 탭 줄은 마우스 휠(위아래)로도 옆으로 넘김
+document.querySelectorAll('.tabs').forEach(el => el.addEventListener('wheel', e => {
+  if (e.deltaX || el.scrollWidth <= el.clientWidth) return;
+  el.scrollLeft += e.deltaY; e.preventDefault();
+}, { passive: false }));
 $('bible').onclick = e => {
   const nb = e.target.closest('[data-note]');
   if (nb) { e.stopPropagation(); select(+nb.dataset.note, undefined, true);return openNote(+nb.dataset.note, nb); }
@@ -2264,6 +2445,9 @@ Promise.all([
   idb('marks', 'readonly', s => s.getAll()).then(list => list.forEach(m => marks.set(m.id, m))).catch(() => {}),
   idb('files', 'readonly', s => s.getAll()).catch(() => []),
 ]).then(([, files]) => load(files || [], false)).then(() => {
+  // 드라이브: 로그인 창이 버튼 누를 때 바로 뜨도록 미리 불러 두고, 로그인이 살아 있으면 조용히 맞춤
+  renderDrive();
+  if (GOOGLE_CLIENT_ID && navigator.onLine) loadGis().then(() => driveSync(false)).catch(() => {});
   // 처음 온 사람에게 한 번만 사용법 둘러보기
   if (!prefs.get('toured', false)) setTimeout(startTour, 700);
 });
