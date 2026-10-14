@@ -83,7 +83,7 @@
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
   .btn.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); filter: brightness(1.1); }
   /* 책 한 쪽의 머리: 큰 "요한복음 3장" + ‹ › · 번역본(알약 스위치) · 검색 */
-  .page-head { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 16px 24px 12px 28px; }
+  .page-head { flex: none; display: flex; flex-wrap: nowrap; align-items: center; gap: 10px 14px; padding: 16px 24px 12px 28px; }
   .nav { display: flex; align-items: center; gap: 2px; flex: none; }
   .ref-btn { border: 0; background: none; padding: 2px 4px; border-radius: var(--r); font: 800 24px/1.2 var(--sans); letter-spacing: -.035em; color: var(--fg); transition: background .15s; }
   .ref-btn:hover { background: color-mix(in srgb, var(--fg) 6%, transparent); }
@@ -91,7 +91,7 @@
   .nb { width: 30px; height: 30px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; transition: background .15s, color .15s; }
   .nb:hover { background: color-mix(in srgb, var(--fg) 7%, transparent); color: var(--fg); }
   .nb .ico { width: 18px; height: 18px; }
-  .search-wrap { position: relative; flex: 0 1 230px; display: flex; align-items: center; color: var(--muted); }
+  .search-wrap { position: relative; flex: 0 0 210px; display: flex; align-items: center; color: var(--muted); }
   .search-wrap .ico { position: absolute; left: 12px; width: 16px; height: 16px; pointer-events: none; }
   .search { width: 100%; height: 36px; padding: 0 14px 0 34px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
   .search:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
@@ -469,7 +469,7 @@
     .rail-logo, .rail-sep, .rail-gap { display: none; }
     .rb { flex: 1 1 0; width: auto; min-width: 44px; padding: 6px 0; }
     .status { bottom: calc(74px + env(safe-area-inset-bottom)); }
-    .page-head { padding: 10px 14px 8px; gap: 8px; }
+    .page-head { padding: 10px 14px 8px; gap: 8px; flex-wrap: wrap; }
     .ref-btn { font-size: 20px; }
     .search-wrap { flex: 1 1 110px; order: 1; }
     .search { height: 34px; }
@@ -509,6 +509,9 @@
   [data-design="classic"] .nav { padding: 2px; border: 1px solid var(--line); border-radius: calc(var(--r) + 3px); }
   [data-design="classic"] .ref-btn { font-size: 15px; font-weight: 700; letter-spacing: -.01em; padding: 4px 10px; }
   [data-design="classic"] .search { border-radius: calc(var(--r) + 2px); background: var(--bg); border-color: transparent; }
+  [data-design="classic"] .rail .search-wrap { flex: 0 1 280px; }
+  [data-design="classic"] .page-head .tabs { justify-content: flex-start; }
+  [data-design="classic"] .page-head { padding: 6px 16px; }
   [data-design="classic"] #verTabs .tab[data-ver] { height: 30px; border-color: transparent; border-radius: var(--r); background: none; font-weight: 500; }
   [data-design="classic"] #verTabs .tab[data-ver].on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
   [data-design="classic"] .chapter-num { display: none; }
@@ -2128,6 +2131,10 @@ function applyDesign(d) {
   if (d !== 'classic') d = 'new';
   document.documentElement.dataset.design = d;
   document.querySelectorAll('#designSw [data-design]').forEach(b => b.classList.toggle('on', b.dataset.design === d));
+  // 기존 디자인은 예전처럼 책·장 이동과 검색창이 맨 위 버튼 줄에 (새 디자인은 성경 칸 머리에)
+  const nav = document.querySelector('.nav'), sw = document.querySelector('.search-wrap'), head = document.querySelector('.page-head');
+  if (d === 'classic') { $('fwd').after(nav); document.querySelector('.rail-gap').after(sw); }
+  else { head.prepend(nav); head.append(sw); }
 }
 applyDesign(prefs.get('design', 'new'));
 $('designSw').onclick = e => {
