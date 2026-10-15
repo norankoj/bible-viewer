@@ -803,8 +803,8 @@ const prefs = {
 };
 try { localStorage.removeItem('esvKey'); } catch {} // 예전 ESV 연결 기능에서 넣은 키 지움
 const markDel = prefs.get('markDel', {}); // 지운 메모·책갈피 {id: 지운 때}: 드라이브로 맞출 때 다른 기기에서도 지우도록
-const S = { b: 43, c: 3, v: 0, versions: [], comm: '', comm2: '', dict: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
-const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, dict: S.dict, split: S.split, hideComm: S.hideComm });
+const S = { b: 43, c: 3, v: 0, versions: [], comm: '', comm2: '', dict2: '', dict: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
+const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, comm: S.comm, comm2: S.comm2, dict2: S.dict2, dict: S.dict, split: S.split, hideComm: S.hideComm });
 
 // 줄 번호 → [책, 장, 절]
 const REF = [];
@@ -927,7 +927,7 @@ function closeUnusedComms() {
 // → 같은 번역의 일반 성경(창 1:1·시 23:1·요 3:16 글자가 같은 것)이 있으면 그 띄어쓰기에 맞춤
 // ponytail: 켤 때마다 다시 맞춤(성경 하나에 0.6초쯤), 느려지면 결과를 cache 에 저장
 function respaceTagged() {
-  const tagged = b => b.tagged ??= b.some(l => /[가-힣]<W[HG]\d/.test(l));
+  const tagged = b => b.hasW ??= b.some(l => /[가-힣]<W[HG]\d/.test(l));
   const SAMPLE = [0, START[19][22], START[43][2] + 15];
   for (const n of Object.keys(bibles)) {
     const b = bibles[n];
@@ -935,7 +935,7 @@ function respaceTagged() {
     const ref = Object.keys(bibles).find(r => r !== n && !tagged(bibles[r]) &&
       SAMPLE.filter(i => b[i] && letters(b[i]) === letters(plainVerse(bibles[r][i]))).length >= 2);
     if (!ref) continue; // 일반 성경이 나중에 들어오면 그때 맞춤
-    bibles[n] = Object.assign(b.map((t, i) => respace(t, plainVerse(bibles[ref][i]))), { spaced: true, tagged: true });
+    bibles[n] = Object.assign(b.map((t, i) => respace(t, plainVerse(bibles[ref][i]))), { spaced: true, hasW: true });
     delete plain[n];
   }
 }
@@ -973,7 +973,8 @@ async function load(files, persist, picked, quiet) {
     for (const p of ['ot', 'nt']) caches.match(`data/orig-${p}.js`).then(r => r || fetch(`data/orig-${p}.js`)).catch(() => {});
   if (S.dict) liteOf(S.dict).catch(() => {}); // 사전 요약을 미리 뒤에서 (목록, 단어 팝업에 씀. 보관본이 있으면 바로)
   if (!commFiles[S.comm2] || S.comm2 === S.comm) S.comm2 = cn.find(n => n !== S.comm) || '';
-  if (!S.comm2) S.split = false;
+  if (!dictFiles[S.dict2]) S.dict2 = '';
+  if (!S.comm2 && !S.dict2) S.split = false;
   go(S.b, S.c, S.v);
 }
 
@@ -1169,6 +1170,7 @@ function select(v, mode, click) {
   }
   renderSelbar();
   syncComm(v);
+  if (S.split && S.dict2) renderPane2();
   if (S.tab === 'xref' && mode !== 'range') renderXref(); // 고른 절의 관련 구절로
 }
 
@@ -1503,7 +1505,7 @@ function renderComm() {
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     (S.tab === 'xref' ? tab(true, 'data-xref', '교차 참조') : '') + // 교차 참조·보관함은 레일 버튼으로 열 때만 (보는 동안만 탭에)
     (S.tab === 'saved' ? tab(true, 'data-saved', '보관함') : '') +
-    (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
+    (names.length + dictNames().length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
   $('commToggle').setAttribute('aria-pressed', !S.hideComm);
   $('main').classList.toggle('split', S.split);
   $('main').classList.toggle('no-comm', !!S.hideComm);
@@ -1513,10 +1515,36 @@ function renderComm() {
   else if (S.tab === 'xref') renderXref();
   else if (S.tab === 'dict' && dictFiles[S.dict]) renderDict();
   else $('comm').innerHTML = commHtml(S.comm);
-  if (S.split) {
-    $('comTabs2').innerHTML = names.map(n => tab(S.comm2 === n, `data-comm2="${esc(n)}"`, esc(nm(n)))).join('');
-    $('comm2').innerHTML = commHtml(S.comm2);
+  if (S.split) renderPane2();
+}
+// 2단 보기 오른쪽 칸: 왼쪽에서 보고 있는 것만 빼고 주석·사전 모두 (자료 탭 순서대로)
+function renderPane2() {
+  const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
+  const left = S.tab === 'comm' ? 'comm:' + S.comm : S.tab === 'dict' ? 'dict:' + S.dict : '';
+  $('comTabs2').innerHTML = rightKeys().filter(k => k !== left).map(k => {
+    const kd = kindOf(k), n = nameOf(k);
+    return tab(kd === 'dict' ? S.dict2 === n : !S.dict2 && S.comm2 === n, `data-${kd}2="${esc(n)}"`, esc(nm(n)));
+  }).join('');
+  $('comm2').innerHTML = S.dict2 ? verseWordsHtml(S.dict2) : commHtml(S.comm2);
+}
+// 2단 보기 오른쪽에 사전: 고른 절(없으면 장 첫 절)에 나오는 원어 단어마다 그 사전의 풀이 (절을 바꾸면 따라감)
+function verseWordsHtml(name) {
+  if (!dicts[name]) { openDict(name).then(() => S.split && S.dict2 === name && renderPane2()).catch(err => flash(`사전을 열지 못했습니다: ${err.message}`)); return '<p class="progress">사전 여는 중…</p>'; }
+  const v = S.v || 1, i = START[S.b][S.c - 1] + v - 1, lang = i < 23145 ? 'H' : 'G';
+  let line = null, from = '';
+  for (const n of [...S.versions, ...allVersions()]) {
+    if (!bibles[n] || !hasOriginal(n, lang)) continue;
+    const t = needsTag(n) ? taggedLine(n, i) : bibles[n][i];
+    if (t === null) { loadOrig(i < 23145 ? 'ot' : 'nt').then(() => S.split && S.dict2 === name && renderPane2()).catch(() => {}); return '<p class="progress">원어 번호 불러오는 중…</p>'; }
+    if (/<W[HG]\d/.test(t)) { line = t; from = n; break; }
   }
+  const head = `<p class="hits-sum">${BOOKS[S.b - 1]} ${S.c}:${v} 원어 단어${from ? ` · ${esc(nm(from))} 기준` : ''}</p>`;
+  if (!line) return head + '<p class="empty small">원어 번호가 있는 성경(개역개정S, 원어 성경 등)을 넣으면 고른 절의 단어 뜻이 여기에 나와요.</p>';
+  const seen = new Set(), words = [];
+  for (const [, w, tags] of line.matchAll(/(\S+?)((?:<W[HG]\d+[a-z]?>)+)/g))
+    for (const [, l, d] of tags.matchAll(/W([HG])(\d+)/g)) { const s = l + +d; if (+d && !seen.has(s)) { seen.add(s); words.push([plainVerse(w), s]); } }
+  return head + words.map(([w, s]) => { const row = dictRow(s, name);
+    return `<article class="entry"><h3>${esc(w)} · ${s}</h3><div>${row ? entryHtml(name, row[0], row[1]) : '<p class="muted">사전에 없는 번호입니다.</p>'}</div></article>`; }).join('');
 }
 
 /* ---------- 원어 사전 (스트롱 번호: H430 히브리어, G26 헬라어) ---------- */
@@ -1548,7 +1576,7 @@ function liteOf(name) {
 }
 // 사전 종류별: 항목 하나 읽기, 풀이 HTML (theWord .twm = RTF, Bible Analyzer .dct = HTML)
 const isDct = name => dictKind[name] === 'dct';
-const dictRow = subject => rows(dicts[S.dict], isDct(S.dict)
+const dictRow = (subject, name = S.dict) => rows(dicts[name], isDct(name)
   ? 'select scode, dtext from Lexicon where scode = ?'
   : 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
 const entryHtml = (name, s, data) => isDct(name) ? dctHtml(data) : linkStrong(toHtml(data), s[0]);
@@ -2398,16 +2426,17 @@ $('comTabs').onclick = e => {
   if (pick) return togglePop(e, $('tabBox'), pick, renderTabBox);
   const t = e.target.closest('.tab'); if (!t) return;
   if (t.dataset.comm) { S.comm = t.dataset.comm; S.tab = 'comm'; if (S.comm2 === S.comm) S.comm2 = commNames().find(n => n !== S.comm) || ''; }
-  else if (t.dataset.dict) { S.dict = t.dataset.dict; S.tab = 'dict'; }
+  else if (t.dataset.dict) { S.dict = t.dataset.dict; S.tab = 'dict'; if (S.dict2 === S.dict) S.dict2 = ''; } // 오른쪽 칸과 같은 사전이면 오른쪽은 주석으로
   else if (t.dataset.xref !== undefined) S.tab = 'xref';
   else if (t.dataset.search !== undefined) S.tab = 'search';
   else if (t.dataset.saved !== undefined) S.tab = 'saved';
-  else if (t.dataset.split !== undefined) S.split = !S.split;
+  else if (t.dataset.split !== undefined) { S.split = !S.split; if (S.split && !S.comm2 && !S.dict2) S.dict2 = dictNames()[0] || ''; }
   save(); renderComm(); if (S.v) syncComm(S.v);
 };
 $('comTabs2').onclick = e => {
-  const t = e.target.closest('[data-comm2]'); if (!t) return;
-  S.comm2 = t.dataset.comm2; save(); renderComm(); if (S.v) syncComm(S.v);
+  const t = e.target.closest('[data-comm2], [data-dict2]'); if (!t) return;
+  if (t.dataset.dict2) S.dict2 = t.dataset.dict2; else { S.comm2 = t.dataset.comm2; S.dict2 = ''; }
+  save(); renderComm(); if (S.v) syncComm(S.v);
 };
 // 검색 결과: 번역본·범위 바꾸기
 $('comm').onchange = e => {
