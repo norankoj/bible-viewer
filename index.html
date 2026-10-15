@@ -489,9 +489,23 @@
   .grid button { height: 32px; border: 0; border-radius: var(--r); background: var(--bg); }
   .grid button:hover, .grid button.on { background: var(--accent-soft); color: var(--accent); }
   /* 책 고르기: 줄임말(굵게) + 이름 */
-  .grid.books { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
-  .grid.books button { height: auto; min-height: 34px; padding: 5px 8px; display: flex; align-items: baseline; gap: 6px; text-align: left; font-size: 12.5px; line-height: 1.3; }
-  .grid.books b { flex: none; min-width: 2.2em; color: var(--accent); font-size: 13px; }
+  /* PC 성경 찾기: 구약 | 신약 두 칸, 묶음별(율법서·역사서…) 목록. 줄임말(강조색) + 이름 */
+  #picker:not(.full) { width: min(780px, calc(100vw - 32px)); max-height: 85vh; padding: 18px 20px; }
+  .bk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+  .bk-cols section + section { border-left: 1px solid var(--line); padding-left: 24px; }
+  .bk-list { columns: 2 130px; column-gap: 12px; }
+  .bk-grp { break-inside: avoid; margin-bottom: 10px; }
+  .bk-grp h5 { margin: 0 0 2px; padding: 0 8px; font-size: 11px; font-weight: 600; color: var(--muted); }
+  .bk-grp button { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 3px 8px; border: 0; border-radius: 4px; background: none; text-align: left; font-size: 14px; line-height: 1.5; }
+  .bk-grp button:hover { background: var(--bg); }
+  .bk-grp button.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .bk-grp b { flex: none; min-width: 2.4em; color: var(--accent); font-size: 12.5px; font-weight: 700; }
+  .ch-title { font-size: 18px !important; color: var(--fg) !important; margin: 0 0 12px !important; }
+  .ch-title small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 6px; }
+  .grid.chaps { grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; }
+  .grid.chaps button { height: 38px; background: none; border: 1px solid var(--line); border-radius: 4px; font-weight: 600; }
+  .grid.chaps button:hover, .grid.chaps button.on { background: var(--accent-soft); border-color: var(--accent); }
+  #chapBtn.pending { color: var(--muted); font-weight: 600; font-size: 0.75em; }
   /* 휴대폰 성경 찾기 (책 | 장 | 절) */
   .pk-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 10px 16px; border-bottom: 1px solid var(--line); font-size: 17px; }
   .pk-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr) minmax(0, 1fr); }
@@ -1038,6 +1052,8 @@ const ordered = (kind, names) => {
 };
 const allVersions = () => ordered('bible', Object.keys(bibles));
 const commNames = () => ordered('comm', Object.keys(commFiles));
+// 오른쪽 칸 탭 줄 순서: 주석·사전을 함께 ("comm:이름", "dict:이름")
+const rightKeys = () => ordered('right', [...commNames().map(n => 'comm:' + n), ...dictNames().map(n => 'dict:' + n)]);
 const dictNames = () => ordered('dict', Object.keys(dictFiles));
 // 대조 보기 칸·복사 순서도 탭 순서를 따름
 const sortVersions = () => { S.versions = allVersions().filter(n => S.versions.includes(n)); };
@@ -1476,8 +1492,10 @@ function renderComm() {
   const shown = (k, n, on) => on || !tabHide.includes(`${k}:${n}`);
   const all = names.length + dictNames().length, vis = names.filter(n => !tabHide.includes(`comm:${n}`)).length + dictNames().filter(n => !tabHide.includes(`dict:${n}`)).length;
   $('comTabs').innerHTML = (all > 1 ? `<button class="tab-pick" data-tab-pick aria-haspopup="dialog" title="탭 줄에 보일 주석·사전 고르기">주석 <b>${vis}</b>/${all} ▾</button>` : '') +
-    names.filter(n => shown('comm', n, S.tab === 'comm' && S.comm === n)).map(n => tab(S.tab === 'comm' && S.comm === n, `data-comm="${esc(n)}" ${drag('comm', n)}`, esc(nm(n)))).join('') +
-    dictNames().filter(n => shown('dict', n, S.tab === 'dict' && S.dict === n)).map(n => tab(S.tab === 'dict' && S.dict === n, `data-dict="${esc(n)}" ${drag('dict', n)}`, esc(nm(n)))).join('') +
+    rightKeys().map(key => {
+      const k = kindOf(key), n = nameOf(key), on = S.tab === k && (k === 'comm' ? S.comm : S.dict) === n;
+      return shown(k, n, on) ? tab(on, `data-${k}="${esc(n)}" ${drag(k, n)}`, esc(nm(n))) : '';
+    }).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'xref', 'data-xref', '교차 참조') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
@@ -2022,11 +2040,17 @@ function placePop(el) {
   el.style.top = Math.max(edge, down ? r.bottom + gap : r.top - gap - h) + 'px';
 }
 addEventListener('resize', () => document.querySelectorAll('.pop.open').forEach(placePop));
-const closePops = () => document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && p.classList.remove('open'));
+const closePops = () => {
+  document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && p.classList.remove('open'));
+  if ($('chapBtn').classList.contains('pending')) { $('chapBtn').classList.remove('pending'); $('bookBtn').textContent = BOOKS[S.b - 1]; $('chapBtn').textContent = `${S.c}장`; }
+};
 
 function pickerBooks() {
-  const grid = (from, to) => `<div class="grid books">${SHORT.slice(from, to).map((s, i) => `<button data-book="${from + i + 1}" class="${S.b === from + i + 1 ? 'on' : ''}"><b>${s}</b>${BOOKS[from + i]}</button>`).join('')}</div>`;
-  $('picker').innerHTML = `<h4>구약</h4>${grid(0, 39)}<h4>신약</h4>${grid(39, 66)}`;
+  const group = k => { const [g, from] = GROUPS[k], to = GROUPS[k + 1]?.[1] || 67;
+    return `<div class="bk-grp"><h5>${g}</h5>${Array.from({ length: to - from }, (_, i) => from + i)
+      .map(b => `<button data-book="${b}" class="${S.b === b ? 'on' : ''}"><b>${SHORT[b - 1]}</b>${BOOKS[b - 1]}</button>`).join('')}</div>`; };
+  $('picker').innerHTML = `<div class="bk-cols"><section><h4>구약</h4><div class="bk-list">${[0, 1, 2, 3, 4].map(group).join('')}</div></section>` +
+    `<section><h4>신약</h4><div class="bk-list">${[5, 6, 7, 8, 9].map(group).join('')}</div></section></div>`;
 }
 // 휴대폰: 화면 전체에 책(묶음별) | 장 | 절. 장을 고르면 아래 '이동', 절을 누르면 그 절로
 const GROUPS = [['율법서', 1], ['역사서', 6], ['시가서', 18], ['대선지서', 23], ['소선지서', 28], ['복음서', 40], ['역사서', 44], ['바울서신', 45], ['일반서신', 58], ['예언서', 66]];
@@ -2056,7 +2080,9 @@ const openPicker = (btn, chapters) => {
   togglePop({ stopPropagation() {} }, $('picker'), btn, chapters ? () => pickerChapters(S.b) : pickerBooks);
 };
 function pickerChapters(b) {
-  $('picker').innerHTML = `<button class="back" data-back>‹ ${BOOKS[b - 1]}</button><div class="grid">` +
+  // 다른 책을 골랐으면 머리 제목을 그 책으로, 장은 고를 때까지 비워 둠 (닫으면 원래대로)
+  if (b !== S.b) { $('bookBtn').textContent = BOOKS[b - 1]; $('chapBtn').textContent = '장 선택'; $('chapBtn').classList.add('pending'); }
+  $('picker').innerHTML = `<button class="back" data-back>‹ 다른 책</button><h4 class="ch-title">${BOOKS[b - 1]} <small>장을 고르세요</small></h4><div class="grid chaps">` +
     VERSES[b - 1].map((_, i) => `<button data-chap="${i + 1}" data-b="${b}" class="${S.b === b && S.c === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('') + '</div>';
 }
 
@@ -2138,7 +2164,7 @@ for (const box of [$('verTabs'), $('comTabs')]) {
   });
   box.addEventListener('dragover', e => {
     const t = e.target.closest('[data-drag]');
-    if (!t || !dragging || kindOf(t.dataset.drag) !== kindOf(dragging)) return; // 같은 종류끼리만
+    if (!t || !dragging || (kindOf(t.dataset.drag) === 'bible') !== (kindOf(dragging) === 'bible')) return; // 성경은 성경끼리, 주석·사전은 함께
     e.preventDefault();
     box.querySelectorAll('.drop-before, .drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
     const r = t.getBoundingClientRect();
@@ -2152,11 +2178,18 @@ for (const box of [$('verTabs'), $('comTabs')]) {
   box.addEventListener('dragend', () => { dragging = null; clearDrop(box); });
 }
 function moveTab(from, to, after) {
-  const kind = kindOf(from), a = nameOf(from), b = nameOf(to);
-  if (kind !== kindOf(to) || a === b) return;
-  const list = (kind === 'bible' ? allVersions() : kind === 'comm' ? commNames() : dictNames()).filter(n => n !== a);
-  list.splice(list.indexOf(b) + (after ? 1 : 0), 0, a);
-  tabOrder[kind] = list; prefs.set('order', tabOrder);
+  if (from === to || (kindOf(from) === 'bible') !== (kindOf(to) === 'bible')) return;
+  if (kindOf(from) === 'bible') {
+    const list = allVersions().filter(n => n !== nameOf(from));
+    list.splice(list.indexOf(nameOf(to)) + (after ? 1 : 0), 0, nameOf(from));
+    tabOrder.bible = list;
+  } else { // 주석·사전 한 줄 순서 + 종류별 순서(기본 주석·사전 고를 때 씀)
+    const list = rightKeys().filter(k => k !== from);
+    list.splice(list.indexOf(to) + (after ? 1 : 0), 0, from);
+    tabOrder.right = list;
+    for (const k of ['comm', 'dict']) tabOrder[k] = list.filter(x => kindOf(x) === k).map(nameOf);
+  }
+  prefs.set('order', tabOrder);
   sortVersions(); save(); refreshBible(); renderComm(); if (S.v) syncComm(S.v);
 }
 
