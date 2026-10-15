@@ -105,7 +105,7 @@
   .hb[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
   .hb .ico { width: 18px; height: 18px; }
   body.no-bibles :is(.hb, #magBtn, #commToggle) { display: none !important; }
-  #magHead { display: none; padding: 0 9px; } /* 머리의 돋보기는 휴대폰에서만 (PC는 왼쪽 레일) */
+  #magHead { display: none; padding: 0 9px; } /* 머리의 돋보기는 모바일에서만 (PC는 왼쪽 레일) */
   .search-wrap { position: relative; flex: 0 1 210px; min-width: 140px; display: flex; align-items: center; color: var(--muted); }
   .search-wrap .ico { position: absolute; left: 12px; width: 16px; height: 16px; pointer-events: none; }
   .search { width: 100%; height: 36px; padding: 0 14px 0 34px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
@@ -221,7 +221,7 @@
   .lex.heb { font-size: 1.3em; } .lex.grk { font-family: var(--serif); font-size: 1.1em; }
   /* 원어 팝업: 머리(번호·원어·버튼)는 고정, 풀이는 사전 탭과 같은 서식으로 스크롤 */
   /* 원어 단어 공부 노트 (번호·큰 원어·문법 칩·풀이·나오는 곳)
-     새 디자인: 화면 오른쪽에 붙어 열림(휴대폰은 아래에서 올라옴) / 기존 디자인: 누른 단어 옆 팝업 */
+     새 디자인: 화면 오른쪽에 붙어 열림(모바일은 아래에서 올라옴) / 기존 디자인: 누른 단어 옆 팝업 */
   #wordPop { width: min(440px, calc(100vw - 32px)); max-height: 70vh; z-index: 25; padding: 18px 20px 20px; overflow-y: auto; overscroll-behavior: contain; }
   :root:not([data-design="classic"]):not([data-word="over"]) #wordPop { inset: 0 0 0 auto !important; width: min(400px, 100vw); max-height: none !important; padding: 22px 24px 32px; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -28px 0 56px -28px rgb(10 25 18 / .4); }
   :root:not([data-design="classic"]):not([data-word="over"]) #wordPop.open { animation: sheet-in .3s cubic-bezier(.16,1,.3,1); }
@@ -297,6 +297,13 @@
   :is(#verBox, #tabBox) label { display: flex; align-items: center; gap: 8px; padding: 7px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   :is(#verBox, #tabBox) label:hover { background: var(--bg); }
   :is(#verBox, #tabBox) input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
+  .vorder { list-style: none; margin: 6px 0 14px; padding: 0; counter-reset: v; }
+  .vorder li { counter-increment: v; display: flex; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .vorder li::before { content: counter(v); width: 1.6em; color: var(--muted); font-size: 12px; }
+  .vorder span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .vorder button { width: 30px; height: 28px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font-size: 11px; }
+  .vorder button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+  .vorder button:disabled { opacity: .35; }
   #tabBox h4 { margin: 10px 0 2px; font-size: 12px; color: var(--muted); }
   /* 오른쪽 칸 탭 줄 맨 앞 '주석 ▾': 탭을 옆으로 넘겨도 제자리에 */
   .tab-pick { position: sticky; left: 0; z-index: 1; flex: none; height: 30px; margin-right: 6px; padding: 0 11px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; box-shadow: 8px 0 8px -4px var(--surface); }
@@ -506,7 +513,7 @@
   .grid.chaps button { height: 38px; background: none; border: 1px solid var(--line); border-radius: 4px; font-weight: 600; }
   .grid.chaps button:hover, .grid.chaps button.on { background: var(--accent-soft); border-color: var(--accent); }
   #chapBtn.pending { color: var(--muted); font-weight: 600; font-size: 0.75em; }
-  /* 휴대폰 성경 찾기 (책 | 장 | 절) */
+  /* 모바일 성경 찾기 (책 | 장 | 절) */
   .pk-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 10px 16px; border-bottom: 1px solid var(--line); font-size: 17px; }
   .pk-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr) minmax(0, 1fr); }
   .pk-cols > div { overflow-y: auto; overscroll-behavior: contain; border-right: 1px solid var(--line); }
@@ -569,7 +576,7 @@
     .search-wrap { flex: 1 1 110px; min-width: 0; order: 1; }
     .search { height: 34px; }
     .page-head .tabs { flex: 1 1 100%; justify-content: flex-start; overflow-x: auto; order: 2; }
-    .ver-pick { order: 2; height: 30px; } /* 휴대폰: 둘째 줄 = 번역본 ▾ + 고른 번역본 */
+    .ver-pick { order: 2; height: 30px; } /* 모바일: 둘째 줄 = 번역본 ▾ + 고른 번역본 */
     .ver-pick:not([hidden]) + .tabs { flex-basis: 0; }
     .selbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     .selbar > *, .sel-ref { flex: none; white-space: nowrap; }
@@ -582,7 +589,7 @@
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
     .scroll { padding: 18px 16px 88px; }
     .chapter-title { font-size: 22px; margin-bottom: 16px; }
-    /* 휴대폰은 성경 칸이 낮아서 떠 있는 막대가 절을 가림 → 아래에 붙여 둠 */
+    /* 모바일은 성경 칸이 낮아서 떠 있는 막대가 절을 가림 → 아래에 붙여 둠 */
     #biblePane > .selbar { position: relative; left: auto; bottom: auto; transform: none; width: auto; max-width: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; animation: none; padding: 8px 12px; }
     .scroll { scroll-padding-bottom: 0; }
     /* 대조: 절마다 번역본을 위아래로 한 줄씩 (번역본 이름은 작게 위에) */
@@ -613,7 +620,7 @@
   [data-design="classic"] .app { position: static; height: auto; min-height: 0; }
   [data-design="classic"] .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px; padding: 12px 20px; background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); overflow: visible; }
   [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
-  /* 기존 디자인: 위 버튼 줄 맨 왼쪽에 작은 로고 (누르면 커피성경 소개). 휴대폰은 설정 › 커피성경 소개 */
+  /* 기존 디자인: 위 버튼 줄 맨 왼쪽에 작은 로고 (누르면 커피성경 소개). 모바일은 설정 › 커피성경 소개 */
   [data-design="classic"] .rail-logo-btn { margin: 0 4px 0 0; align-self: center; }
   [data-design="classic"] .rail-logo { width: 32px; height: 32px; box-shadow: none; }
   @media (max-width: 760px) { [data-design="classic"] .rail-logo-btn { display: none; } }
@@ -649,7 +656,7 @@
 </style>
 </head>
 <body>
-<!-- 왼쪽 레일(휴대폰은 아래 막대): 이동 기록 · 오른쪽 칸 바로가기 · 보기/세팅/파일 -->
+<!-- 왼쪽 레일(모바일은 아래 막대): 이동 기록 · 오른쪽 칸 바로가기 · 보기/세팅/파일 -->
 <nav class="rail" aria-label="주 메뉴">
   <button class="rail-logo-btn" id="aboutBtn" aria-haspopup="dialog" title="커피성경 소개"><img class="rail-logo" src="icons/icon-192.png" alt="커피성경 소개"></button>
   <button class="rb" id="back" data-icon="arrow-left" title="이전 위치로 (Alt+←)" disabled><span>뒤로</span></button>
@@ -831,9 +838,12 @@ function idb(store, mode, fn) {
     };
     r.onerror = () => no(r.error);
     r.onsuccess = () => {
-      const tx = r.result.transaction(store, mode), q = fn(tx.objectStore(store));
-      tx.oncomplete = () => { r.result.close(); ok(q.result); };
-      tx.onerror = () => { r.result.close(); no(tx.error); };
+      // 저장 공간 부족(abort)이나 저장할 수 없는 값(바로 예외)도 실패로 알림 (그냥 두면 기다리기만 하고 끝나지 않음)
+      try {
+        const tx = r.result.transaction(store, mode), q = fn(tx.objectStore(store));
+        tx.oncomplete = () => { r.result.close(); ok(q.result); };
+        tx.onerror = tx.onabort = () => { r.result.close(); no(tx.error || new Error('저장소 오류')); };
+      } catch (err) { r.result.close(); no(err); }
     };
   });
 }
@@ -939,6 +949,19 @@ function respaceTagged() {
     delete plain[n];
   }
 }
+// 불러온 파일을 브라우저에 보관. 일부 모바일 브라우저(iOS Safari 등)는 큰 File 을 그대로 못 넣는 경우가 있어 실패하면 내용(ArrayBuffer)으로
+async function storeFile(f) {
+  try { await idb('files', 'readwrite', s => s.put(f, f.name)); }
+  catch { const buf = await f.arrayBuffer(); await idb('files', 'readwrite', s => s.put({ name: f.name, type: f.type, buf }, f.name)); }
+}
+const fromStore = v => v instanceof Blob ? v : v?.buf ? new File([v.buf], v.name, { type: v.type }) : null;
+// 이번에 보관하지 못한 파일 (앱을 다시 켜면 또 받아야 하므로 알림)
+const unsaved = [];
+const reportUnsaved = () => {
+  if (!unsaved.length) return;
+  alert(`이 기기에 보관하지 못한 파일이 있습니다. 앱을 다시 켜면 다시 받아야 합니다.\n\n${unsaved.join('\n')}\n\n저장 공간을 확보하거나, 설정 › 파일 관리에서 쓰지 않는 파일을 지워 주세요.`);
+  unsaved.length = 0;
+};
 // picked: 파일 선택으로 직접 고른 것 (폴더에는 다른 파일도 섞여 있어 안 맞는 건 조용히 건너뜀)
 // quiet: 진행 막대를 건드리지 않음 (드라이브에서 받을 때는 받는 쪽이 막대 하나로 끝까지 보여줌)
 async function load(files, persist, picked, quiet) {
@@ -956,10 +979,10 @@ async function load(files, persist, picked, quiet) {
     await new Promise(r => setTimeout(r)); // 막대가 그려질 틈
     try {
       await addFile(f);
-      if (persist) await idb('files', 'readwrite', s => s.put(f, f.name)).catch(() => {});
+      if (persist) await storeFile(f).catch(err => unsaved.push(`${f.name} (${err?.name === 'QuotaExceededError' ? '저장 공간 부족' : err?.message || '저장 실패'})`));
     } catch (err) { alert(`${f.name}: 읽을 수 없습니다 (${err.message})`); }
   }
-  if (files.length && !quiet) progress();
+  if (files.length && !quiet) { progress(); reportUnsaved(); }
   respaceTagged();
   const cn = commNames();
   S.versions = S.versions.filter(n => bibles[n]);
@@ -1115,7 +1138,7 @@ function renderBible() {
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>/${names.length} ▾`;
   $('verPick').hidden = names.length < 2;
   if ($('verBox').classList.contains('open')) renderVerBox();
-  const vs = phone() ? S.versions.slice(0, 3) : S.versions; // 휴대폰은 3개까지
+  const vs = phone() ? S.versions.slice(0, 3) : S.versions; // 모바일은 3개까지
   // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
   document.body.classList.toggle('no-bibles', !names.length);
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
@@ -1384,7 +1407,7 @@ async function getDriveFiles(list) {
       delete driveSkip[dKey(f)]; n++;
     } catch (err) { failed.push(`${f.name} (${err.message})`); sum += +f.size; }
   }
-  prefs.set('driveSkip', driveSkip); progress();
+  prefs.set('driveSkip', driveSkip); progress(); reportUnsaved();
   if (failed.length) throw new Error(`${n}개는 받았지만 ${failed.length}개를 받지 못했습니다: ${failed.join(', ')}`);
   return n;
 }
@@ -1507,7 +1530,7 @@ function renderComm() {
     (S.tab === 'saved' ? tab(true, 'data-saved', '보관함') : '') +
     (names.length + dictNames().length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
   $('commToggle').setAttribute('aria-pressed', !S.hideComm);
-  // 기존 디자인(PC, 글자 버튼 줄)은 할 일을 이름으로 (자료 숨기기 / 자료 보기), 새 디자인 레일·휴대폰은 짧게 '자료'
+  // 기존 디자인(PC, 글자 버튼 줄)은 할 일을 이름으로 (자료 숨기기 / 자료 보기), 새 디자인 레일·모바일은 짧게 '자료'
   $('commToggle').querySelector('span').textContent = phone() || !classic() ? '자료' : S.hideComm ? '자료 보기' : '자료 숨기기';
   $('main').classList.toggle('split', S.split);
   $('main').classList.toggle('no-comm', !!S.hideComm);
@@ -2054,11 +2077,11 @@ function openPop(el, anchor) {
 // 내용이 나중에 채워져 길어지면(원어 전체 풀이 등) 다시 부름
 function placePop(el) {
   if (!el.classList.contains('open') || !el._anchor?.isConnected) return;
-  // 새 디자인의 단어 노트는 화면 오른쪽(휴대폰은 아래)에 고정, 기존 디자인은 단어 옆 팝업
+  // 새 디자인의 단어 노트는 화면 오른쪽(모바일은 아래)에 고정, 기존 디자인은 단어 옆 팝업
   if (el.id === 'wordPop' && document.documentElement.dataset.design !== 'classic' && !wordOver) return;
   el.style.maxHeight = ''; // CSS 기본 높이로 재고
   const r = el._anchor.getBoundingClientRect(), w = el.offsetWidth, gap = 6, edge = 8;
-  // 왼쪽 레일 버튼에서 연 창은 레일 오른쪽에 (휴대폰처럼 레일이 아래 막대면 기존대로 위로)
+  // 왼쪽 레일 버튼에서 연 창은 레일 오른쪽에 (모바일처럼 레일이 아래 막대면 기존대로 위로)
   if (el._anchor.closest('.rail') && getComputedStyle(el._anchor.closest('.rail')).flexDirection === 'column') {
     const hh = Math.min(el.offsetHeight, innerHeight - edge * 2);
     el.style.maxHeight = hh < el.offsetHeight ? hh + 'px' : '';
@@ -2086,7 +2109,7 @@ function pickerBooks() {
   $('picker').innerHTML = `<div class="bk-cols"><section><h4>구약</h4><div class="bk-list">${[0, 1, 2, 3, 4].map(group).join('')}</div></section>` +
     `<section><h4>신약</h4><div class="bk-list">${[5, 6, 7, 8, 9].map(group).join('')}</div></section></div>`;
 }
-// 휴대폰: 화면 전체에 책(묶음별) | 장 | 절. 장을 고르면 아래 '이동', 절을 누르면 그 절로
+// 모바일: 화면 전체에 책(묶음별) | 장 | 절. 장을 고르면 아래 '이동', 절을 누르면 그 절로
 const GROUPS = [['율법서', 1], ['역사서', 6], ['시가서', 18], ['대선지서', 23], ['소선지서', 28], ['복음서', 40], ['역사서', 44], ['바울서신', 45], ['일반서신', 58], ['예언서', 66]];
 const pk = { b: 0, c: 0 };
 function pickerFull() {
@@ -2196,16 +2219,21 @@ for (const box of [$('verTabs'), $('comTabs')]) {
     e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragging);
     t.classList.add('dragging');
   });
+  // 놓을 자리는 탭 위가 아니어도(탭 사이 틈, 줄 끝) 마우스와 가장 가까운 탭 앞/뒤로. 줄 양 끝에 가면 줄이 저절로 넘어감
   box.addEventListener('dragover', e => {
-    const t = e.target.closest('[data-drag]');
-    if (!t || !dragging || (kindOf(t.dataset.drag) === 'bible') !== (kindOf(dragging) === 'bible')) return; // 성경은 성경끼리, 주석·사전은 함께
+    if (!dragging) return;
+    const same = [...box.querySelectorAll('[data-drag]')].filter(x => (kindOf(x.dataset.drag) === 'bible') === (kindOf(dragging) === 'bible')); // 성경은 성경끼리, 주석·사전은 함께
+    if (!same.length) return;
     e.preventDefault();
-    box.querySelectorAll('.drop-before, .drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
-    const r = t.getBoundingClientRect();
-    t.classList.add(e.clientX < r.left + r.width / 2 ? 'drop-before' : 'drop-after');
+    const br = box.getBoundingClientRect();
+    if (e.clientX < br.left + 40) box.scrollLeft -= 12; else if (e.clientX > br.right - 40) box.scrollLeft += 12;
+    let t = same[0], d = Infinity;
+    for (const x of same) { const r = x.getBoundingClientRect(), dx = Math.abs(e.clientX - (r.left + r.right) / 2); if (dx < d) { d = dx; t = x; } }
+    const r = t.getBoundingClientRect(), cls = e.clientX < (r.left + r.right) / 2 ? 'drop-before' : 'drop-after';
+    if (!t.classList.contains(cls)) { box.querySelectorAll('.drop-before, .drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after')); t.classList.add(cls); }
   });
   box.addEventListener('drop', e => {
-    const t = e.target.closest('[data-drag]'); if (!t || !dragging) return;
+    const t = box.querySelector('.drop-before, .drop-after'); if (!t || !dragging) return;
     e.preventDefault();
     moveTab(dragging, t.dataset.drag, t.classList.contains('drop-after'));
   });
@@ -2239,6 +2267,10 @@ function renderManage() {
       : '<p class="help">불러온 파일이 없습니다.</p>') +
     driveOnlyHtml() +
     '<div class="actions"><button class="btn sm" id="manageClose">닫기</button><button class="btn sm primary" id="manageDel" disabled>선택한 파일 지우기</button></div>';
+  // 이 기기에서 쓰는 저장 공간 (모바일은 작아서 파일이 저장되지 않을 수 있음)
+  navigator.storage?.estimate?.().then(({ usage, quota }) => {
+    if (quota) $('manageBox').querySelector('.help')?.insertAdjacentHTML('afterend', `<p class="help">이 기기 저장 공간: ${mb(usage)} 사용 중 · 약 ${mb(quota)}까지 쓸 수 있음</p>`);
+  }).catch(() => {});
 }
 // 드라이브에는 있는데 이 브라우저에는 없는 파일 (지웠거나 아직 안 받은 것): 하나씩 받기
 function driveOnlyHtml() {
@@ -2371,18 +2403,29 @@ $('verTabs').onclick = e => {
   const x = e.target.closest('[data-ver-x]'); if (x) toggleVer(x.dataset.verX);
 };
 const phone = () => matchMedia('(max-width: 760px)').matches;
-matchMedia('(max-width: 760px)').addEventListener('change', () => { renderComm(); renderBible(); }); // 창 크기가 휴대폰↔PC로 바뀌면 이름·대조 개수 다시
+matchMedia('(max-width: 760px)').addEventListener('change', () => { renderComm(); renderBible(); }); // 창 크기가 모바일↔PC로 바뀌면 이름·대조 개수 다시
 function toggleVer(n) {
-  if (!S.versions.includes(n) && phone() && S.versions.length >= 3) { flash('휴대폰에서는 3개까지 대조할 수 있어요'); return renderVerBox(); }
+  if (!S.versions.includes(n) && phone() && S.versions.length >= 3) { flash('모바일에서는 3개까지 대조할 수 있어요'); return renderVerBox(); }
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
   sortVersions(); save(); refreshBible();
 }
 // 번역본이 많을 때: 체크 목록으로 고르기
 const KO = new Intl.Collator('ko', { numeric: true });
-const renderVerBox = () => $('verBox').innerHTML = '<b>번역본 고르기</b><p class="help">체크한 번역본을 나란히 대조해서 봐요.</p>' +
+// 위: 고른 번역본의 대조 순서(▲▼로 옮기기, 터치에서도 됨) / 아래: 전체 번역본 체크 목록(가나다순)
+const renderVerBox = () => $('verBox').innerHTML =
+  (S.versions.length > 1 ? '<b>대조 순서</b><ol class="vorder">' + S.versions.map((n, i) => `<li><span>${esc(nm(n))}</span>` +
+    `<button data-vmove="${esc(n)}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="${esc(nm(n))} 앞으로">▲</button>` +
+    `<button data-vmove="${esc(n)}" data-dir="1" ${i < S.versions.length - 1 ? '' : 'disabled'} aria-label="${esc(nm(n))} 뒤로">▼</button></li>`).join('') + '</ol>' : '') +
+  '<b>번역본 고르기</b><p class="help">체크한 번역본을 나란히 대조해서 봐요.</p>' +
   allVersions().sort((a, b) => KO.compare(nm(a), nm(b))).map(n => `<label><input type="checkbox" value="${esc(n)}" ${S.versions.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('');
 $('verPick').onclick = e => togglePop(e, $('verBox'), $('verPick'), renderVerBox);
-$('verBox').onclick = e => e.stopPropagation();
+$('verBox').onclick = e => {
+  e.stopPropagation();
+  const b = e.target.closest('[data-vmove]'); if (!b) return;
+  const n = b.dataset.vmove, dir = +b.dataset.dir, i = S.versions.indexOf(n), to = S.versions[i + dir];
+  if (to) moveTab('bible:' + n, 'bible:' + to, dir > 0);
+  renderVerBox();
+};
 $('verBox').onchange = e => toggleVer(e.target.value);
 $('tabBox').onclick = e => e.stopPropagation();
 $('tabBox').onchange = e => {
@@ -2627,7 +2670,7 @@ function applyDesign(d) {
   // 기존 디자인은 예전처럼 책·장 이동과 검색창이 맨 위 버튼 줄에 (새 디자인은 성경 칸 머리에)
   const nav = document.querySelector('.nav'), sw = document.querySelector('.search-wrap'), head = document.querySelector('.page-head');
   if (d === 'classic') { $('fwd').after(nav); document.querySelector('.rail-gap').after(sw); }
-  else { head.prepend(nav); $('magHead').before(sw); } // 검색창 다음에 (휴대폰) 돋보기
+  else { head.prepend(nav); $('magHead').before(sw); } // 검색창 다음에 (모바일) 돋보기
 }
 applyDesign(prefs.get('design', 'new'));
 $('designSw').onclick = e => {
@@ -2753,7 +2796,7 @@ addEventListener('keydown', e => { if (e.altKey && (e.code === 'Digit1' || e.cod
 Promise.all([
   idb('marks', 'readonly', s => s.getAll()).then(list => list.forEach(m => marks.set(m.id, m))).catch(() => {}),
   idb('files', 'readonly', s => s.getAll()).catch(() => []),
-]).then(([, files]) => load(files || [], false)).then(() => {
+]).then(([, files]) => load((files || []).map(fromStore).filter(Boolean), false)).then(() => {
   // 드라이브: 로그인 창이 버튼 누를 때 바로 뜨도록 미리 불러 두고, 로그인이 살아 있으면 조용히 맞춤
   renderDrive();
   if (GOOGLE_CLIENT_ID && navigator.onLine) loadGis().then(() => driveSync(false)).catch(() => {});
