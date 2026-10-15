@@ -59,7 +59,7 @@
   .rb .ico { width: 21px; height: 21px; opacity: .85; }
   .rb:hover:not(:disabled) { background: rgb(255 255 255 / .08); color: #fff; }
   .rb:active:not(:disabled) { transform: scale(.95); }
-  .rb.on { background: rgb(255 255 255 / .14); color: #fff; }
+  .rb.on, .rb[aria-pressed="true"] { background: rgb(255 255 255 / .14); color: #fff; }
   .rb.on .ico { opacity: 1; }
   .rb:focus-visible { outline: 2px solid var(--rail-fg); outline-offset: -2px; }
   .rail-sep { width: 28px; height: 1px; background: rgb(255 255 255 / .12); margin: 8px 0; }
@@ -99,7 +99,14 @@
   .nb { width: 30px; height: 30px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; transition: background .15s, color .15s; }
   .nb:hover { background: color-mix(in srgb, var(--fg) 7%, transparent); color: var(--fg); }
   .nb .ico { width: 18px; height: 18px; }
-  .search-wrap { position: relative; flex: 0 0 210px; display: flex; align-items: center; color: var(--muted); }
+  /* 머리 오른쪽 아이콘 버튼: 돋보기(글자 크게) · 주석 칸 열기/닫기 (켜진 상태는 강조색) */
+  .hb { flex: none; height: 36px; padding: 0 11px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font-weight: 600; font-size: 13px; white-space: nowrap; }
+  .hb:hover { color: var(--fg); border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
+  .hb[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .hb .ico { width: 18px; height: 18px; }
+  body.no-bibles :is(.hb, #magBtn, #commToggle) { display: none !important; }
+  #magHead { display: none; padding: 0 9px; } /* 머리의 돋보기는 휴대폰에서만 (PC는 왼쪽 레일) */
+  .search-wrap { position: relative; flex: 0 1 210px; min-width: 140px; display: flex; align-items: center; color: var(--muted); }
   .search-wrap .ico { position: absolute; left: 12px; width: 16px; height: 16px; pointer-events: none; }
   .search { width: 100%; height: 36px; padding: 0 14px 0 34px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
   .search:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
@@ -147,9 +154,9 @@
   .tab:hover { color: var(--fg); background: color-mix(in srgb, var(--bg) 70%, transparent); }
   .tab.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   /* 칸 위 탭 줄: 고른 탭은 글씨 진하게 + 아래 강조색 밑줄 (채운 상자보다 본문을 덜 가림) */
-  :is(#comTabs, #comTabs2) > .tab:not(.spacer):not([data-word-side]):not([data-hide-comm]):not([data-show-comm]):not([data-split]) { position: relative; }
-  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-word-side]):not([data-hide-comm]):not([data-show-comm]):not([data-split]) { background: none; color: var(--fg); font-weight: 700; }
-  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-word-side]):not([data-hide-comm]):not([data-show-comm]):not([data-split])::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: -8px; height: 2px; border-radius: 2px; background: var(--accent); }
+  :is(#comTabs, #comTabs2) > .tab:not(.spacer):not([data-word-side]):not([data-split]) { position: relative; }
+  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-word-side]):not([data-split]) { background: none; color: var(--fg); font-weight: 700; }
+  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-word-side]):not([data-split])::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: -8px; height: 2px; border-radius: 2px; background: var(--accent); }
   .tabs { scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } /* 탭 줄은 밀어서 넘기고 스크롤바는 숨김 */
   .tabs .spacer { margin-left: auto; }
   /* 탭이 넘치면 가려진 쪽 끝을 흐리게 (더 있다는 표시) */
@@ -481,6 +488,21 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
   .grid button { height: 32px; border: 0; border-radius: var(--r); background: var(--bg); }
   .grid button:hover, .grid button.on { background: var(--accent-soft); color: var(--accent); }
+  /* 책 고르기: 줄임말(굵게) + 이름 */
+  .grid.books { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  .grid.books button { height: auto; min-height: 34px; padding: 5px 8px; display: flex; align-items: baseline; gap: 6px; text-align: left; font-size: 12.5px; line-height: 1.3; }
+  .grid.books b { flex: none; min-width: 2.2em; color: var(--accent); font-size: 13px; }
+  /* 휴대폰 성경 찾기 (책 | 장 | 절) */
+  .pk-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 10px 16px; border-bottom: 1px solid var(--line); font-size: 17px; }
+  .pk-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .pk-cols > div { overflow-y: auto; overscroll-behavior: contain; border-right: 1px solid var(--line); }
+  .pk-cols > div:last-child { border-right: 0; }
+  .pk-cols h5 { position: sticky; top: 0; z-index: 1; margin: 0; padding: 4px 10px; background: var(--bg); color: var(--muted); font-size: 11.5px; font-weight: 600; }
+  .pk-cols button { display: block; width: 100%; border: 0; border-bottom: 1px solid var(--line); background: none; padding: 11px 10px; text-align: left; font-size: 15px; }
+  .pk-chaps button, .pk-verses button { text-align: right; padding-right: 14px; }
+  .pk-cols button em { font-style: normal; display: inline-block; min-width: 2.6em; color: var(--red); font-size: 13px; }
+  .pk-cols button.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .pk-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); font-weight: 700; color: var(--accent); }
   #picker .back { border: 0; background: none; color: var(--accent); padding: 0; margin-bottom: 12px; font-weight: 600; }
   /* 드롭다운: 닫힌 모양 (화살표) + 마우스로 열면 앱 디자인 목록 #ddPop */
   select.btn, .search-opts select { appearance: none; -webkit-appearance: none; padding-right: 28px; cursor: pointer;
@@ -505,7 +527,10 @@
   #menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
   /* 설정 메뉴 소제목 */
   #menu h6 { margin: 10px 10px 2px; padding-top: 10px; border-top: 1px solid var(--line); font: 700 11.5px var(--sans); letter-spacing: .02em; color: var(--accent); }
-  #menu h6:first-child { margin-top: 4px; padding-top: 0; border-top: 0; }
+  #menu h6:first-child, #menu .menu-head + h6:not(.mobile-only), #menu .menu-head + .mobile-only { margin-top: 4px; padding-top: 0; border-top: 0; }
+  #menu .menu-head { display: none; position: sticky; top: 0; z-index: 1; align-items: center; justify-content: space-between; padding: 14px 6px 10px; background: var(--surface); font-size: 17px; }
+  #menu .menu-head button { width: 36px; height: 36px; padding: 0; float: none; margin: 0; display: grid; place-items: center; }
+  #menu .mobile-only { display: none; }
   #clearAll { color: var(--red); }
   #tip { max-width: 380px; padding: 12px 14px; font: 14px/1.7 var(--read); pointer-events: none; z-index: 30; } /* 사전 팝업 위에 */
   #tip b { font: 600 12px var(--sans); color: var(--accent); display: block; margin-bottom: 4px; }
@@ -527,7 +552,7 @@
     .status { bottom: calc(74px + env(safe-area-inset-bottom)); }
     .page-head { padding: 10px 14px 8px; gap: 8px; flex-wrap: wrap; }
     .ref-btn { font-size: 20px; }
-    .search-wrap { flex: 1 1 110px; order: 1; }
+    .search-wrap { flex: 1 1 110px; min-width: 0; order: 1; }
     .search { height: 34px; }
     .page-head .tabs { flex: 1 1 100%; justify-content: flex-start; overflow-x: auto; order: 2; }
     .ver-pick { order: 2; height: 30px; } /* 휴대폰: 둘째 줄 = 번역본 ▾ + 고른 번역본 */
@@ -546,6 +571,22 @@
     /* 휴대폰은 성경 칸이 낮아서 떠 있는 막대가 절을 가림 → 아래에 붙여 둠 */
     #biblePane > .selbar { position: relative; left: auto; bottom: auto; transform: none; width: auto; max-width: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; animation: none; padding: 8px 12px; }
     .scroll { scroll-padding-bottom: 0; }
+    /* 대조: 절마다 번역본을 위아래로 한 줄씩 (번역본 이름은 작게 위에) */
+    .par { display: block; }
+    .par .heads { display: none; }
+    .par .row { display: grid; grid-template-columns: 28px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+    .par .row > .vn { grid-row: 1 / span 3; padding-left: 0; }
+    .par .row > :not(.vn) { padding: 6px 8px 6px 4px; }
+    .par .row > :not(.vn)::before { content: attr(data-name); display: block; font: 600 11px/1.4 var(--sans); color: var(--muted); }
+    /* 아래 막대는 자주 쓰는 것만: 앞으로·보기·내 세팅은 설정 화면 안으로 */
+    #fwd, #viewBtn, #presetBtn, #magBtn { display: none; }
+    #magHead { display: inline-flex; order: 3; height: 30px; padding: 0 7px; } /* 둘째 줄 끝: 번역본 ▾ · 고른 번역본 · 돋보기 · 주석 */
+    /* 설정: 화면 전체로 */
+    #menu.open { position: fixed; inset: 0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important; width: auto; max-height: none !important; border: 0; border-radius: 0; padding: 0 10px 24px; animation: none; }
+    #menu .menu-head { display: flex; }
+    #menu .mobile-only { display: block; }
+    /* 성경 찾기: 화면 전체에 책 | 장 | 절 세 칸 */
+    #picker.full.open { position: fixed; inset: 0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important; width: auto; max-height: none !important; padding: 0; border: 0; border-radius: 0; display: flex; flex-direction: column; overflow: hidden; animation: none; }
   }
 
   /* ---------- 기존 디자인 (설정 → 디자인 → 기존 디자인): 같은 화면 뼈대를 예전 모양으로 ----------
@@ -561,7 +602,7 @@
   [data-design="classic"] .rail-gap { flex: 1; min-height: 0; }
   [data-design="classic"] .rb { width: auto; flex: none; height: 34px; padding: 0 13px; flex-direction: row; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font: 500 14px var(--sans); }
   [data-design="classic"] .rb:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
-  [data-design="classic"] .rb.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  [data-design="classic"] :is(.rb.on, .rb[aria-pressed="true"]) { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
   [data-design="classic"] .rb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   [data-design="classic"] .page-head { padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--line); }
   [data-design="classic"] .nav { padding: 2px; border: 1px solid var(--line); border-radius: calc(var(--r) + 3px); }
@@ -599,7 +640,9 @@
   <button class="rb" data-rail="dict" data-icon="language" title="원어 사전"><span>원어</span></button>
   <button class="rb" data-rail="xref" data-icon="link" title="교차 참조 (관련 구절)"><span>참조</span></button>
   <button class="rb" data-rail="saved" data-icon="bookmarks" title="보관함 (책갈피·메모·하이라이트)"><span>보관함</span></button>
+  <button class="rb" id="commToggle" data-icon="layout-sidebar-right" aria-pressed="true" title="오른쪽 칸(주석·사전) 열기·닫기"><span>주석</span></button>
   <i class="rail-gap" aria-hidden="true"></i>
+  <button class="rb mag-toggle" id="magBtn" data-icon="zoom-in" aria-pressed="false" title="돋보기: 본문 글자를 크게"><span>돋보기</span></button>
   <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="글자 크기·글꼴"><span>보기</span></button>
   <button class="rb" id="presetBtn" data-icon="adjustments-horizontal" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)"><span>내 세팅</span></button>
   <button class="rb" id="menuBtn" data-icon="menu-2" aria-haspopup="menu" title="설정: 파일 추가·관리, 구글 드라이브, 백업, 화면, 도움말"><span>설정</span></button>
@@ -631,6 +674,7 @@
       <button class="ver-pick" id="verPick" aria-haspopup="dialog" title="번역본 골라 보기 (체크한 것을 나란히 대조)"></button>
       <div class="tabs" id="verTabs"></div>
       <label class="search-wrap" data-icon="search"><input class="search" id="q" type="search" placeholder="검색 ( / )" aria-label="성경·주석 검색" title="여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호"></label>
+      <button class="hb mag-toggle" id="magHead" data-icon="zoom-in" aria-pressed="false" title="돋보기: 본문 글자를 크게" aria-label="돋보기"></button>
     </header>
     <div class="scroll" id="bible"></div>
     <div class="selbar" id="selbar" hidden></div>
@@ -650,6 +694,10 @@
 
 <div class="pop" id="picker" role="dialog" aria-label="성경 책과 장 선택"></div>
 <div class="pop" id="menu" role="menu">
+  <div class="menu-head"><b>설정</b><button class="ws-close" data-close aria-label="닫기"></button></div>
+  <h6 class="mobile-only">보기</h6>
+  <button id="viewMenu" class="mobile-only">글자 크기·글꼴<small>본문 글자를 키우거나 줄이고 글꼴 고르기</small></button>
+  <button id="presetMenu" class="mobile-only">내 세팅<small>보는 구성을 두 가지로 저장해 두고 바꾸기</small></button>
   <h6>성경·주석 파일</h6>
   <button id="addFolder">폴더 열기<small>성경·주석·사전 파일을 모아 둔 폴더를 고르면 한 번에 추가</small></button>
   <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword·베들레헴 성경, 주석, 사전</small></button>
@@ -1042,12 +1090,11 @@ function renderBible() {
   $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>`).join('') +
     (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
     (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지 (누를 때마다 바뀜)">단어 뜻: ${wordSide ? '옆 사전' : wordOver && !classic() ? '팝오버' : '팝업'}</button>` : '') +
-    (S.versions.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">대조 보기 중</span>` : '') +
-    (S.hideComm ? `<button class="tab on ${names.length > 1 || words ? '' : 'spacer'}" data-show-comm title="주석 칸 다시 열기">‹ 주석 보기</button>` : '');
+    (S.versions.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">대조 보기 중</span>` : '');
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>/${names.length} ▾`;
   $('verPick').hidden = names.length < 2;
   if ($('verBox').classList.contains('open')) renderVerBox();
-  const vs = S.versions;
+  const vs = phone() ? S.versions.slice(0, 3) : S.versions; // 휴대폰은 3개까지
   // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
   document.body.classList.toggle('no-bibles', !names.length);
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
@@ -1065,7 +1112,7 @@ function renderBible() {
     $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><div class="heads"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}</span>`).join('')}</div>` +
       ids.map(v => {
         const m = verseMark(v);
-        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)}><span class="t">${cellHtml(x, v)}</span>${i ? '' : m.badge}</span>`).join('')}</div>`;
+        return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)} data-name="${esc(nm(x))}"><span class="t">${cellHtml(x, v)}</span>${i ? '' : m.badge}</span>`).join('')}</div>`;
       }).join('') + '</div>' + notice;
   }
 }
@@ -1434,8 +1481,8 @@ function renderComm() {
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
     tab(S.tab === 'xref', 'data-xref', '교차 참조') +
     tab(S.tab === 'saved', 'data-saved', '보관함') +
-    (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '') +
-    `<button class="tab ${names.length > 1 ? '' : 'spacer'}" data-hide-comm title="주석 칸 숨기기 (성경 칸 위 '주석 보기'로 다시 열기)" aria-label="주석 칸 숨기기">숨기기 ›</button>`;
+    (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
+  $('commToggle').setAttribute('aria-pressed', !S.hideComm);
   $('main').classList.toggle('split', S.split);
   $('main').classList.toggle('no-comm', !!S.hideComm);
   railSync();
@@ -1721,7 +1768,7 @@ $('wordPop').onclick = e => {
   const ss = e.target.closest('[data-search-strong]');
   if (ss) { closePops(); return searchStrong(ss.dataset.searchStrong); }
   const open = e.target.closest('[data-open]');
-  if (open) { closePops(); S.tab = 'dict'; D.entry = open.dataset.open; D.list = null; renderComm(); return; }
+  if (open) { closePops(); S.tab = 'dict'; S.hideComm = false; save(); D.entry = open.dataset.open; D.list = null; renderComm(); renderBible(); return; }
   // 풀이 속 링크: 번호 참조는 팝업 안에서 그 항목으로, 성경 구절은 그 구절로
   const st = e.target.closest('[data-strong]');
   if (st) { e.preventDefault(); $('wordPop').dataset.ids = st.dataset.strong; return wordPopAt(0); }
@@ -1978,9 +2025,36 @@ addEventListener('resize', () => document.querySelectorAll('.pop.open').forEach(
 const closePops = () => document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && p.classList.remove('open'));
 
 function pickerBooks() {
-  const grid = (from, to) => `<div class="grid">${SHORT.slice(from, to).map((s, i) => `<button data-book="${from + i + 1}" title="${BOOKS[from + i]}" class="${S.b === from + i + 1 ? 'on' : ''}">${s}</button>`).join('')}</div>`;
+  const grid = (from, to) => `<div class="grid books">${SHORT.slice(from, to).map((s, i) => `<button data-book="${from + i + 1}" class="${S.b === from + i + 1 ? 'on' : ''}"><b>${s}</b>${BOOKS[from + i]}</button>`).join('')}</div>`;
   $('picker').innerHTML = `<h4>구약</h4>${grid(0, 39)}<h4>신약</h4>${grid(39, 66)}`;
 }
+// 휴대폰: 화면 전체에 책(묶음별) | 장 | 절. 장을 고르면 아래 '이동', 절을 누르면 그 절로
+const GROUPS = [['율법서', 1], ['역사서', 6], ['시가서', 18], ['대선지서', 23], ['소선지서', 28], ['복음서', 40], ['역사서', 44], ['바울서신', 45], ['일반서신', 58], ['예언서', 66]];
+const pk = { b: 0, c: 0 };
+function pickerFull() {
+  const books = GROUPS.map(([g, from], k) => `<h5>${g}</h5>` + Array.from({ length: (GROUPS[k + 1]?.[1] || 67) - from }, (_, i) => from + i)
+    .map(b => `<button data-pb="${b}"><em>${SHORT[b - 1]}</em>${BOOKS[b - 1]}</button>`).join('')).join('');
+  $('picker').innerHTML = `<div class="pk-head"><b>성경 찾기</b><button class="ws-close" data-close aria-label="닫기">${icon('x')}</button></div>
+    <div class="pk-cols"><div class="pk-books">${books}</div><div class="pk-chaps"></div><div class="pk-verses"></div></div><div class="pk-foot"></div>`;
+  pickerCols();
+}
+function pickerCols() {
+  const { b, c } = pk, p = $('picker');
+  p.querySelectorAll('[data-pb]').forEach(x => x.classList.toggle('on', +x.dataset.pb === b));
+  p.querySelector('.pk-chaps').innerHTML = b ? VERSES[b - 1].map((_, i) => `<button data-pc="${i + 1}" class="${i + 1 === c ? 'on' : ''}">${i + 1}장</button>`).join('') : '';
+  p.querySelector('.pk-verses').innerHTML = b && c ? Array.from({ length: VERSES[b - 1][c - 1] }, (_, i) => `<button data-pv="${i + 1}">${i + 1}절</button>`).join('') : '';
+  p.querySelector('.pk-foot').innerHTML = `<span>${b ? BOOKS[b - 1] + (c ? ` ${c}장` : '') : '책을 고르세요'}</span>` + (b && c ? `<button class="btn primary" data-pgo>${c}장으로 이동</button>` : '');
+}
+const openPicker = (btn, chapters) => {
+  if (phone()) {
+    pk.b = S.b; pk.c = S.c; $('picker').classList.add('full');
+    togglePop({ stopPropagation() {} }, $('picker'), btn, pickerFull);
+    // 열린 뒤에 지금 책·장이 보이게 (닫혀 있을 땐 스크롤이 안 됨)
+    return $('picker').querySelectorAll('.pk-books .on, .pk-chaps .on').forEach(x => x.scrollIntoView({ block: 'center' }));
+  }
+  $('picker').classList.remove('full');
+  togglePop({ stopPropagation() {} }, $('picker'), btn, chapters ? () => pickerChapters(S.b) : pickerBooks);
+};
 function pickerChapters(b) {
   $('picker').innerHTML = `<button class="back" data-back>‹ ${BOOKS[b - 1]}</button><div class="grid">` +
     VERSES[b - 1].map((_, i) => `<button data-chap="${i + 1}" data-b="${b}" class="${S.b === b && S.c === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('') + '</div>';
@@ -1991,16 +2065,24 @@ function pickerChapters(b) {
 // 위 막대 버튼: 같은 버튼을 한 번 더 누르면 닫힘
 const isOpenFrom = (pop, btn) => pop.classList.contains('open') && pop._anchor === btn;
 const togglePop = (e, pop, btn, fill) => { e.stopPropagation(); if (isOpenFrom(pop, btn)) return closePops(); fill?.(); openPop(pop, btn); };
-$('bookBtn').onclick = e => togglePop(e, $('picker'), $('bookBtn'), pickerBooks);
-$('chapBtn').onclick = e => togglePop(e, $('picker'), $('chapBtn'), () => pickerChapters(S.b));
+$('bookBtn').onclick = e => { e.stopPropagation(); openPicker($('bookBtn')); };
+$('chapBtn').onclick = e => { e.stopPropagation(); openPicker($('chapBtn'), true); };
 $('picker').onclick = e => {
   e.stopPropagation();
   const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.close !== undefined) return closePops();
+  if (t.dataset.pb) { pk.b = +t.dataset.pb; pk.c = 0; return pickerCols(); }
+  if (t.dataset.pc) { pk.c = +t.dataset.pc; return pickerCols(); }
+  if (t.dataset.pv || t.dataset.pgo !== undefined) { closePops(); return go(pk.b, pk.c, +t.dataset.pv || 0, true); }
   if (t.dataset.book) pickerChapters(+t.dataset.book);
   else if (t.dataset.back !== undefined) pickerBooks();
   else if (t.dataset.chap) { closePops(); go(+t.dataset.b, +t.dataset.chap, 0, true); }
 };
 $('menuBtn').onclick = e => togglePop(e, $('menu'), $('menuBtn'), renderDrive);
+$('menu').addEventListener('click', e => { if (e.target.closest('[data-close]')) closePops(); });
+document.querySelector('#menu .menu-head [data-close]').innerHTML = icon('x');
+$('viewMenu').onclick = e => { e.stopPropagation(); openPop($('viewBox'), $('menuBtn')); };
+$('presetMenu').onclick = e => { e.stopPropagation(); $('presetBtn').click(); };
 $('aboutBtn').onclick = e => togglePop(e, $('aboutBox'), $('aboutBtn'));
 $('aboutMenu').onclick = e => { e.stopPropagation(); openPop($('aboutBox'), $('menuBtn')); };
 $('aboutBox').onclick = e => e.stopPropagation();
@@ -2214,7 +2296,6 @@ const setWordMode = (side, over) => { wordSide = side; wordOver = over; prefs.se
 document.documentElement.dataset.word = wordOver ? 'over' : '';
 document.body.classList.toggle('no-gloss', !gloss);
 $('verTabs').onclick = e => {
-  if (e.target.closest('[data-show-comm]')) { S.hideComm = false; save(); renderComm(); renderBible(); if (S.v) syncComm(S.v); return; }
   if (e.target.closest('[data-word-side]')) {
     if (wordSide) setWordMode(false, false); else if (wordOver || classic()) setWordMode(true, false); else setWordMode(false, true);
     closePops(); return renderBible();
@@ -2222,7 +2303,9 @@ $('verTabs').onclick = e => {
   if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
   const x = e.target.closest('[data-ver-x]'); if (x) toggleVer(x.dataset.verX);
 };
+const phone = () => matchMedia('(max-width: 760px)').matches;
 function toggleVer(n) {
+  if (!S.versions.includes(n) && phone() && S.versions.length >= 3) { flash('휴대폰에서는 3개까지 대조할 수 있어요'); return renderVerBox(); }
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
   sortVersions(); save(); refreshBible();
 }
@@ -2282,7 +2365,6 @@ $('comTabs').onclick = e => {
   else if (t.dataset.search !== undefined) S.tab = 'search';
   else if (t.dataset.saved !== undefined) S.tab = 'saved';
   else if (t.dataset.split !== undefined) S.split = !S.split;
-  else if (t.dataset.hideComm !== undefined) { S.hideComm = true; save(); renderComm(); return renderBible(); }
   save(); renderComm(); if (S.v) syncComm(S.v);
 };
 $('comTabs2').onclick = e => {
@@ -2404,14 +2486,15 @@ const FONTS = {
 };
 // 기본 글꼴은 프리텐다드. 예전 버전은 켤 때마다 '기본 명조'를 저장해서, 한 번만 프리텐다드로 바꿔 줌 (그 뒤 고른 글꼴은 그대로)
 if (!prefs.get('fontDefaultSans', false)) { prefs.set('font', 'gothic'); prefs.set('fontDefaultSans', true); }
-let fs = prefs.get('fs', 17), font = prefs.get('font', 'gothic');
+let fs = prefs.get('fs', 17), font = prefs.get('font', 'gothic'), magnify = prefs.get('magnify', false);
 $('fontSel').innerHTML = Object.entries(FONTS).map(([k, [label]]) => `<option value="${k}">${label}</option>`).join('');
 const applyFont = () => {
   if (!FONTS[font]) font = 'gothic';
   const [, web, base] = FONTS[font], family = web?.split(':')[0];
   if (web && !$('font-' + font)) document.head.append(Object.assign(document.createElement('link'),
     { id: 'font-' + font, rel: 'stylesheet', href: `https://fonts.googleapis.com/css2?family=${web.replace(/ /g, '+')}&display=swap` }));
-  document.documentElement.style.setProperty('--fs', fs + 'px');
+  document.documentElement.style.setProperty('--fs', (magnify ? Math.round(fs * 1.4) : fs) + 'px'); // 돋보기면 1.4배
+  document.querySelectorAll('.mag-toggle').forEach(b => b.setAttribute('aria-pressed', magnify));
   document.documentElement.style.setProperty('--read', web ? `"${family}", var(--${base})` : font === 'gothic' ? 'var(--sans)' : 'var(--serif)');
   $('fontSel').value = font;
   prefs.set('fs', fs); prefs.set('font', font);
@@ -2419,6 +2502,8 @@ const applyFont = () => {
 const fontName = p => FONTS[p.font ?? (p.serif ? 'myeongjo' : 'gothic')]?.[0] || '';
 $('smaller').onclick = () => { fs = Math.max(13, fs - 1); applyFont(); };
 $('bigger').onclick = () => { fs = Math.min(26, fs + 1); applyFont(); };
+$('commToggle').onclick = () => { S.hideComm = !S.hideComm; save(); renderComm(); renderBible(); if (!S.hideComm && S.v) syncComm(S.v); };
+document.querySelectorAll('.mag-toggle').forEach(b => b.onclick = () => { magnify = !magnify; prefs.set('magnify', magnify); applyFont(); refreshBible(); flash(magnify ? '돋보기: 글자를 크게 보여요' : '돋보기를 껐어요'); });
 $('fontSel').onchange = e => { font = e.target.value; applyFont(); e.target.blur(); };
 applyFont();
 checkNudge();
@@ -2472,7 +2557,7 @@ function applyDesign(d) {
   // 기존 디자인은 예전처럼 책·장 이동과 검색창이 맨 위 버튼 줄에 (새 디자인은 성경 칸 머리에)
   const nav = document.querySelector('.nav'), sw = document.querySelector('.search-wrap'), head = document.querySelector('.page-head');
   if (d === 'classic') { $('fwd').after(nav); document.querySelector('.rail-gap').after(sw); }
-  else { head.prepend(nav); head.append(sw); }
+  else { head.prepend(nav); $('magHead').before(sw); } // 검색창 다음에 (휴대폰) 돋보기
 }
 applyDesign(prefs.get('design', 'new'));
 $('designSw').onclick = e => {
@@ -2618,6 +2703,8 @@ const TOUR = [
   { sel: ['[data-rail="dict"]', '[data-rail="xref"]', '[data-rail="saved"]'], title: '바로가기', text: '<b>원어 사전 · 교차 참조 · 보관함</b>을 오른쪽 칸에 바로 열어요. 한 번 더 누르면 주석으로 돌아가요.' },
   { sel: ['#comTabs'], title: '오른쪽 칸', text: '<b>주석·원전분해·원어 사전·교차 참조·보관함</b>을 탭으로 바꿔 봐요. 맨 앞 <b>주석 ▾</b>에서 탭 줄에 보일 것을 골라요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
   { sel: ['#q'], title: '검색', text: '여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로, <b>H430·G26</b>은 원어 번호로 찾아요. 키보드 <b>/</b> 로 바로 검색창으로.' },
+  { sel: ['#commToggle'], title: '주석 칸 열기·닫기', text: '오른쪽 칸(주석·사전)을 닫으면 성경을 넓게 봐요. 한 번 더 누르면 다시 열려요.' },
+  { sel: ['#magBtn'], title: '돋보기', text: '본문 글자를 한 번에 크게 보여 줘요. 다시 누르면 원래 크기로.' },
   { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기</b>를 줄이고 키우고, <b>글꼴</b>을 골라요. 기본은 프리텐다드예요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
   { sel: ['#menuBtn'], title: '설정', text: '성경·주석 파일 추가와 관리, <b>구글 드라이브</b>, 메모 백업, <b>디자인·색·배경 화면</b>, 사용법 다시 보기와 <b>앱으로 설치</b>가 여기 있어요.' },
