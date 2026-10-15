@@ -1507,6 +1507,8 @@ function renderComm() {
     (S.tab === 'saved' ? tab(true, 'data-saved', '보관함') : '') +
     (names.length + dictNames().length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
   $('commToggle').setAttribute('aria-pressed', !S.hideComm);
+  // PC는 할 일을 이름으로 (자료 숨기기 / 자료 보기), 휴대폰 아래 막대는 짧게 '자료'
+  $('commToggle').querySelector('span').textContent = phone() ? '자료' : S.hideComm ? '자료 보기' : '자료 숨기기';
   $('main').classList.toggle('split', S.split);
   $('main').classList.toggle('no-comm', !!S.hideComm);
   railSync();
@@ -2369,6 +2371,7 @@ $('verTabs').onclick = e => {
   const x = e.target.closest('[data-ver-x]'); if (x) toggleVer(x.dataset.verX);
 };
 const phone = () => matchMedia('(max-width: 760px)').matches;
+matchMedia('(max-width: 760px)').addEventListener('change', () => { renderComm(); renderBible(); }); // 창 크기가 휴대폰↔PC로 바뀌면 이름·대조 개수 다시
 function toggleVer(n) {
   if (!S.versions.includes(n) && phone() && S.versions.length >= 3) { flash('휴대폰에서는 3개까지 대조할 수 있어요'); return renderVerBox(); }
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
