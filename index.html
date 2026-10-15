@@ -612,7 +612,11 @@
   [data-design="classic"] body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   [data-design="classic"] .app { position: static; height: auto; min-height: 0; }
   [data-design="classic"] .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px; padding: 12px 20px; background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); overflow: visible; }
-  [data-design="classic"] .rail-logo-btn, [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
+  [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
+  /* 기존 디자인: 위 버튼 줄 맨 왼쪽에 작은 로고 (누르면 커피성경 소개). 휴대폰은 설정 › 커피성경 소개 */
+  [data-design="classic"] .rail-logo-btn { margin: 0 4px 0 0; align-self: center; }
+  [data-design="classic"] .rail-logo { width: 32px; height: 32px; box-shadow: none; }
+  @media (max-width: 760px) { [data-design="classic"] .rail-logo-btn { display: none; } }
   [data-design="classic"] .rail-gap { flex: 1; min-height: 0; }
   [data-design="classic"] .rb { width: auto; flex: none; height: 34px; padding: 0 13px; flex-direction: row; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font: 500 14px var(--sans); }
   [data-design="classic"] .rb:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
