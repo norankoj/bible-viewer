@@ -658,7 +658,7 @@
   <button class="rb" data-rail="dict" data-icon="language" title="원어 사전"><span>원어</span></button>
   <button class="rb" data-rail="xref" data-icon="link" title="교차 참조 (관련 구절)"><span>참조</span></button>
   <button class="rb" data-rail="saved" data-icon="bookmarks" title="보관함 (책갈피·메모·하이라이트)"><span>보관함</span></button>
-  <button class="rb" id="commToggle" data-icon="layout-sidebar-right" aria-pressed="true" title="오른쪽 칸(주석·사전) 열기·닫기"><span>주석</span></button>
+  <button class="rb" id="commToggle" data-icon="layout-sidebar-right" aria-pressed="true" title="자료 칸(주석·원어 사전·교차 참조·보관함) 열기·닫기"><span>자료</span></button>
   <i class="rail-gap" aria-hidden="true"></i>
   <button class="rb mag-toggle" id="magBtn" data-icon="zoom-in" aria-pressed="false" title="돋보기: 본문 글자를 크게"><span>돋보기</span></button>
   <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="글자 크기·글꼴"><span>보기</span></button>
@@ -759,7 +759,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사님</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br>기획자와 로고 디자이너에게는 <b>디카페인</b>,<br>개발자에게는 <b>카페인</b> 커피 한 잔씩 사주세요!</p>
-  <p class="about-note">무료로 나누는 버전이라 일부 기능에 오류가 있을 수 있으니 참고해 주세요.</p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.</p>
 </div>
 <div class="pop" id="tabBox" role="dialog" aria-label="탭 줄에 보일 주석·사전 고르기"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
@@ -1484,7 +1484,7 @@ function commHtml(name) {
 }
 
 let tabHide = prefs.get('tabHide', []); // 탭 줄에서 뺀 주석·사전 ["comm:이름", "dict:이름"]
-const renderTabBox = () => $('tabBox').innerHTML = '<b>탭 줄에 보일 주석·사전</b><p class="help">체크한 것만 위 탭 줄에 보여요.</p>' +
+const renderTabBox = () => $('tabBox').innerHTML = '<b>탭 줄에 보일 자료</b><p class="help">체크한 것만 위 탭 줄에 보여요.</p>' +
   [['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length).map(([k, t, ns]) => `<h4>${t}</h4>` +
     ns.map(n => `<label><input type="checkbox" value="${k}:${esc(n)}" ${tabHide.includes(`${k}:${n}`) ? '' : 'checked'}>${esc(nm(n))}</label>`).join('')).join('');
 function renderComm() {
@@ -1495,14 +1495,14 @@ function renderComm() {
   // 탭 줄에는 체크해 둔 주석·사전만 (지금 보는 것은 늘 보임). 고르기는 맨 앞 '주석 ▾'
   const shown = (k, n, on) => on || !tabHide.includes(`${k}:${n}`);
   const all = names.length + dictNames().length, vis = names.filter(n => !tabHide.includes(`comm:${n}`)).length + dictNames().filter(n => !tabHide.includes(`dict:${n}`)).length;
-  $('comTabs').innerHTML = (all > 1 ? `<button class="tab-pick" data-tab-pick aria-haspopup="dialog" title="탭 줄에 보일 주석·사전 고르기">주석 <b>${vis}</b>/${all} ▾</button>` : '') +
+  $('comTabs').innerHTML = (all > 1 ? `<button class="tab-pick" data-tab-pick aria-haspopup="dialog" title="탭 줄에 보일 자료(주석·사전) 고르기">자료 <b>${vis}</b>/${all} ▾</button>` : '') +
     rightKeys().map(key => {
       const k = kindOf(key), n = nameOf(key), on = S.tab === k && (k === 'comm' ? S.comm : S.dict) === n;
       return shown(k, n, on) ? tab(on, `data-${k}="${esc(n)}" ${drag(k, n)}`, esc(nm(n))) : '';
     }).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
-    tab(S.tab === 'xref', 'data-xref', '교차 참조') +
-    tab(S.tab === 'saved', 'data-saved', '보관함') +
+    (S.tab === 'xref' ? tab(true, 'data-xref', '교차 참조') : '') + // 교차 참조·보관함은 레일 버튼으로 열 때만 (보는 동안만 탭에)
+    (S.tab === 'saved' ? tab(true, 'data-saved', '보관함') : '') +
     (names.length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
   $('commToggle').setAttribute('aria-pressed', !S.hideComm);
   $('main').classList.toggle('split', S.split);
@@ -2347,8 +2347,9 @@ function toggleVer(n) {
   sortVersions(); save(); refreshBible();
 }
 // 번역본이 많을 때: 체크 목록으로 고르기
+const KO = new Intl.Collator('ko', { numeric: true });
 const renderVerBox = () => $('verBox').innerHTML = '<b>번역본 고르기</b><p class="help">체크한 번역본을 나란히 대조해서 봐요.</p>' +
-  allVersions().map(n => `<label><input type="checkbox" value="${esc(n)}" ${S.versions.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('');
+  allVersions().sort((a, b) => KO.compare(nm(a), nm(b))).map(n => `<label><input type="checkbox" value="${esc(n)}" ${S.versions.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('');
 $('verPick').onclick = e => togglePop(e, $('verBox'), $('verPick'), renderVerBox);
 $('verBox').onclick = e => e.stopPropagation();
 $('verBox').onchange = e => toggleVer(e.target.value);
@@ -2738,9 +2739,9 @@ const TOUR = [
   { sel: ['#verPick', '#verTabs'], title: '번역본', text: '<b>번역본 ▾</b>에서 체크하면 <b>여러 개를 나란히 대조</b>해서 봐요. 고른 번역본만 옆에 보이고, 끌어서 순서를 바꿀 수 있어요.' },
   { sel: ['#bible'], title: '본문', text: '절을 누르면 선택돼요. 아래에 뜨는 막대에서 <b>복사·하이라이트·메모·책갈피</b>를 할 수 있어요. 원어 성경에서는 <b>단어를 누르면 사전 뜻</b>이 떠요.' },
   { sel: ['[data-rail="dict"]', '[data-rail="xref"]', '[data-rail="saved"]'], title: '바로가기', text: '<b>원어 사전 · 교차 참조 · 보관함</b>을 오른쪽 칸에 바로 열어요. 한 번 더 누르면 주석으로 돌아가요.' },
-  { sel: ['#comTabs'], title: '오른쪽 칸', text: '<b>주석·원전분해·원어 사전·교차 참조·보관함</b>을 탭으로 바꿔 봐요. 맨 앞 <b>주석 ▾</b>에서 탭 줄에 보일 것을 골라요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
+  { sel: ['#comTabs'], title: '자료 칸', text: '<b>주석·원전분해·원어 사전·교차 참조·보관함</b>을 탭으로 바꿔 봐요. 맨 앞 <b>자료 ▾</b>에서 탭 줄에 보일 것을 골라요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
   { sel: ['#q'], title: '검색', text: '여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로, <b>H430·G26</b>은 원어 번호로 찾아요. 키보드 <b>/</b> 로 바로 검색창으로.' },
-  { sel: ['#commToggle'], title: '주석 칸 열기·닫기', text: '오른쪽 칸(주석·사전)을 닫으면 성경을 넓게 봐요. 한 번 더 누르면 다시 열려요.' },
+  { sel: ['#commToggle'], title: '자료 칸 열기·닫기', text: '주석·원어 사전·교차 참조·보관함이 있는 자료 칸을 닫으면 성경을 넓게 봐요. 한 번 더 누르면 다시 열려요.' },
   { sel: ['#magBtn'], title: '돋보기', text: '본문 글자를 한 번에 크게 보여 줘요. 다시 누르면 원래 크기로.' },
   { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기</b>를 줄이고 키우고, <b>글꼴</b>을 골라요. 기본은 프리텐다드예요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
