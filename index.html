@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="vendor/pretendard.css">
 <style>
-  /* "펼친 책" 디자인: 숲 초록(배지) + 종이색 + 호박색 한 곳(형광펜). 강조색은 하나(파일 → 색 설정: 초록 기본 / 파랑 / 검정, <html data-accent>)
+  /* "펼친 책" 디자인: 숲 초록(배지) + 종이색 + 호박색 한 곳(형광펜). 강조색은 하나(설정 → 색 설정: 초록 기본 / 파랑 / 검정, <html data-accent>)
      --page 성경 칸(책 한 쪽), --surface 주석 노트·팝업(종이), --bg 바탕, --rail 왼쪽 레일, --dock 절 작업 막대. 하이라이트 4색은 사용자 표시용 */
   :root {
     --bg: #e9ece6; --page: #f3f5f0; --surface: #fbfbf8; --line: #dde2da; --fg: #17201b; --muted: #636c66;
@@ -78,6 +78,8 @@
   .status.prog span { overflow: hidden; text-overflow: ellipsis; }
   .status.prog b { font-variant-numeric: tabular-nums; }
   .status.prog i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--dock-fg) 22%, transparent); overflow: hidden; }
+  .status.prog i.busy::after { width: 35%; animation: prog-busy 1.1s ease-in-out infinite; }
+  @keyframes prog-busy { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
   .status.prog i::after { content: ''; display: block; height: 100%; width: calc(var(--p) * 100%); border-radius: inherit; background: var(--dock-fg); transition: width .2s; }
   .btn { height: 34px; padding: 0 13px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font-weight: 500; white-space: nowrap; transition: background .15s, border-color .15s, transform .12s cubic-bezier(.16,1,.3,1); }
   .btn:hover:not(:disabled) { background: var(--bg); border-color: color-mix(in srgb, var(--muted) 35%, var(--line)); }
@@ -180,7 +182,7 @@
   #biblePane.has-bg { --glass: color-mix(in srgb, var(--surface) 62%, transparent); }
   #biblePane.has-bg .page-head, #biblePane.has-bg .par .heads { background: var(--glass); -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border-color: color-mix(in srgb, var(--line) 55%, transparent); }
   #biblePane.has-bg .note-badge { background: var(--glass); }
-  #biblePane.has-bg .tab.on { background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
+  #biblePane.has-bg .tab.on:not([data-ver]) { background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
   #biblePane.has-bg .verse.on, #biblePane.has-bg .par .row.on > * { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
   #biblePane.has-bg :is(.verse, .par .row)[class*="hl-"] { --hl-a: 65%; }
   .par .row { display: contents; }
@@ -297,7 +299,7 @@
   .drive-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
   .drive-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .drive-row small { color: var(--muted); }
-  /* 커피성경 소개 (레일 로고 · 파일 메뉴) */
+  /* 커피성경 소개 (레일 로고 · 설정 메뉴) */
   .rail-logo-btn { border: 0; padding: 0; background: none; border-radius: 50%; cursor: pointer; margin-bottom: 12px; }
   .rail-logo-btn .rail-logo { margin-bottom: 0; display: block; transition: transform .15s; }
   .rail-logo-btn:hover .rail-logo { transform: scale(1.06); }
@@ -311,6 +313,7 @@
   .about-people dd { margin: 0; font-weight: 600; text-align: left; }
   .about-coffee { padding: 12px; border-radius: var(--r); background: var(--accent-soft); color: var(--fg); margin: 0 !important; }
   .about-coffee b { color: var(--accent); }
+  #aboutBox .about-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
   #manageBox label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   #manageBox label:hover { background: var(--bg); }
   #manageBox label small { margin-left: auto; color: var(--muted); }
@@ -500,6 +503,10 @@
   #menu .accent-sw button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; background: var(--accent-soft); }
   #menu .accent-sw i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / .25); }
   #menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+  /* 설정 메뉴 소제목 */
+  #menu h6 { margin: 10px 10px 2px; padding-top: 10px; border-top: 1px solid var(--line); font: 700 11.5px var(--sans); letter-spacing: .02em; color: var(--accent); }
+  #menu h6:first-child { margin-top: 4px; padding-top: 0; border-top: 0; }
+  #clearAll { color: var(--red); }
   #tip { max-width: 380px; padding: 12px 14px; font: 14px/1.7 var(--read); pointer-events: none; z-index: 30; } /* 사전 팝업 위에 */
   #tip b { font: 600 12px var(--sans); color: var(--accent); display: block; margin-bottom: 4px; }
   #noteBox { width: min(380px, calc(100vw - 32px)); }
@@ -541,7 +548,7 @@
     .scroll { scroll-padding-bottom: 0; }
   }
 
-  /* ---------- 기존 디자인 (파일 → 디자인 → 기존 디자인): 같은 화면 뼈대를 예전 모양으로 ----------
+  /* ---------- 기존 디자인 (설정 → 디자인 → 기존 디자인): 같은 화면 뼈대를 예전 모양으로 ----------
      위쪽 글자 버튼 줄, 흰 바탕·회색 톤, 밑줄 탭, 본문 안 장 제목, 흰 떠 있는 작업 막대 */
   :root[data-design="classic"] { --bg: #f6f7f9; --page: #ffffff; --surface: #ffffff; --line: #e3e5ea; --fg: #1d2027; --muted: #646b7a; --dock: #ffffff; --dock-fg: #1d2027; }
   @media (prefers-color-scheme: dark) {
@@ -594,8 +601,8 @@
   <button class="rb" data-rail="saved" data-icon="bookmarks" title="보관함 (책갈피·메모·하이라이트)"><span>보관함</span></button>
   <i class="rail-gap" aria-hidden="true"></i>
   <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="글자 크기·글꼴"><span>보기</span></button>
-  <button class="rb" id="presetBtn" data-icon="adjustments-horizontal" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)"><span>세팅</span></button>
-  <button class="rb" id="menuBtn" data-icon="menu-2" aria-haspopup="menu" title="파일·색 설정·배경·백업"><span>파일</span></button>
+  <button class="rb" id="presetBtn" data-icon="adjustments-horizontal" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)"><span>내 세팅</span></button>
+  <button class="rb" id="menuBtn" data-icon="menu-2" aria-haspopup="menu" title="설정: 파일 추가·관리, 구글 드라이브, 백업, 화면, 도움말"><span>설정</span></button>
 </nav>
 <div class="pop" id="viewBox" role="dialog" aria-label="글자 크기·글꼴">
   <b>보기</b>
@@ -643,26 +650,28 @@
 
 <div class="pop" id="picker" role="dialog" aria-label="성경 책과 장 선택"></div>
 <div class="pop" id="menu" role="menu">
+  <h6>성경·주석 파일</h6>
   <button id="addFolder">폴더 열기<small>성경·주석·사전 파일을 모아 둔 폴더를 고르면 한 번에 추가</small></button>
   <button id="addFiles">파일 선택<small>theWord·Bible Analyzer·MySword·베들레헴 성경, 주석, 사전</small></button>
+  <button id="manageBtn">파일 관리<small>불러온 성경·주석·사전을 골라서 지우기</small></button>
   <button id="fmtBtn">지원하는 파일 형식<small>어떤 확장자를 넣을 수 있는지</small></button>
-  <button id="aboutMenu">커피성경 소개<small>만든 사람들, 커피 한 잔</small></button>
-  <button id="tourBtn">사용법 둘러보기<small>버튼·메뉴를 하나씩 비추며 설명</small></button>
-  <hr>
+  <h6 class="drive-only">구글 드라이브</h6>
+  <button id="driveBtn" hidden></button>
+  <button id="driveOff" hidden>구글 드라이브 연결 끊기<small>받아 둔 파일과 메모는 이 브라우저에 그대로 남습니다</small></button>
+  <h6>메모·책갈피</h6>
+  <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
+  <button id="importMarks">백업 불러오기</button>
+  <h6>화면</h6>
   <div class="accent-row" role="group" aria-label="디자인"><span>디자인<small>화면 모양 (기능은 같아요)</small></span>
     <span class="accent-sw" id="designSw"><button data-design="new">새 디자인</button><button data-design="classic">기존 디자인</button></span></div>
   <div class="accent-row" role="group" aria-label="색 설정"><span>색 설정<small>버튼·선택·강조 색</small></span>
     <span class="accent-sw"><button data-accent="green"><i style="background:#035b36"></i>초록</button><button data-accent="blue"><i style="background:#2c4aa8"></i>파랑</button><button data-accent="black"><i style="background:#1d2027"></i>검정</button></span></div>
   <button id="bgBtn">배경 화면<small>성경 뒤에 사진 깔기, 진하기·흐림 조절</small></button>
-  <hr>
-  <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
-  <button id="importMarks">백업 불러오기</button>
-  <button id="driveBtn" hidden></button>
-  <button id="driveOff" hidden>구글 드라이브 연결 끊기<small>받아 둔 파일과 메모는 이 브라우저에 그대로 남습니다</small></button>
-  <hr>
+  <h6>도움말</h6>
+  <button id="tourBtn">사용법 둘러보기<small>버튼·메뉴를 하나씩 비추며 설명</small></button>
+  <button id="aboutMenu">커피성경 소개<small>만든 사람들, 커피 한 잔</small></button>
   <button id="installBtn">앱으로 설치<small>바탕화면 아이콘, 독립 창, 인터넷 없이도 열림</small></button>
   <hr>
-  <button id="manageBtn">파일 관리<small>불러온 성경·주석·사전을 골라서 지우기</small></button>
   <button id="clearAll">저장된 파일 모두 지우기<small>메모와 책갈피는 지우지 않습니다</small></button>
 </div>
 <div class="pop" id="noteBox" role="dialog" aria-label="메모">
@@ -682,8 +691,9 @@
   <b class="about-name">커피성경</b>
   <p class="about-en">Community People's Bible</p>
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
-  <dl class="about-people"><dt>기획</dt><dd>이성진 목사님</dd><dt>개발</dt><dd>노나연</dd></dl>
-  <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br>기획자와 개발자에게 <b>커피 한 잔씩</b> 사주세요!</p>
+  <dl class="about-people"><dt>기획</dt><dd>이성진 목사님</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
+  <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br>기획자와 로고 디자이너에게는 <b>디카페인</b>,<br>개발자에게는 <b>카페인</b> 커피 한 잔씩 사주세요!</p>
+  <p class="about-note">무료로 나누는 버전이라 일부 기능에 오류가 있을 수 있으니 참고해 주세요.</p>
 </div>
 <div class="pop" id="tabBox" role="dialog" aria-label="탭 줄에 보일 주석·사전 고르기"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
@@ -864,7 +874,8 @@ function respaceTagged() {
   }
 }
 // picked: 파일 선택으로 직접 고른 것 (폴더에는 다른 파일도 섞여 있어 안 맞는 건 조용히 건너뜀)
-async function load(files, persist, picked) {
+// quiet: 진행 막대를 건드리지 않음 (드라이브에서 받을 때는 받는 쪽이 막대 하나로 끝까지 보여줌)
+async function load(files, persist, picked, quiet) {
   // theWord가 암호화한 유료 모듈(.ontx, .ntx 등)은 열 수 없음
   const isLocked = f => /\.(ont|ot|nt|twm)x$/i.test(f.name);
   const locked = files.filter(isLocked).map(f => f.name);
@@ -875,14 +886,14 @@ async function load(files, persist, picked) {
   // 저장 공간이 부족할 때 브라우저가 임의로 지우지 않도록 영구 저장 요청 (지원 안 하면 무시)
   if (persist && files.length) navigator.storage?.persist?.().catch(() => {});
   for (const [i, f] of files.entries()) {
-    progress(`불러오는 중 ${i + 1}/${files.length} · ${f.name}`, i / files.length);
+    if (!quiet) progress(`불러오는 중 ${i + 1}/${files.length} · ${f.name}`, i / files.length);
     await new Promise(r => setTimeout(r)); // 막대가 그려질 틈
     try {
       await addFile(f);
       if (persist) await idb('files', 'readwrite', s => s.put(f, f.name)).catch(() => {});
     } catch (err) { alert(`${f.name}: 읽을 수 없습니다 (${err.message})`); }
   }
-  if (files.length) progress();
+  if (files.length && !quiet) progress();
   respaceTagged();
   const cn = commNames();
   S.versions = S.versions.filter(n => bibles[n]);
@@ -929,7 +940,7 @@ function step(d) {
   if (b + d >= 1 && b + d <= 66) go(b + d, d > 0 ? 1 : VERSES[b + d - 1].length);
 }
 
-/* ---------- 넣을 수 있는 파일 형식 (첫 화면, 파일 → 지원하는 파일 형식, 안 맞는 파일 알림에 씀) ---------- */
+/* ---------- 넣을 수 있는 파일 형식 (첫 화면, 설정 → 지원하는 파일 형식, 안 맞는 파일 알림에 씀) ---------- */
 const FORMATS = `<table class="fmt"><thead><tr><th>프로그램</th><th>성경</th><th>주석</th><th>원어 사전</th></tr></thead><tbody>
   <tr><th>theWord</th><td data-l="성경"><code>.ont</code> <code>.ot</code> <code>.nt</code></td><td data-l="주석"><code>.cmt.twm</code></td><td data-l="원어 사전"><code>.gbk.twm</code> <code>.dct.twm</code></td></tr>
   <tr><th>Bible Analyzer</th><td data-l="성경"><code>.bdb</code></td><td data-l="주석">없음</td><td data-l="원어 사전"><code>.dct</code></td></tr>
@@ -1139,7 +1150,7 @@ function progress(text, frac) {
   const s = $('status');
   s.classList.toggle('prog', !!text);
   if (!text) return s.textContent = '';
-  s.innerHTML = `<span>${esc(text)}</span><b>${Math.floor(frac * 100)}%</b><i style="--p:${frac}"></i>`;
+  s.innerHTML = frac == null ? `<span>${esc(text)}</span><b></b><i class="busy"></i>` : `<span>${esc(text)}</span><b>${Math.floor(frac * 100)}%</b><i style="--p:${frac}"></i>`;
 }
 function flash(msg) { $('status').classList.remove('prog'); $('status').textContent = msg; clearTimeout(flashTimer); flashTimer = setTimeout(() => $('status').textContent = '', 2500); }
 
@@ -1256,7 +1267,7 @@ async function getToken() {
 async function gfetch(url, opt = {}) {
   const r = await fetch(url, { ...opt, headers: { ...opt.headers, Authorization: `Bearer ${await getToken()}` } });
   if (r.status === 401) { gToken = null; prefs.set('gtoken', null); }
-  if (!r.ok) throw new Error(r.status === 404 ? '드라이브 폴더를 찾을 수 없습니다. 연결을 끊고 다시 연결해 보세요' : `드라이브 오류 (${r.status})`);
+  if (!r.ok) throw new Error(r.status === 404 ? '드라이브에서 찾을 수 없습니다. 지워졌거나 공유가 끊겼을 수 있어요 (폴더라면 연결을 끊고 다시 연결해 보세요)' : `드라이브 오류 (${r.status})`);
   return r;
 }
 async function driveList(q, fields, spaces = 'drive') {
@@ -1282,8 +1293,9 @@ async function driveFiles(id, seen = new Set()) {
     else if (MODULE.test(f.name)) out.push(t ? { id: t.targetId, name: f.name, size: 0 } : f);
   }
   // 바로가기는 크기를 몰라서 원본에서 확인
-  for (const f of out) if (!f.size) f.size = (await (await gfetch(`${DRIVE}/${f.id}?fields=size&supportsAllDrives=true`)).json()).size;
-  return out;
+  // (원본을 볼 수 없는 바로가기는 건너뜀: 하나 때문에 전체 맞추기가 멈추지 않게)
+  for (const f of out) if (!f.size) f.size = await gfetch(`${DRIVE}/${f.id}?fields=size&supportsAllDrives=true`).then(r => r.json()).then(j => +j.size || 0, () => 0);
+  return out.filter(f => +f.size);
 }
 // 드라이브 파일 목록(마지막 맞춤 때)과, 파일 관리에서 지워서 다시 받지 않을 것: 둘 다 "이름:크기" 열쇠
 const dKey = f => `${f.name}:${+f.size}`;
@@ -1294,13 +1306,14 @@ async function getDriveFiles(list) {
   let sum = 0, n = 0;
   for (const [i, f] of list.entries()) {
     const label = `드라이브에서 받는 중 ${i + 1}/${list.length} · ${f.name} (${mb(+f.size)})`;
+    progress(label, sum / total);
     try {
       // 받은 만큼 막대가 차오르게 조금씩 읽음
       const reader = (await gfetch(`${DRIVE}/${f.id}?alt=media&supportsAllDrives=true`)).body.getReader(), parts = [];
       for (let c; !(c = await reader.read()).done;) { parts.push(c.value); sum += c.value.length; progress(label, sum / total); }
-      await load([new File(parts, f.name)], true);
+      await load([new File(parts, f.name)], true, false, true); // 받자마자 저장 (중간에 실패해도 받은 건 남게), 막대는 그대로
       delete driveSkip[dKey(f)]; n++;
-    } catch (err) { failed.push(`${f.name} (${err.message})`); }
+    } catch (err) { failed.push(`${f.name} (${err.message})`); sum += +f.size; }
   }
   prefs.set('driveSkip', driveSkip); progress();
   if (failed.length) throw new Error(`${n}개는 받았지만 ${failed.length}개를 받지 못했습니다: ${failed.join(', ')}`);
@@ -1355,14 +1368,17 @@ async function driveSync(asked) {
   try {
     let d = prefs.get('drive', null);
     if (!d) { await getToken(); d = { folder: await driveFolder() }; prefs.set('drive', d); }
-    await syncMarks();
+    // 버튼을 누르자마자 보이게 (파일 목록 확인에 몇 초 걸림). 메모 맞추기는 그동안 같이
+    progress('드라이브에서 파일 목록을 확인하는 중…');
+    const marksDone = syncMarks().then(() => null, err => err);
     const n = await syncFiles(d.folder);
+    const merr = await marksDone; if (merr) throw merr;
     prefs.set('drive', { ...d, at: Date.now() }); driveErr('');
     if (asked) flash(n ? `드라이브에서 파일 ${n}개를 받았습니다` : '드라이브와 맞췄습니다');
   } catch (err) { progress(); driveErr(err.message); if (asked) alert(`구글 드라이브: ${err.message}`); }
   finally { driveBusy = false; }
 }
-// 마지막 실패 이유는 파일 메뉴의 드라이브 버튼에 남김 (조용히 맞추다 실패해도 알 수 있게)
+// 마지막 실패 이유는 설정 메뉴의 드라이브 버튼에 남김 (조용히 맞추다 실패해도 알 수 있게)
 function driveErr(msg) { prefs.set('driveErr', msg); renderDrive(); }
 function renderDrive() {
   const d = GOOGLE_CLIENT_ID && prefs.get('drive', null), err = prefs.get('driveErr', '');
@@ -2014,9 +2030,11 @@ $('driveOff').onclick = () => {
 $('importFile').onchange =e => { if (e.target.files[0]) importMarks(e.target.files[0]); e.target.value = ''; };
 $('clearAll').onclick = async () => {
   closePops();
-  if (!confirm('브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.')) return;
+  if (!confirm(`브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.${driveOn() ? '\n\n구글 드라이브의 파일은 다시 받지 않습니다. 필요하면 파일 관리 > 드라이브에만 있는 파일에서 받으세요.' : ''}`)) return;
   await idb('files', 'readwrite', s => s.clear()).catch(() => {});
-  prefs.set('driveSkip', {}); // 모두 지우면 드라이브에서 처음부터 다시 받음
+  // 드라이브에서 받은 것도 지운 것으로 기억 (켜자마자 자동으로 다시 받지 않게). 파일 관리에서 다시 받을 수 있음
+  for (const k in driveIdx) driveSkip[k] = 1;
+  prefs.set('driveSkip', driveSkip);
   // 사전·주석 색인은 지우고 배경 사진은 남김
   await idb('cache', 'readwrite', s => { const r = s.getAllKeys(); r.onsuccess = () => r.result.filter(k => k !== 'bg').forEach(k => s.delete(k)); return r; }).catch(() => {});
   location.reload();
@@ -2078,7 +2096,8 @@ function driveOnlyHtml() {
   if (!driveOn()) return '';
   const have = haveKeys(), list = Object.entries(driveIdx).filter(([k]) => !have.has(k));
   return list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">지운 파일은 '드라이브와 맞추기'를 해도 다시 받지 않아요. 필요하면 여기서 받으세요.</p>` +
-    list.map(([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`).join('') : '';
+    list.map(([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`).join('') +
+    (list.length > 1 ? `<div class="drive-row"><span></span><button class="btn sm primary" data-drive-get="*">${list.length}개 모두 받기</button></div>` : '') : '';
 }
 async function removeModules(items) {
   for (const it of items) {
@@ -2121,9 +2140,10 @@ $('manageBox').addEventListener('click', async e => {
   const get = e.target.closest('[data-drive-get]');
   if (get) {
     if (driveBusy) return flash('드라이브와 맞추는 중입니다. 끝난 뒤 다시 눌러 주세요');
-    const f = driveIdx[get.dataset.driveGet];
+    const have = haveKeys(), k = get.dataset.driveGet;
+    const list = k === '*' ? Object.entries(driveIdx).filter(([x]) => !have.has(x)).map(([, f]) => f) : [driveIdx[k]];
     driveBusy = true; get.disabled = true;
-    try { await getDriveFiles([f]); flash(`${f.name}을(를) 받았습니다`); }
+    try { const n = await getDriveFiles(list); flash(`드라이브에서 ${n}개를 받았습니다`); }
     catch (err) { alert(`구글 드라이브: ${err.message}`); }
     finally { driveBusy = false; renderManage(); }
     return;
@@ -2600,8 +2620,8 @@ const TOUR = [
   { sel: ['#q'], title: '검색', text: '여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로, <b>H430·G26</b>은 원어 번호로 찾아요. 키보드 <b>/</b> 로 바로 검색창으로.' },
   { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기</b>를 줄이고 키우고, <b>글꼴</b>을 골라요. 기본은 프리텐다드예요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
-  { sel: ['#menuBtn'], title: '파일 메뉴', text: '성경·주석 추가, <b>색 설정, 배경 화면</b>, 메모 백업, <b>앱으로 설치</b>, 그리고 이 사용법 다시 보기가 여기 있어요.' },
-  { title: '준비 끝', text: '커피 한 잔과 함께 말씀을 천천히 읽어 보세요. 이 안내는 <b>파일 › 사용법 둘러보기</b>에서 언제든 다시 볼 수 있어요.' },
+  { sel: ['#menuBtn'], title: '설정', text: '성경·주석 파일 추가와 관리, <b>구글 드라이브</b>, 메모 백업, <b>디자인·색·배경 화면</b>, 사용법 다시 보기와 <b>앱으로 설치</b>가 여기 있어요.' },
+  { title: '준비 끝', text: '커피 한 잔과 함께 말씀을 천천히 읽어 보세요. 이 안내는 <b>설정 › 사용법 둘러보기</b>에서 언제든 다시 볼 수 있어요.' },
 ];
 let tourAt = -1, tourEls = null;
 const tourTargets = st => (st.sel || []).map(s => document.querySelector(s)).filter(el => el && el.getClientRects().length && el.offsetWidth);
