@@ -1507,8 +1507,8 @@ function renderComm() {
     (S.tab === 'saved' ? tab(true, 'data-saved', '보관함') : '') +
     (names.length + dictNames().length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
   $('commToggle').setAttribute('aria-pressed', !S.hideComm);
-  // PC는 할 일을 이름으로 (자료 숨기기 / 자료 보기), 휴대폰 아래 막대는 짧게 '자료'
-  $('commToggle').querySelector('span').textContent = phone() ? '자료' : S.hideComm ? '자료 보기' : '자료 숨기기';
+  // 기존 디자인(PC, 글자 버튼 줄)은 할 일을 이름으로 (자료 숨기기 / 자료 보기), 새 디자인 레일·휴대폰은 짧게 '자료'
+  $('commToggle').querySelector('span').textContent = phone() || !classic() ? '자료' : S.hideComm ? '자료 보기' : '자료 숨기기';
   $('main').classList.toggle('split', S.split);
   $('main').classList.toggle('no-comm', !!S.hideComm);
   railSync();
@@ -2633,7 +2633,7 @@ applyDesign(prefs.get('design', 'new'));
 $('designSw').onclick = e => {
   e.stopPropagation();
   const d = e.target.closest('[data-design]')?.dataset.design; if (!d) return;
-  prefs.set('design', d); applyDesign(d); closePops();
+  prefs.set('design', d); applyDesign(d); closePops(); renderComm(); // 디자인마다 '자료' 버튼 이름이 다름
   if (S.v) select(S.v); // 칸 모양이 바뀌었으니 고른 절이 보이게
 };
 document.querySelector('.accent-sw:not(#designSw)').onclick = e => {
