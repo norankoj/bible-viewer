@@ -330,6 +330,8 @@
   /* 사용설명서: PC는 가운데 큰 창, 모바일은 화면 전체 */
   #guideBox.open { position: fixed; inset: 4vh 0 auto 0 !important; margin: 0 auto; width: min(780px, calc(100vw - 32px)); max-height: 92vh !important; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
   .guide-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 10px 22px; font-size: 18px; border-bottom: 1px solid var(--line); }
+  .guide-acts { display: flex; align-items: center; gap: 8px; }
+  .guide-head .ws-close { float: none; margin: 0; }
   .guide-toc { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 22px; border-bottom: 1px solid var(--line); background: var(--bg); }
   .guide-toc button { border: 1px solid var(--line); border-radius: 4px; background: var(--surface); padding: 4px 10px; font-size: 12.5px; color: var(--fg); }
   .guide-toc button:hover { border-color: var(--accent); color: var(--accent); }
@@ -795,7 +797,7 @@
   <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.</p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
-  <div class="guide-head"><b>커피성경 사용설명서</b><button class="ws-close" data-close aria-label="닫기"></button></div>
+  <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
   <nav class="guide-toc" aria-label="목차">
     <button data-goto="start">시작하기</button><button data-goto="screen">화면 구성</button><button data-goto="read">성경 읽기</button><button data-goto="compare">번역본 대조</button>
     <button data-goto="verse">절 고르기·메모</button><button data-goto="side">자료 칸</button><button data-goto="word">원어 단어</button><button data-goto="search">검색</button>
@@ -2317,11 +2319,22 @@ $('menuBtn').onclick = e => togglePop(e, $('menu'), $('menuBtn'), renderDrive);
 $('menu').addEventListener('click', e => { if (e.target.closest('[data-close]')) closePops(); });
 document.querySelector('#menu .menu-head [data-close]').innerHTML = icon('x');
 // 사용설명서: 목차 누르면 그 부분으로, 닫기
-$('guideMenu').onclick = e => { e.stopPropagation(); openPop($('guideBox'), $('menuBtn')); $('guideBox').querySelector('.guide-body').scrollTop = 0; };
+// 공유 링크: 주소 뒤에 #guide (특정 장은 #guide-drive 처럼) 붙이면 열자마자 사용설명서
+const openGuide = sec => {
+  openPop($('guideBox'), $('menuBtn'));
+  const body = $('guideBox').querySelector('.guide-body');
+  body.scrollTop = 0; if (sec && $('g-' + sec)) $('g-' + sec).scrollIntoView({ block: 'start' });
+};
+$('guideMenu').onclick = e => { e.stopPropagation(); openGuide(); };
 document.querySelector('#guideBox [data-close]').innerHTML = icon('x');
+const guideLink = () => location.origin + location.pathname + '#guide';
 $('guideBox').onclick = e => {
   e.stopPropagation();
-  if (e.target.closest('[data-close]')) return closePops();
+  if (e.target.closest('[data-close]')) { if (location.hash.startsWith('#guide')) history.replaceState(null, '', location.pathname + location.search); return closePops(); }
+  if (e.target.closest('[data-guide-link]')) {
+    const done = () => flash('사용설명서 링크를 복사했어요');
+    return navigator.clipboard?.writeText(guideLink()).then(done, () => prompt('이 링크를 복사해서 보내세요', guideLink())) ?? prompt('이 링크를 복사해서 보내세요', guideLink());
+  }
   const g = e.target.closest('[data-goto]'); if (!g) return;
   e.preventDefault(); $('g-' + g.dataset.goto).scrollIntoView({ block: 'start' });
 };
@@ -2956,7 +2969,11 @@ Promise.all([
   maybeTour();
 });
 // 사용법 둘러보기는 처음 한 번, 성경을 불러온 뒤에 (빈 첫 화면에서는 비출 버튼이 없어서)
-const maybeTour = () => { if (!prefs.get('toured', false) && allVersions().length && !tourEls) setTimeout(() => tourEls || startTour(), 700); };
+const maybeTour = () => { if (!prefs.get('toured', false) && allVersions().length && !tourEls && !location.hash.startsWith('#guide')) setTimeout(() => tourEls || startTour(), 700); };
+// 사용설명서 링크(#guide, #guide-장)로 들어오면 바로 열기
+const guideFromHash = () => { const m = location.hash.match(/^#guide(?:-([\w-]+))?$/); if (m) openGuide(m[1]); };
+guideFromHash();
+addEventListener('hashchange', guideFromHash);
 
 /* ---------- 사용법 둘러보기 (코치마크): 화면을 어둡게 하고 버튼·영역을 하나씩 비추며 설명 ----------
    sel: 비출 곳(여러 개면 합친 영역), 화면에 없으면 그 단계는 건너뜀. sel 없으면 가운데 카드 */
