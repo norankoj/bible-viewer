@@ -73,10 +73,10 @@
   #viewBox .view-row span { display: flex; gap: 6px; }
   #viewBox select { max-width: 150px; color: var(--fg); }
   /* 알림(불러오는 중·복사했습니다 등): 화면 아래 가운데에 잠깐 */
-  .status { position: fixed; z-index: 45; left: 50%; bottom: 22px; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 9px 16px; border-radius: 999px; background: var(--dock); color: var(--dock-fg); font-size: 13px; font-weight: 500; box-shadow: var(--shadow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+  .status { position: fixed; z-index: 45; left: 50%; bottom: 22px; transform: translateX(-50%); width: max-content; max-width: min(520px, calc(100vw - 32px)); text-align: center; padding: 9px 16px; border-radius: 16px; background: var(--dock); color: var(--dock-fg); font-size: 13px; font-weight: 500; box-shadow: var(--shadow); pointer-events: none; } /* 긴 안내는 두 줄로 */
   .status:empty { display: none; }
   .status.prog { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; width: min(440px, calc(100vw - 32px)); padding: 12px 16px 14px; border-radius: 14px; }
-  .status.prog span { overflow: hidden; text-overflow: ellipsis; }
+  .status.prog span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .status.prog b { font-variant-numeric: tabular-nums; }
   .status.prog i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--dock-fg) 22%, transparent); overflow: hidden; }
   .status.prog i.busy::after { width: 35%; animation: prog-busy 1.1s ease-in-out infinite; }
@@ -112,7 +112,7 @@
   .search { width: 100%; height: 36px; padding: 0 14px 0 34px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
   .search:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   .search:focus, .btn:focus-visible, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  /* 번역본: 알약 모양 스위치 (고른 것은 짙게). 음역·뜻 등 나머지 버튼은 작은 글자 버튼 */
+  /* 번역본: 알약 모양 스위치 (고른 것은 짙게). 발음·뜻 보기 등 나머지 버튼은 작은 글자 버튼 */
   /* safe: 번역본이 넘치면 오른쪽 맞춤을 풀어 첫 탭부터 보이고 밀어서 봄 (그냥 flex-end면 왼쪽이 잘려 못 봄) */
   .page-head .tabs { flex: 1 1 auto; min-width: 0; border: 0; padding: 0; min-height: 0; justify-content: safe flex-end; gap: 6px; }
   /* 오른쪽 칸 탭 줄 높이를 성경 칸 머리와 맞춤 (본문이 같은 높이에서 시작) */
@@ -124,6 +124,12 @@
   #verTabs .tab[data-ver]:hover { color: var(--fg); border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   #verTabs .tab[data-ver].on { background: var(--fg); border-color: var(--fg); color: var(--page); }
   #verTabs .tab:not([data-ver]) { font-size: 12.5px; }
+  .word-mode { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .word-mode select { height: 32px; padding: 0 28px 0 12px; border: 1px solid var(--line); border-radius: 4px; background-color: var(--surface); color: var(--fg); font-size: 13px; font-weight: 600; } /* 번역본 N개 ▾ 와 같은 모양 */
+  .help-q { flex: none; width: 22px; height: 22px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--muted); font: 700 12px/1 var(--sans); cursor: help; }
+  #helpPop { width: min(280px, calc(100vw - 32px)); padding: 10px 12px; font-size: 13px; line-height: 1.6; }
+  .help-q:hover { color: var(--accent); border-color: var(--accent); }
+  .word-mode select:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   #verTabs .tab[data-ver] { display: inline-flex; align-items: center; gap: 4px; flex: none; cursor: grab; }
   .ver-x { width: 18px; height: 18px; margin-right: -6px; padding: 0; border: 0; border-radius: 3px; background: none; color: inherit; font-size: 15px; line-height: 1; opacity: .55; cursor: pointer; }
   .ver-x:hover { opacity: 1; background: color-mix(in srgb, currentColor 18%, transparent); }
@@ -155,11 +161,12 @@
   .tab:hover { color: var(--fg); background: color-mix(in srgb, var(--bg) 70%, transparent); }
   .tab.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   /* 칸 위 탭 줄: 고른 탭은 글씨 진하게 + 아래 강조색 밑줄 (채운 상자보다 본문을 덜 가림) */
-  :is(#comTabs, #comTabs2) > .tab:not(.spacer):not([data-word-side]):not([data-split]) { position: relative; }
-  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-word-side]):not([data-split]) { background: none; color: var(--fg); font-weight: 700; }
-  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-word-side]):not([data-split])::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: -8px; height: 2px; border-radius: 2px; background: var(--accent); }
+  :is(#comTabs, #comTabs2) > .tab:not(.spacer):not([data-split]) { position: relative; }
+  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-split]) { background: none; color: var(--fg); font-weight: 700; }
+  :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-split])::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: -8px; height: 2px; border-radius: 2px; background: var(--accent); }
   .tabs { scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } /* 탭 줄은 밀어서 넘기고 스크롤바는 숨김 */
   .tabs .spacer { margin-left: auto; }
+  .tabs [draggable="true"] { cursor: grab; } .tabs [draggable="true"]:active { cursor: grabbing; } /* 끌어서 순서 바꾸기 */
   /* 탭이 넘치면 가려진 쪽 끝을 흐리게 (더 있다는 표시) */
   .tabs.more-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); }
   .tabs.more-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent); }
@@ -698,17 +705,17 @@
   <button class="rb" id="back" data-icon="arrow-left" title="이전 위치로 (Alt+←)" disabled><span>뒤로</span></button>
   <button class="rb" id="fwd" data-icon="arrow-right" title="다시 앞으로 (Alt+→)" disabled><span>앞으로</span></button>
   <i class="rail-sep" aria-hidden="true"></i>
-  <button class="rb" data-rail="dict" data-icon="language" title="원어 사전"><span>원어</span></button>
-  <button class="rb" data-rail="xref" data-icon="link" title="교차 참조 (관련 구절)"><span>참조</span></button>
+  <button class="rb" data-rail="dict" data-icon="language" title="원어 사전"><span>사전</span></button>
+  <button class="rb" data-rail="xref" data-icon="link" title="관련 구절 (이 절과 비슷한 내용의 다른 구절)"><span>관련절</span></button>
   <button class="rb" data-rail="saved" data-icon="bookmarks" title="보관함 (책갈피·메모·하이라이트)"><span>보관함</span></button>
-  <button class="rb" id="commToggle" data-icon="layout-sidebar-right" aria-pressed="true" title="자료 칸(주석·원어 사전·교차 참조·보관함) 열기·닫기"><span>자료</span></button>
+  <button class="rb" id="commToggle" data-icon="layout-sidebar-right" aria-pressed="true" title="자료 칸(주석·원어 사전·관련 구절·보관함) 열기·닫기"><span>자료</span></button>
   <i class="rail-gap" aria-hidden="true"></i>
-  <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="글자 크기·글꼴"><span>보기</span></button>
+  <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="글자 크기·글꼴"><span>글자</span></button>
   <button class="rb" id="presetBtn" data-icon="adjustments-horizontal" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)"><span>내 세팅</span></button>
   <button class="rb" id="menuBtn" data-icon="menu-2" aria-haspopup="menu" title="설정: 파일 추가·관리, 구글 드라이브, 백업, 화면, 도움말"><span>설정</span></button>
 </nav>
 <div class="pop" id="viewBox" role="dialog" aria-label="글자 크기·글꼴">
-  <b>보기</b>
+  <b>글자</b>
   <div class="view-row">글자 크기
     <span><button class="btn icon" id="smaller" title="글자 작게" aria-label="글자 작게" style="font-size:13px">가</button><button class="btn icon" id="bigger" title="글자 크게" aria-label="글자 크게" style="font-size:17px">가</button></span></div>
   <div class="view-row">글꼴 <select class="btn" id="fontSel" title="본문 글꼴" aria-label="본문 글꼴"></select></div>
@@ -733,7 +740,7 @@
       </span>
       <button class="ver-pick" id="verPick" aria-haspopup="dialog" title="번역본 골라 보기 (체크한 것을 나란히 대조)"></button>
       <div class="tabs" id="verTabs"></div>
-      <label class="search-wrap" data-icon="search"><input class="search" id="q" type="search" placeholder="검색 ( / )" aria-label="성경·주석 검색" title="여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호"></label>
+      <label class="search-wrap" data-icon="search"><input class="search" id="q" type="search" placeholder="성경·주석 검색" aria-label="성경·주석 검색" title="키보드 / 키로 바로 · 여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호"></label>
       <button class="hb mag-toggle" id="magHead" data-icon="zoom-in" aria-pressed="false" title="돋보기: 본문 글자를 크게" aria-label="돋보기"></button>
     </header>
     <div class="scroll" id="bible"></div>
@@ -755,7 +762,7 @@
 <div class="pop" id="picker" role="dialog" aria-label="성경 책과 장 선택"></div>
 <div class="pop" id="menu" role="menu">
   <div class="menu-head"><b>설정</b><button class="ws-close" data-close aria-label="닫기"></button></div>
-  <h6 class="mobile-only">보기</h6>
+  <h6 class="mobile-only">글자·내 세팅</h6>
   <button id="viewMenu" class="mobile-only">글자 크기·글꼴<small>본문 글자를 키우거나 줄이고 글꼴 고르기</small></button>
   <button id="presetMenu" class="mobile-only">내 세팅<small>보는 구성을 두 가지로 저장해 두고 바꾸기</small></button>
   <h6>성경·주석 파일</h6>
@@ -826,9 +833,9 @@
     <figure><img src="img/guide/screen.jpg" alt="PC: 왼쪽 막대 · 성경 칸 · 자료 칸" loading="lazy"><figcaption>PC: 왼쪽 막대 · 성경 칸 · 자료 칸</figcaption></figure><figure class="phone"><img src="img/guide/mobile.jpg" alt="모바일: 위 성경 칸 · 아래 자료 칸 · 아래 막대" loading="lazy"><figcaption>모바일: 위 성경 칸 · 아래 자료 칸 · 아래 막대</figcaption></figure>
     <ul>
       <li><b>성경 칸</b>: 위에 <b>책·장 제목</b>, <b>번역본 ▾</b>와 고른 번역본, <b>검색창</b>이 있고 아래에 본문이 나와요.</li>
-      <li><b>자료 칸</b>(PC는 오른쪽, 모바일은 아래): 주석·원전분해·원어 사전·교차 참조·보관함을 탭으로 봐요.</li>
-      <li><b>PC 왼쪽 막대</b>: 뒤로 · 앞으로 · 원어 · 참조 · 보관함 · 자료 · 보기 · 내 세팅 · 설정. 맨 위 로고를 누르면 커피성경 소개가 나와요.</li>
-      <li><b>모바일 아래 막대</b>: 뒤로 · 원어 · 참조 · 보관함 · 자료 · 설정. 글자 크기·글꼴과 내 세팅은 <b>설정 › 보기</b>에 있어요. 성경 칸 위의 돋보기 아이콘으로 글자를 크게 볼 수 있어요.</li>
+      <li><b>자료 칸</b>(PC는 오른쪽, 모바일은 아래): 주석·원전분해·원어 사전·관련 구절·보관함을 탭으로 봐요.</li>
+      <li><b>PC 왼쪽 막대</b>: 뒤로 · 앞으로 · 사전 · 관련절 · 보관함 · 자료 · 글자 · 내 세팅 · 설정. 맨 위 로고를 누르면 커피성경 소개가 나와요.</li>
+      <li><b>모바일 아래 막대</b>: 뒤로 · 사전 · 관련절 · 보관함 · 자료 · 설정. 글자 크기·글꼴과 내 세팅은 <b>설정</b> 맨 위에 있어요. 성경 칸 위의 돋보기 아이콘으로 글자를 크게 볼 수 있어요.</li>
       <li><b>자료</b> 버튼은 자료 칸을 열고 닫아요. 닫으면 성경을 넓게 봐요.</li>
     </ul></section>
 <section id="g-read"><h3>성경 읽기 · 이동</h3>
@@ -841,9 +848,9 @@
       <li>주석 속 성경 구절에 마우스를 올리면 본문을 미리 볼 수 있어요.</li>
     </ul></section>
 <section id="g-compare"><h3>번역본 대조</h3>
-    <figure><img src="img/guide/compare.jpg" alt="번역본 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기" loading="lazy"><figcaption>번역본 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기</figcaption></figure>
+    <figure><img src="img/guide/compare.jpg" alt="번역본 N개 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기" loading="lazy"><figcaption>번역본 N개 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기</figcaption></figure>
     <ul>
-      <li><b>번역본 ▾</b>를 눌러 보고 싶은 번역본을 체크하면 나란히 대조해요. 목록은 가나다순이에요.</li>
+      <li><b>번역본 N개 ▾</b>를 눌러 보고 싶은 번역본을 체크하면 나란히 대조해요. 목록은 가나다순이에요.</li>
       <li>같은 창 맨 위 <b>대조 순서</b>에서 ▲▼로 칸 순서를 바꿔요. PC에서는 번역본 이름을 끌어서 옮겨도 돼요.</li>
       <li>번역본 이름 옆 <b>×</b>를 누르면 대조에서 빠져요.</li>
       <li>모바일은 <b>3개까지</b> 대조하고, 절마다 번역본을 위아래로 한 줄씩 보여 줘요.</li>
@@ -852,43 +859,43 @@
 <section id="g-verse"><h3>절 고르기 · 하이라이트 · 메모 · 책갈피</h3>
     <figure><img src="img/guide/verse.jpg" alt="절을 고르면 아래에 작업 막대 (복사 · 하이라이트 · 메모 · 책갈피)" loading="lazy"><figcaption>절을 고르면 아래에 작업 막대 (복사 · 하이라이트 · 메모 · 책갈피)</figcaption></figure>
     <ul>
-      <li>절을 누르면 선택돼요. <kbd>Shift</kbd>+누르기로 범위, <kbd>Ctrl</kbd>(맥은 <kbd>⌘</kbd>)+누르기로 여러 절을 고를 수 있어요.</li>
+      <li>절을 누르면 선택돼요. 하이라이트를 없애려면 <b>색 지우기</b>. <kbd>Shift</kbd>+누르기로 범위, <kbd>Ctrl</kbd>(맥은 <kbd>⌘</kbd>)+누르기로 여러 절을 고를 수 있어요.</li>
       <li>선택하면 나오는 막대에서 <b>복사</b>(<kbd>Ctrl</kbd>+<kbd>C</kbd>), <b>하이라이트</b>(노랑·초록·파랑·분홍, 지우기), <b>메모</b>, <b>책갈피</b>를 해요.</li>
       <li>하이라이트는 글자 줄마다 형광펜처럼 칠해지고, 메모가 있는 절에는 <b>메모</b> 표시가 붙어요.</li>
       <li>모아 보기는 <b>보관함</b>에서 해요. 책갈피·메모·하이라이트를 누르면 그 절로 가요.</li>
     </ul></section>
-<section id="g-side"><h3>자료 칸 (주석 · 원전분해 · 사전 · 교차 참조 · 보관함)</h3>
-    <figure><img src="img/guide/side.jpg" alt="2단 보기: 가운데 주석, 오른쪽은 고른 절의 원어 단어 사전 풀이" loading="lazy"><figcaption>2단 보기: 가운데 주석, 오른쪽은 고른 절의 원어 단어 사전 풀이</figcaption></figure>
+<section id="g-side"><h3>자료 칸 (주석 · 원전분해 · 사전 · 관련 구절 · 보관함)</h3>
+    <figure><img src="img/guide/side.jpg" alt="두 개 나란히: 가운데 주석, 오른쪽은 고른 절의 원어 단어 사전 풀이" loading="lazy"><figcaption>두 개 나란히: 가운데 주석, 오른쪽은 고른 절의 원어 단어 사전 풀이</figcaption></figure>
     <ul>
       <li><b>주석</b>: 고른 절의 주석으로 저절로 따라가요.</li>
       <li><b>원전분해</b>(베들레헴 .sdb): 절마다 원어 단어·기본형·문법·뜻을 보여 줘요. 번호를 누르면 단어 노트가 열려요.</li>
       <li><b>원어 사전</b>: 번호(H430, G26)나 한글 단어로 찾고, 히브리어·헬라어 전체 목록도 볼 수 있어요.</li>
-      <li><b>교차 참조</b>·<b>보관함</b>은 막대의 <b>참조</b>·<b>보관함</b> 버튼으로 열어요. 한 번 더 누르면 주석으로 돌아와요.</li>
-      <li>탭 줄 맨 앞 <b>자료 ▾</b>에서 탭 줄에 보일 주석·사전을 골라요. 탭을 끌어서 순서도 바꿀 수 있어요(주석·사전 섞어서).</li>
-      <li><b>2단 보기</b>: 자료 칸을 둘로 나눠 비교해요. 오른쪽 칸에서 사전을 고르면 고른 절의 원어 단어마다 사전 풀이가 나와요.</li>
+      <li><b>관련 구절</b>·<b>보관함</b>은 막대의 <b>관련절</b>·<b>보관함</b> 버튼으로 열어요. 한 번 더 누르면 주석으로 돌아와요.</li>
+      <li>탭 줄 맨 앞 <b>자료 N개 ▾</b>에서 탭 줄에 보일 주석·사전을 골라요. 탭을 끌어서 순서도 바꿀 수 있어요(주석·사전 섞어서).</li>
+      <li><b>두 개 나란히</b>: 자료 칸을 둘로 나눠 비교해요. 오른쪽 칸에서 사전을 고르면 고른 절의 원어 단어마다 사전 풀이가 나와요.</li>
     </ul></section>
 <section id="g-word"><h3>원어 단어 · 단어 노트</h3>
-    <figure><img src="img/guide/word.jpg" alt="단어 노트: 번호 · 검색 · 사전 탭에서 보기" loading="lazy"><figcaption>단어 노트: 번호 · 검색 · 사전 탭에서 보기</figcaption></figure>
+    <figure><img src="img/guide/word.jpg" alt="단어 노트: 번호 · 나오는 절 모두 찾기 · 사전에서 보기" loading="lazy"><figcaption>단어 노트: 번호 · 나오는 절 모두 찾기 · 사전에서 보기</figcaption></figure>
     <ul>
       <li>원어 성경(BHS, 원어 신약 등)이나 스트롱 번호가 붙은 성경(개역개정S 등)의 <b>단어를 누르면</b> 단어 노트가 열려요.</li>
-      <li>단어 노트 맨 위: <b>번호 · 검색</b>(이 단어가 나오는 모든 절) · <b>사전 탭에서 보기</b>. 아래에 사전 풀이와 <b>이 단어가 나오는 곳</b>이 있어요.</li>
-      <li>번역본 줄의 <b>단어 뜻:</b> 버튼으로 보는 방식을 바꿔요 — 팝업(새 디자인은 오른쪽 노트) · 팝오버(단어 바로 아래 작은 창) · 옆 사전(자료 칸 사전 탭).</li>
-      <li>BHS 형식 성경은 <b>음역·뜻</b>으로 원어 아래 발음과 기본형 뜻을 켜고 끌 수 있어요.</li>
+      <li>단어 노트 맨 위: <b>번호</b>(마우스를 올리면 설명) · <b>나오는 절 모두 찾기</b> · <b>사전에서 보기</b>. 아래에 사전 풀이와 <b>이 단어가 나오는 곳</b>이 있어요.</li>
+      <li>번역본 줄의 <b>단어 뜻</b> 목록에서 보는 곳을 골라요 — <b>오른쪽 창</b>(모바일은 아래에서 올라옴) · <b>단어 바로 아래</b>(작은 창) · <b>자료 칸 사전</b>. 기존 디자인은 단어 옆 창 · 자료 칸 사전.</li>
+      <li>BHS 형식 성경은 <b>발음·뜻 보기</b>로 원어 아래 발음과 기본형 뜻을 켜고 끌 수 있어요.</li>
     </ul></section>
 <section id="g-search"><h3>검색</h3>
     <figure><img src="img/guide/search.jpg" alt="원어 번호(G25) 검색 결과" loading="lazy"><figcaption>원어 번호(G25) 검색 결과</figcaption></figure>
     <ul>
-      <li>검색창(키보드 <kbd>/</kbd>)에 적고 <kbd>Enter</kbd>.</li>
+      <li><b>성경·주석 검색</b> 칸(키보드 <kbd>/</kbd> 키로 바로)에 적고 <kbd>Enter</kbd>.</li>
       <li>여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로 찾아요.</li>
-      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 원어 단어를 강조하고 아래에 개역개정을 함께 보여 줘요.</li>
+      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 원어 단어를 강조하고 아래에 개역개정을 함께 보여 줘요. <b>원전분해</b>가 있으면 그것을 기준으로 찾아 가장 정확하고(처음 한 번만 정리하느라 몇 초 걸려요), 개역개정S처럼 번호가 붙은 개역개정이 있으면 한국어 단어도 같은 색으로 칠해져요.</li>
       <li>결과에서 번역본과 범위(전체·구약·신약·현재 책)를 바꿀 수 있고, 주석에서도 찾아요(여러 주석을 한꺼번에).</li>
     </ul></section>
 <section id="g-view"><h3>보기 · 내 세팅 · 화면 설정</h3>
     <figure><img src="img/guide/view.jpg" alt="내 세팅 1 · 2" loading="lazy"><figcaption>내 세팅 1 · 2</figcaption></figure><figure class="phone"><img src="img/guide/mobile-settings.jpg" alt="모바일 설정: 맨 위 보기 묶음" loading="lazy"><figcaption>모바일 설정: 맨 위 보기 묶음</figcaption></figure>
     <ul>
-      <li><b>보기</b>: 글자 크기와 글꼴(기본 프리텐다드).</li>
+      <li><b>글자</b>: 글자 크기와 글꼴(기본 프리텐다드). 모바일은 <b>설정</b> 맨 위.</li>
       <li><b>돋보기</b>(모바일): 본문 글자를 한 번에 크게. 다시 누르면 원래대로.</li>
-      <li><b>내 세팅</b>: 지금 보는 구성(번역본·주석·2단 보기·사전·글꼴·칸 너비)을 1·2에 저장하고 한 번에 바꿔요(<kbd>Alt</kbd>+<kbd>1</kbd>, <kbd>Alt</kbd>+<kbd>2</kbd>). 구글 드라이브를 연결하면 다른 기기와도 맞춰져요.</li>
+      <li><b>내 세팅</b>: 지금 보는 구성(번역본·주석·두 개 나란히·사전·글꼴·칸 너비)을 1·2에 저장하고 한 번에 바꿔요(<kbd>Alt</kbd>+<kbd>1</kbd>, <kbd>Alt</kbd>+<kbd>2</kbd>). 구글 드라이브를 연결하면 다른 기기와도 맞춰져요.</li>
       <li><b>설정 › 화면</b>: 디자인(새 디자인 / 기존 디자인), 색(초록·파랑·검정), 배경 화면(커피 사진·내 사진, 진하기·흐림·맞춤).</li>
       <li>PC에서 칸 사이 경계를 끌면 너비를 조절해요(두 번 누르면 원래대로).</li>
     </ul></section>
@@ -922,6 +929,7 @@
     </dl></section>
   </div>
 </div>
+<div class="pop" id="helpPop" role="tooltip"></div>
 <div class="pop" id="tabBox" role="dialog" aria-label="탭 줄에 보일 주석·사전 고르기"></div>
 <div class="pop" id="notePop" role="dialog" aria-label="각주"></div>
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
@@ -1031,7 +1039,7 @@ async function addFile(f) {
       prefs.set('sdbKind', seen);
     }
     if (seen[key] === 'bible') { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
-    commKind[name] = 'sdb'; // 원전분해
+    commKind[name] = 'sdb'; delete bibles[name]; // 원전분해 (원어 번호 검색용 본문은 검색할 때 다시 만듦)
   } else if (/\.(bdb|mybible)$/i.test(f.name)) { bibles[name] = await readSqlBible(f); delete plain[name]; return; }
   // 주석·사전은 여기서 열지 않음 (필요할 때 openComm/openDict). 종류는 이름으로, 모르면 열어서 표를 봄
   let type = /\.cmt\.twm$|\.sdb$/i.test(f.name) ? 'comm' : /\.(gbk|dct)\.twm$|\.dct$/i.test(f.name) ? 'dict' : '';
@@ -1080,7 +1088,7 @@ function openDb(name, files, dbs) {
 }
 const openComm = name => openDb(name, commFiles, comms);
 const openDict = name => openDb(name, dictFiles, dicts);
-// 열어 둔 주석은 지금 보는 것(2단 보기면 2개)만 남기고 닫아 메모리를 비움 (검색 색인 중인 것은 그대로)
+// 열어 둔 주석은 지금 보는 것(두 개 나란히면 2개)만 남기고 닫아 메모리를 비움 (검색 색인 중인 것은 그대로)
 function closeUnusedComms() {
   const busy = Object.keys(indexing).join('\n');
   for (const n of Object.keys(comms))
@@ -1233,7 +1241,9 @@ const ordered = (kind, names) => {
   const o = tabOrder[kind] || [], at = n => { const i = o.indexOf(n); return i < 0 ? 1e6 : i; }; // 처음 보는 건 뒤에
   return [...names].sort((a, b) => at(a) - at(b));
 };
-const allVersions = () => ordered('bible', Object.keys(bibles));
+const allVersions = () => ordered('bible', Object.keys(bibles).filter(n => !bibles[n].searchOnly));
+// 원어 번호 검색 전용 원어 본문 (원전분해 .sdb 에서 만든 것, 이미 만든 것만)
+const searchOnly = () => Object.keys(bibles).filter(n => bibles[n].searchOnly);
 const commNames = () => ordered('comm', Object.keys(commFiles));
 // 오른쪽 칸 탭 줄 순서: 주석·사전을 함께 ("comm:이름", "dict:이름")
 const rightKeys = () => ordered('right', [...commNames().map(n => 'comm:' + n), ...dictNames().map(n => 'dict:' + n)]);
@@ -1286,16 +1296,17 @@ function cellHtml(name, v) {
 
 function renderBible() {
   const names = allVersions();
-  // 음역·뜻은 BHS 기본형 성경만, 단어 뜻 위치는 단어를 누를 수 있는 성경(원어·스트롱 번호)이면
+  // 발음·뜻 보기은 BHS 기본형 성경만, 단어 뜻 위치는 단어를 누를 수 있는 성경(원어·스트롱 번호)이면
   const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
   // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
   $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>`).join('') +
-    (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래 음역과 기본형 뜻 보이기">음역·뜻</button>` : '') +
-    (words ? `<button class="tab ${bhs ? '' : 'spacer'}" data-word-side title="원어 단어를 누르면 뜻을 어디에 보여줄지 (누를 때마다 바뀜)">단어 뜻: ${wordSide ? '옆 사전' : wordOver && !classic() ? '팝오버' : '팝업'}</button>` : '') +
-    (S.versions.length > 1 ? `<span class="hint ${words ? '' : 'spacer'}">대조 보기 중</span>` : '');
-  $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>/${names.length} ▾`;
+    (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래에 발음과 기본형 뜻 보이기">발음·뜻 보기</button>` : '') +
+    (words ? `<span class="word-mode ${bhs ? '' : 'spacer'}"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
+    '';
+  $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>개 ▾`;
   $('verPick').hidden = names.length < 2;
   if ($('verBox').classList.contains('open')) renderVerBox();
+  if (words && !prefs.get('wordHint', false)) { prefs.set('wordHint', true); setTimeout(() => flash('원어 번호가 있는 성경은 단어를 누르면 뜻이 나와요'), 800); }
   const vs = phone() ? S.versions.slice(0, 3) : S.versions; // 모바일은 3개까지
   // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
   document.body.classList.toggle('no-bibles', !names.length);
@@ -1374,7 +1385,7 @@ function renderSelbar() {
   bar.innerHTML = `<span class="sel-ref">${SHORT[S.b - 1]} ${S.c}:${rangeLabel(vs)}</span>
     <button class="btn sm" data-act="copy" title="Cmd/Ctrl+C">복사</button>
     <span class="swatches">${Object.entries(COLORS).map(([k, n]) => `<button class="sw hl-${k}" data-hl="${k}" title="${n} 하이라이트" aria-label="${n} 하이라이트"></button>`).join('')}
-      <button class="btn sm" data-hl="" title="하이라이트 지우기">지우기</button></span>
+      <button class="btn sm" data-hl="" title="하이라이트 지우기">색 지우기</button></span>
     <button class="btn sm" data-act="note">${hasNote ? '메모 보기' : '메모'}</button>
     <button class="btn sm" data-act="bm">${marks.has(bmId) ? '책갈피 해제' : '책갈피'}</button>
     <button class="btn sm icon" data-act="clear" title="선택 해제 (Esc)" aria-label="선택 해제">×</button>`;
@@ -1402,7 +1413,7 @@ function progress(text, frac) {
   if (!text) return s.textContent = '';
   s.innerHTML = frac == null ? `<span>${esc(text)}</span><b></b><i class="busy"></i>` : `<span>${esc(text)}</span><b>${Math.floor(frac * 100)}%</b><i style="--p:${frac}"></i>`;
 }
-function flash(msg) { $('status').classList.remove('prog'); $('status').textContent = msg; clearTimeout(flashTimer); flashTimer = setTimeout(() => $('status').textContent = '', 2500); }
+function flash(msg) { $('status').classList.remove('prog'); $('status').textContent = msg; clearTimeout(flashTimer); flashTimer = setTimeout(() => $('status').textContent = '', Math.max(2500, msg.length * 70)); } // 긴 안내는 더 오래
 
 /* ---------- 하이라이트·메모·책갈피 ---------- */
 /* ---------- 백업 알림: 백업 안 한 변경이 10개 쌓이거나 7일이 지나면 ---------- */
@@ -1678,21 +1689,21 @@ const renderTabBox = () => $('tabBox').innerHTML = '<b>탭 줄에 보일 자료<
     ns.map(n => `<label><input type="checkbox" value="${k}:${esc(n)}" ${tabHide.includes(`${k}:${n}`) ? '' : 'checked'}>${esc(nm(n))}</label>`).join('')).join('');
 const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
 function renderComm() {
-  closeUnusedComms(); // 2단 보기를 끄거나 주석을 바꾸면 안 보는 주석은 닫음
+  closeUnusedComms(); // 두 개 나란히를 끄거나 주석을 바꾸면 안 보는 주석은 닫음
   const names = commNames();
   const drag = (kind, n) => `draggable="true" data-drag="${kind}:${esc(n)}" title="끌어서 순서 바꾸기"`;
   // 탭 줄에는 체크해 둔 주석·사전만 (지금 보는 것은 늘 보임). 고르기는 맨 앞 '주석 ▾'
   const shown = (k, n, on) => on || !tabHide.includes(`${k}:${n}`);
   const all = names.length + dictNames().length, vis = names.filter(n => !tabHide.includes(`comm:${n}`)).length + dictNames().filter(n => !tabHide.includes(`dict:${n}`)).length;
-  $('comTabs').innerHTML = (all > 1 ? `<button class="tab-pick" data-tab-pick aria-haspopup="dialog" title="탭 줄에 보일 자료(주석·사전) 고르기">자료 <b>${vis}</b>/${all} ▾</button>` : '') +
+  $('comTabs').innerHTML = (all > 1 ? `<button class="tab-pick" data-tab-pick aria-haspopup="dialog" title="탭 줄에 보일 주석·사전 고르기">자료 <b>${vis}</b>개 ▾</button>` : '') +
     rightKeys().map(key => {
       const k = kindOf(key), n = nameOf(key), on = S.tab === k && (k === 'comm' ? S.comm : S.dict) === n;
       return shown(k, n, on) ? tab(on, `data-${k}="${esc(n)}" ${drag(k, n)}`, esc(nm(n))) : '';
     }).join('') +
     (hits ? tab(S.tab === 'search', 'data-search', '검색 결과') : '') +
-    (S.tab === 'xref' ? tab(true, 'data-xref', '교차 참조') : '') + // 교차 참조·보관함은 레일 버튼으로 열 때만 (보는 동안만 탭에)
+    (S.tab === 'xref' ? tab(true, 'data-xref', '관련 구절') : '') + // 관련 구절·보관함은 레일 버튼으로 열 때만 (보는 동안만 탭에)
     (S.tab === 'saved' ? tab(true, 'data-saved', '보관함') : '') +
-    (names.length + dictNames().length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">2단 보기</button>` : '');
+    (names.length + dictNames().length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">두 개 나란히</button>` : '');
   $('commToggle').setAttribute('aria-pressed', !S.hideComm);
   // 기존 디자인(PC, 글자 버튼 줄)은 할 일을 이름으로 (자료 숨기기 / 자료 보기), 새 디자인 레일·모바일은 짧게 '자료'
   $('commToggle').querySelector('span').textContent = phone() || !classic() ? '자료' : S.hideComm ? '자료 보기' : '자료 숨기기';
@@ -1706,7 +1717,7 @@ function renderComm() {
   else $('comm').innerHTML = commHtml(S.comm);
   if (S.split) renderPane2();
 }
-// 2단 보기 오른쪽 칸: 왼쪽에서 보고 있는 것만 빼고 주석·사전 모두 (자료 탭 순서대로)
+// 두 개 나란히 오른쪽 칸: 왼쪽에서 보고 있는 것만 빼고 주석·사전 모두 (자료 탭 순서대로)
 function renderPane2() {
   const left = S.tab === 'comm' ? 'comm:' + S.comm : S.tab === 'dict' ? 'dict:' + S.dict : '';
   $('comTabs2').innerHTML = rightKeys().filter(k => k !== left).map(k => {
@@ -1715,7 +1726,7 @@ function renderPane2() {
   }).join('');
   $('comm2').innerHTML = S.dict2 ? verseWordsHtml(S.dict2) : commHtml(S.comm2);
 }
-// 2단 보기 오른쪽에 사전: 고른 절(없으면 장 첫 절)에 나오는 원어 단어마다 그 사전의 풀이 (절을 바꾸면 따라감)
+// 두 개 나란히 오른쪽에 사전: 고른 절(없으면 장 첫 절)에 나오는 원어 단어마다 그 사전의 풀이 (절을 바꾸면 따라감)
 function verseWordsHtml(name) {
   if (!dicts[name]) { openDict(name).then(() => S.split && S.dict2 === name && renderPane2()).catch(err => flash(`사전을 열지 못했습니다: ${err.message}`)); return '<p class="progress">사전 여는 중…</p>'; }
   const v = S.v || 1, i = START[S.b][S.c - 1] + v - 1, lang = i < 23145 ? 'H' : 'G';
@@ -1799,7 +1810,7 @@ function renderDict(scrollTo) {
   if (D.entry) {
     const row = dictRow(D.entry), same = D.shown === D.entry;
     box.innerHTML = form + '<button class="linkish" data-dict-back>‹ 목록</button>' + (row
-      ? `<article class="entry"><h3 class="act">${esc(row[0])}<button class="btn sm find" data-search-strong="${esc(row[0])}" title="이 번호가 나오는 성경 구절 찾기">검색</button></h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
+      ? `<article class="entry"><h3 class="act">${esc(row[0])}<button class="btn sm find" data-search-strong="${esc(row[0])}" title="이 번호가 나오는 성경 구절 찾기">나오는 절 모두 찾기</button></h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
       : `<p class="empty small">${esc(D.entry)} 항목이 없습니다.</p>`);
     box.scrollTop = same ? keep : 0; // 같은 항목을 다시 그릴 때(장 이동 등)는 읽던 위치 유지
     D.shown = D.entry;
@@ -1875,7 +1886,7 @@ async function dictSearch(q) {
   renderDict(0);
 }
 
-/* ---------- 교차 참조 (OpenBible.info, CC BY 4.0) ----------
+/* ---------- 관련 구절 (OpenBible.info, CC BY 4.0) ----------
    data/xrefs.js 를 처음 열 때만 불러옴 (스크립트 형태라 파일로 연 index.html에서도 됨) */
 let xrefLines = null, xrefLoading = null;
 function loadXrefs() {
@@ -1883,24 +1894,24 @@ function loadXrefs() {
   return xrefLoading ||= new Promise((ok, no) => {
     const s = Object.assign(document.createElement('script'), { src: 'data/xrefs.js' });
     s.onload = () => { if (typeof window.XREFS !== 'string') return s.onerror(); xrefLines = window.XREFS.split('\n'); delete window.XREFS; ok(xrefLines); };
-    s.onerror = () => { xrefLoading = null; no(new Error('교차 참조 파일을 불러오지 못했습니다')); };
+    s.onerror = () => { xrefLoading = null; no(new Error('관련 구절 파일을 불러오지 못했습니다')); };
     document.head.append(s);
   });
 }
 function renderXref() {
   const box = $('comm');
   if (!xrefLines) {
-    box.innerHTML = '<p class="progress empty small">교차 참조 불러오는 중…</p>';
+    box.innerHTML = '<p class="progress empty small">관련 구절 불러오는 중…</p>';
     loadXrefs().then(() => S.tab === 'xref' && renderXref()).catch(err => { box.innerHTML = `<p class="empty small">${esc(err.message)}</p>`; });
     return;
   }
-  const credit = '<p class="credit">교차 참조: <a href="https://www.openbible.info/labs/cross-references/" target="_blank" rel="noopener">OpenBible.info</a> (CC BY 4.0), 사용자 투표 순</p>';
+  const credit = '<p class="credit">관련 구절: <a href="https://www.openbible.info/labs/cross-references/" target="_blank" rel="noopener">OpenBible.info</a> (CC BY 4.0), 사용자 투표 순</p>';
   if (!S.v) { box.innerHTML = '<p class="empty small">절을 고르면 관련 구절이 나옵니다.</p>' + credit; return; }
   const list = parseXrefs(xrefLines[START[S.b][S.c - 1] + S.v - 1]), ver = firstLocal();
   const label = (s, n) => refName(...REF[s]) + (n ? '-' + (REF[s + n][1] === REF[s][1] ? REF[s + n][2] : `${REF[s + n][1]}:${REF[s + n][2]}`) : '');
   box.innerHTML = `<p class="hits-sum">${BOOKS[S.b - 1]} ${S.c}:${S.v} 관련 구절 ${list.length}개</p>` +
     (list.length ? list.map(([s, n]) => `<button class="hit" data-go="${REF[s].join('.')}"><span class="ref">${label(s, n)}</span>` +
-      (ver ? esc(plainVerse(bibles[ver][s])) + (n ? ' …' : '') : '') + '</button>').join('') : '<p class="empty small">이 절에는 교차 참조가 없습니다.</p>') + credit;
+      (ver ? esc(plainVerse(bibles[ver][s])) + (n ? ' …' : '') : '') + '</button>').join('') : '<p class="empty small">이 절에는 관련 구절가 없습니다.</p>') + credit;
   box.scrollTop = 0;
 }
 
@@ -1951,7 +1962,7 @@ function wordPopAt(i, lemma = '') {
   const { title, body } = e, heb = e.s[0] === 'H';
   // 단어 공부 노트: 번호 · 큰 원어 · 제목(발음·뜻) · 풀이 · 이 단어가 나오는 곳
   // 먼저 요약(제목)으로 바로 보여주고, 사전 파일을 열면 전체 풀이로 바꿈 (풀이 첫머리가 제목과 같아서 제목은 뺌)
-  pop.innerHTML = sheetClose + `<div class="ws-top"><span class="ws-num">${e.s}</span><button class="btn sm find" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 모두 찾기">검색</button><button class="btn sm" data-open="${e.s}">사전 탭에서 보기</button></div>
+  pop.innerHTML = sheetClose + `<div class="ws-top"><span class="ws-num" title="스트롱 번호: 원어 단어마다 붙은 사전 번호 (H는 히브리어, G는 헬라어)">${e.s}</span><button class="btn sm find" data-search-strong="${e.s}" title="이 번호가 나오는 성경 구절 모두 찾기">나오는 절 모두 찾기</button><button class="btn sm" data-open="${e.s}" title="자료 칸의 사전에서 크게 보기">사전에서 보기</button></div>
     ${e.h ? `<div class="ws-word ${heb ? 'heb' : 'grk'}"${heb ? ' dir="rtl"' : ''}>${esc(e.h)}</div>` : ''}
     <div class="ws-title">${esc(title)}</div>
     ${ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
@@ -1972,7 +1983,7 @@ const sheetClose = `<button class="ws-close" data-close aria-label="닫기" titl
 const occCache = new Map();
 async function wordOccurrences(num) {
   const box = () => $('wordPop').classList.contains('open') && $('wordPop').dataset.ids?.split(',').includes(num) && $('wordOcc');
-  const lang = num[0], ver = [...S.versions, ...allVersions()].find(n => hasOriginal(n, lang));
+  const lang = num[0], ver = [...searchOnly(), ...S.versions, ...allVersions()].find(n => hasOriginal(n, lang));
   if (!ver) { const b = box(); if (b) b.innerHTML = '<p class="muted">원어 번호가 있는 성경(BHS, 원어 성경 등)을 넣으면 나오는 곳을 보여 드려요.</p>'; return; }
   const key = num + ':' + ver;
   if (!occCache.has(key)) occCache.set(key, await strongVerses(num, ver).catch(() => []));
@@ -2049,7 +2060,10 @@ async function runBibleSearch() {
   const h = hits;
   if (h.Q.strong) {
     const lang = h.Q.strong[0];
-    h.ver = hasOriginal(h.ver, lang) ? h.ver : allVersions().find(n => hasOriginal(n, lang)) || '';
+    // 원전분해가 있으면 그것을 먼저 (BHSSBL 등은 번호가 단어에서 떨어진 곳이 있어 못 찾는 경우가 많음)
+    const ana = await anaSources(name => { h.building = name; if (hits === h && S.tab === 'search') renderHits(); }).catch(() => []);
+    h.building = '';
+    h.ver = hasOriginal(h.ver, lang) ? h.ver : [...ana, ...allVersions()].find(n => hasOriginal(n, lang)) || '';
     if (!h.ver) { h.bible = []; h.note = `원어 번호 검색은 ${lang === 'H' ? 'BHS처럼 원어 기본형' : '스트롱 번호 태그'}이 있는 성경이 필요합니다.`; return renderHits(); }
     h.bible = await strongVerses(h.Q.strong, h.ver).catch(() => []);
   } else {
@@ -2058,6 +2072,27 @@ async function runBibleSearch() {
     h.bible = plain[h.ver].reduce((a, t, i) => (h.Q.test(t) && a.push(i), a), []);
   }
   if (hits === h && S.tab === 'search') renderHits();
+}
+
+// 원전분해(.sdb)를 원어 번호 검색용 원어 본문으로: 절마다 "단어<WH430> 단어<WH…>" (단어와 번호가 정확히 짝지어 있어 검색이 정확함)
+// 처음 한 번만 파일을 열어 만들고 브라우저에 보관 (다음부터는 바로). 읽는 번역본 목록에는 안 나옴
+async function anaSources(onBuild) {
+  for (const name of commNames().filter(n => commKind[n] === 'sdb')) {
+    if (bibles[name]) continue;
+    const key = `ana:${name}:${fileInfo[name]?.size}`;
+    let arr = await idb('cache', 'readonly', s => s.get(key)).catch(() => null);
+    if (!Array.isArray(arr)) {
+      onBuild?.(name);
+      const db = await openComm(name);
+      arr = new Array(31102).fill('');
+      for (const [b, c, v, t] of rows(db, 'select book, chapter, verse, btext from Bible', []))
+        if (VERSES[b - 1]?.[c - 1] >= v) arr[START[b][c - 1] + v - 1] = anaWords(t).map(w => w.num ? `${w.word}<W${w.num}>` : w.word).join(' ');
+      closeUnusedComms();
+      idb('cache', 'readwrite', s => s.put(arr, key)).catch(() => {});
+    }
+    bibles[name] = Object.assign(arr, { searchOnly: true });
+  }
+  return searchOnly();
 }
 
 // 원어 번호가 나오는 절: <WH430> 태그, 또는 BHS 기본형을 사전 표제어와 맞대어 (같은 철자 단어도 함께 나올 수 있음)
@@ -2146,6 +2181,9 @@ function hitOrigHtml(ver, i, num) {
       (ids ? ids.split(',').includes(num) : lemma && find?.(lemma).includes(num)) ? '<span class="sh">' : '<span>');
   return `<span class="o${isHeb(ver, i) ? ' heb" dir="rtl' : ''}">${html}</span>`;
 }
+// 한국어 줄(스트롱 번호가 붙은 개역개정): 찾는 번호의 단어만 강조, 각주는 뺌
+const korHl = (ver, i, num) => verseHtml(bibles[ver][i] || '').replace(/<sup class="fn"[^>]*>[^<]*<\/sup>/g, '')
+  .replace(/<span class="w" data-strong="([^"]*)"[^>]*>/g, (_, ids) => ids.split(',').includes(num) ? '<span class="sh">' : '<span>');
 const isHeb = (ver, i) => /[֐-׿]/.test(bibles[ver][i] || '');
 
 function renderHits() {
@@ -2153,7 +2191,7 @@ function renderHits() {
   const inR = b => inRange(b, h.range);
   const bibleList = (h.bible || []).filter(i => inR(REF[i][0]));
   const commList = h.comm ? h.comm.list.filter(x => inR(x.e.b)) : null, cns = commNames();
-  const locals = allVersions().filter(n => bibles[n] && (!h.Q.strong || hasOriginal(n, h.Q.strong[0])));
+  const locals = [...(h.Q.strong ? searchOnly() : []), ...allVersions()].filter(n => bibles[n] && (!h.Q.strong || hasOriginal(n, h.Q.strong[0])));
   let html = `<div class="seg">
     ${locals.length ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 ${h.bible ? bibleList.length : '…'}</button>` : ''}
     ${cns.length && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 ${commList ? commList.length : '…'}</button>` : ''}</div>
@@ -2165,18 +2203,20 @@ function renderHits() {
   if (h.scope === 'bible') {
     if (h.note) { $('comm').innerHTML = html + `<p class="hits-sum">${h.note}</p>`; return; }
     if (!locals.length) { $('comm').innerHTML = html + '<p class="hits-sum">성경 파일(.ont)을 추가하면 성경에서 찾을 수 있습니다.</p>'; return; }
-    if (!h.bible) { $('comm').innerHTML = html + `<p class="progress">${qLabel(h.q)} 찾는 중…</p>`; return; }
+    if (!h.bible) { $('comm').innerHTML = html + `<p class="progress">${h.building ? `${esc(nm(h.building))}에서 원어 번호를 정리하는 중… (처음 한 번만, 조금 걸려요)` : `${qLabel(h.q)} 찾는 중…`}</p>`; return; }
     // 원어 번호 검색: 원어 본문(찾는 단어 강조) + 아래에 개역개정(없으면 첫 번역본). 일반 검색: 고른 번역본
     const kor = korVersion();
     const show = h.Q.strong ? kor : h.ver;
     if (show) plain[show] ||= bibles[show].map(plainVerse);
+    const korTag = h.Q.strong && allVersions().find(n => readable(n) && hasOriginal(n, h.Q.strong[0]) && /개역개정/.test(n + nm(n)));
     const line = i => h.Q.strong
-      ? hitOrigHtml(h.ver, i, h.Q.strong) + (show && show !== h.ver ? `<span class="k">${esc(plain[show][i])}</span>` : '')
+      ? hitOrigHtml(h.ver, i, h.Q.strong) + (korTag && korTag !== h.ver ? `<span class="k">${korHl(korTag, i, h.Q.strong)}</span>`
+        : show && show !== h.ver ? `<span class="k">${esc(plain[show][i])}</span>` : '')
       : mk(plain[show][i]);
     const byBook = {};
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
-    html += `<p class="hits-sum">${qLabel(h.q)} ${bibleList.length}절 (구약 ${ot}, 신약 ${bibleList.length - ot})${h.Q.strong ? ` · ${esc(nm(h.ver))}의 원어 기준, 같은 철자 단어가 함께 나올 수 있음` : ''}</p>` +
+    html += `<p class="hits-sum">${qLabel(h.q)} ${bibleList.length}절 (구약 ${ot}, 신약 ${bibleList.length - ot})${h.Q.strong ? ` · ${esc(nm(h.ver))}의 원어 기준${bibles[h.ver]?.searchOnly ? '' : ', 같은 철자 단어가 함께 나올 수 있음'}` : ''}</p>` +
       (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
         .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
       (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
@@ -2356,7 +2396,7 @@ $('presetMenu').onclick = e => { e.stopPropagation(); renderPresets(); openPop($
 $('aboutBtn').onclick = e => togglePop(e, $('aboutBox'), $('aboutBtn'));
 $('aboutMenu').onclick = e => { e.stopPropagation(); openPop($('aboutBox'), $('menuBtn')); };
 $('viewBtn').onclick = e => togglePop(e, $('viewBox'), $('viewBtn'));
-// 레일 바로가기: 오른쪽 칸을 원어 사전 / 교차 참조 / 보관함으로 (숨겨 둔 칸은 다시 열고, 같은 걸 또 누르면 주석으로)
+// 레일 바로가기: 오른쪽 칸을 원어 사전 / 관련 구절 / 보관함으로 (숨겨 둔 칸은 다시 열고, 같은 걸 또 누르면 주석으로)
 document.querySelectorAll('[data-rail]').forEach(b => b.onclick = e => {
   e.stopPropagation(); closePops();
   const t = b.dataset.rail;
@@ -2472,7 +2512,7 @@ async function removeModules(items) {
     if (k && driveIdx[k]) { driveSkip[k] = 1; prefs.set('driveSkip', driveSkip); }
     if (kind === 'bible') { delete bibles[name]; delete plain[name]; }
     if (kind === 'comm') {
-      comms[name]?.close(); delete comms[name]; delete commText[name]; delete commFiles[name];
+      comms[name]?.close(); delete comms[name]; delete commText[name]; delete commFiles[name]; delete bibles[name];
       await idb('cache', 'readwrite', s => s.delete(commKey(name))).catch(() => {});
       delete commKind[name];
     }
@@ -2572,17 +2612,24 @@ $('fwd').onclick = forward;
 $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
 let gloss = prefs.get('gloss', true), wordSide = prefs.get('wordSide', false), wordOver = prefs.get('wordOver', false);
-// 단어 뜻 보기: 팝업(새 디자인은 오른쪽 노트) → 팝오버(단어 옆 작은 창) → 옆 사전. 기존 디자인은 팝업이 곧 단어 옆 창이라 팝업 ↔ 옆 사전
+// 단어 뜻 보기(번역본 줄의 목록): 오른쪽 창 / 단어 바로 아래 / 자료 칸 사전. 기존 디자인은 오른쪽 창이 곧 단어 옆 창이라 둘
 const classic = () => document.documentElement.dataset.design === 'classic';
+// 단어 뜻 보기 목록: 지금 방식과 고를 수 있는 것 (기존 디자인은 오른쪽 창이 곧 단어 옆 창이라 둘)
+const wordMode = () => wordSide ? 'side' : wordOver && !classic() ? 'over' : 'sheet';
+// 단어 뜻 목록 옆 ? 설명 (마우스를 올리거나 누르면)
+const WORD_HELP = '원어 성경이나 개역개정S처럼 원어 번호가 있는 성경을 볼 때만 나와요. 본문 단어를 누르면 뜻을 어디에 보여줄지 골라요.';
+const wordModes = () => classic() ? [['sheet', '단어 옆 창'], ['side', '자료 칸 사전']] : [['sheet', '오른쪽 창'], ['over', '단어 바로 아래'], ['side', '자료 칸 사전']];
+$('verTabs').addEventListener('change', e => {
+  const v = e.target.dataset.wordMode !== undefined && e.target.value; if (!v) return;
+  setWordMode(v === 'side', v === 'over'); closePops(); renderBible();
+});
 const setWordMode = (side, over) => { wordSide = side; wordOver = over; prefs.set('wordSide', side); prefs.set('wordOver', over); document.documentElement.dataset.word = over ? 'over' : ''; };
 document.documentElement.dataset.word = wordOver ? 'over' : '';
 document.body.classList.toggle('no-gloss', !gloss);
 $('verTabs').onclick = e => {
-  if (e.target.closest('[data-word-side]')) {
-    if (wordSide) setWordMode(false, false); else if (wordOver || classic()) setWordMode(true, false); else setWordMode(false, true);
-    closePops(); return renderBible();
-  }
   if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
+  const q = e.target.closest('[data-word-help]');
+  if (q) return togglePop(e, $('helpPop'), q, () => $('helpPop').textContent = WORD_HELP);
   const x = e.target.closest('[data-ver-x]'); if (x) toggleVer(x.dataset.verX);
 };
 const phone = () => matchMedia('(max-width: 760px)').matches;
@@ -2958,7 +3005,7 @@ function applyPreset(i) {
   flash(`세팅 ${i + 1}로 바꿨습니다`);
 }
 function renderPresets() {
-  $('presetBox').innerHTML = '<b>내 세팅</b><p class="help">지금 보는 구성(번역본, 주석, 2단 보기, 사전, 글꼴·크기, 칸 너비)을 저장해 두고 한 번에 바꿉니다. 단축키 Alt+1, Alt+2</p>' +
+  $('presetBox').innerHTML = '<b>내 세팅</b><p class="help">지금 보는 구성(번역본, 주석, 두 개 나란히, 사전, 글꼴·크기, 칸 너비)을 저장해 두고 한 번에 바꿉니다. 단축키 Alt+1, Alt+2</p>' +
     [0, 1].map(i => `<div class="slot"><div><b>세팅 ${i + 1}</b><small>${presets[i] ? esc(presetSummary(presets[i])) : '비어 있음'}</small></div>
       <button class="btn sm" data-psave="${i}">지금 상태 저장</button>
       <button class="btn sm primary" data-papply="${i}" ${presets[i] ? '' : 'disabled'}>불러오기</button></div>`).join('');
@@ -2998,12 +3045,12 @@ const TOUR = [
   { sel: ['#back', '#fwd'], title: '뒤로 · 앞으로', text: '링크나 검색으로 건너뛴 뒤 원래 자리로 돌아가요. 단축키 <b>Alt+← / Alt+→</b>' },
   { sel: ['#verPick', '#verTabs'], title: '번역본', text: '<b>번역본 ▾</b>에서 체크하면 <b>여러 개를 나란히 대조</b>해서 봐요. 고른 번역본만 옆에 보이고, 끌어서 순서를 바꿀 수 있어요.' },
   { sel: ['#bible'], title: '본문', text: '절을 누르면 선택돼요. 아래에 뜨는 막대에서 <b>복사·하이라이트·메모·책갈피</b>를 할 수 있어요. 원어 성경에서는 <b>단어를 누르면 사전 뜻</b>이 떠요.' },
-  { sel: ['[data-rail="dict"]', '[data-rail="xref"]', '[data-rail="saved"]'], title: '바로가기', text: '<b>원어 사전 · 교차 참조 · 보관함</b>을 오른쪽 칸에 바로 열어요. 한 번 더 누르면 주석으로 돌아가요.' },
-  { sel: ['#comTabs'], title: '자료 칸', text: '<b>주석·원전분해·원어 사전·교차 참조·보관함</b>을 탭으로 바꿔 봐요. 맨 앞 <b>자료 ▾</b>에서 탭 줄에 보일 것을 골라요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
+  { sel: ['[data-rail="dict"]', '[data-rail="xref"]', '[data-rail="saved"]'], title: '바로가기', text: '<b>원어 사전 · 관련 구절 · 보관함</b>을 오른쪽 칸에 바로 열어요. 한 번 더 누르면 주석으로 돌아가요.' },
+  { sel: ['#comTabs'], title: '자료 칸', text: '<b>주석·원전분해·원어 사전·관련 구절·보관함</b>을 탭으로 바꿔 봐요. 맨 앞 <b>자료 ▾</b>에서 탭 줄에 보일 것을 골라요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
   { sel: ['#q'], title: '검색', text: '여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로, <b>H430·G26</b>은 원어 번호로 찾아요. 키보드 <b>/</b> 로 바로 검색창으로.' },
-  { sel: ['#commToggle'], title: '자료 칸 열기·닫기', text: '주석·원어 사전·교차 참조·보관함이 있는 자료 칸을 닫으면 성경을 넓게 봐요. 한 번 더 누르면 다시 열려요.' },
+  { sel: ['#commToggle'], title: '자료 칸 열기·닫기', text: '주석·원어 사전·관련 구절·보관함이 있는 자료 칸을 닫으면 성경을 넓게 봐요. 한 번 더 누르면 다시 열려요.' },
   { sel: ['#magHead'], title: '돋보기', text: '본문 글자를 한 번에 크게 보여 줘요. 다시 누르면 원래 크기로.' },
-  { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기</b>를 줄이고 키우고, <b>글꼴</b>을 골라요. 기본은 프리텐다드예요.' },
+  { sel: ['#viewBtn'], title: '글자', text: '<b>글자 크기</b>를 줄이고 키우고, <b>글꼴</b>을 골라요. 기본은 프리텐다드예요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
   { sel: ['#menuBtn'], title: '설정', text: '<b>사용설명서</b>, 성경·주석 파일 추가와 관리, <b>구글 드라이브</b>, 메모 백업, <b>디자인·색·배경 화면</b>, 사용법 다시 보기와 <b>앱으로 설치</b>가 여기 있어요.' },
   { title: '준비 끝', text: '커피 한 잔과 함께 말씀을 천천히 읽어 보세요. 이 안내는 <b>설정 › 사용법 둘러보기</b>에서 언제든 다시 볼 수 있어요.' },
