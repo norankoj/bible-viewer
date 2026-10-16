@@ -2352,7 +2352,7 @@ $('guideBox').onclick = e => {
   e.preventDefault(); $('g-' + g.dataset.goto).scrollIntoView({ block: 'start' });
 };
 $('viewMenu').onclick = e => { e.stopPropagation(); openPop($('viewBox'), $('menuBtn')); };
-$('presetMenu').onclick = e => { e.stopPropagation(); $('presetBtn').click(); };
+$('presetMenu').onclick = e => { e.stopPropagation(); renderPresets(); openPop($('presetBox'), $('menuBtn')); }; // 모바일은 내 세팅 버튼이 숨겨져 있어 설정 버튼 기준으로
 $('aboutBtn').onclick = e => togglePop(e, $('aboutBox'), $('aboutBtn'));
 $('aboutMenu').onclick = e => { e.stopPropagation(); openPop($('aboutBox'), $('menuBtn')); };
 $('viewBtn').onclick = e => togglePop(e, $('viewBox'), $('viewBtn'));
@@ -2550,17 +2550,18 @@ let ddSel = null;
 document.addEventListener('mousedown', e => {
   const s = e.target.closest('select'); if (!s || e.button) return;
   e.preventDefault();
-  if (ddPop.classList.contains('open') && ddSel === s) return closePops(); // 다시 누르면 닫기
+  if (ddPop.classList.contains('open') && ddSel === s) return ddPop.classList.remove('open'); // 다시 누르면 닫기
   ddSel = s;
   ddPop.innerHTML = [...s.options].map((o, i) => `<button role="option" aria-selected="${o.selected}" data-i="${i}" class="${o.selected ? 'on' : ''}">${esc(o.textContent)}</button>`).join('');
   ddPop.style.minWidth = s.offsetWidth + 'px';
-  openPop(ddPop, s); s.focus();
+  // 목록만 연다 (openPop 은 다른 창을 닫아서, 보기 창 안의 글꼴 칸처럼 창 속 드롭다운이면 그 창이 사라짐)
+  ddPop._anchor = s; ddPop.classList.add('open'); placePop(ddPop); s.focus();
   ddPop.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
 });
 ddPop.onclick = e => {
   e.stopPropagation();
   const b = e.target.closest('[data-i]'); if (!b) return;
-  closePops();
+  ddPop.classList.remove('open'); // 목록만 닫고 보기 창 등은 그대로
   if (ddSel.selectedIndex === +b.dataset.i) return;
   ddSel.selectedIndex = +b.dataset.i;
   ddSel.dispatchEvent(new Event('change', { bubbles: true }));
