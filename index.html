@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>커피성경 (Community People's Bible)</title>
 <!-- 색 설정을 화면 그리기 전에 (깜빡임 없게) -->
-<script>try { const d = document.documentElement; d.dataset.accent = JSON.parse(localStorage.getItem('accent')) || 'green'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; } catch {}</script>
+<script>try { const d = document.documentElement; d.dataset.accent = JSON.parse(localStorage.getItem('accent')) || 'green'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; } catch {}
+  if (location.hash.startsWith('#guide')) document.documentElement.classList.add('guide-page'); // 사용설명서 링크로 오면 설명서만 한 페이지로</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#035b36">
 <link rel="icon" href="icons/icon-192.png">
@@ -330,6 +331,13 @@
   /* 사용설명서: PC는 가운데 큰 창, 모바일은 화면 전체 */
   #guideBox.open { position: fixed; inset: 4vh 0 auto 0 !important; margin: 0 auto; width: min(780px, calc(100vw - 32px)); max-height: 92vh !important; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
   .guide-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 10px 22px; font-size: 18px; border-bottom: 1px solid var(--line); }
+  /* 사용설명서 링크로 왔을 때: 앱 화면 없이 설명서만 한 페이지로 (닫으면 앱) */
+  html.guide-page body { display: block; background: var(--page); }
+  html.guide-page :is(.rail, .app, #status) { display: none !important; }
+  html.guide-page #guideBox.open { position: static !important; inset: auto !important; width: auto !important; max-width: 860px; max-height: none !important; margin: 0 auto; border: 0; border-radius: 0; box-shadow: none; overflow: visible; display: block; animation: none; background: var(--surface); min-height: 100dvh; }
+  html.guide-page .guide-head { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+  html.guide-page .guide-body { overflow: visible; }
+  html.guide-page .guide-body section { scroll-margin-top: 64px; } /* 목차로 옮겼을 때 위에 붙은 제목 줄에 가리지 않게 */
   .guide-acts { display: flex; align-items: center; gap: 8px; }
   .guide-head .ws-close { float: none; margin: 0; }
   .guide-toc { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 22px; border-bottom: 1px solid var(--line); background: var(--bg); }
@@ -2250,7 +2258,7 @@ function placePop(el) {
 }
 addEventListener('resize', () => document.querySelectorAll('.pop.open').forEach(placePop));
 const closePops = () => {
-  document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && p.classList.remove('open'));
+  document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && !(p.id === 'guideBox' && guidePage()) && p.classList.remove('open')); // 설명서 한 페이지일 땐 그대로
   if ($('chapBtn').classList.contains('pending')) { $('chapBtn').classList.remove('pending'); $('bookBtn').textContent = BOOKS[S.b - 1]; $('chapBtn').textContent = `${S.c}장`; }
 };
 
@@ -2320,6 +2328,7 @@ $('menu').addEventListener('click', e => { if (e.target.closest('[data-close]'))
 document.querySelector('#menu .menu-head [data-close]').innerHTML = icon('x');
 // 사용설명서: 목차 누르면 그 부분으로, 닫기
 // 공유 링크: 주소 뒤에 #guide (특정 장은 #guide-drive 처럼) 붙이면 열자마자 사용설명서
+const guidePage = () => document.documentElement.classList.contains('guide-page');
 const openGuide = sec => {
   openPop($('guideBox'), $('menuBtn'));
   const body = $('guideBox').querySelector('.guide-body');
@@ -2330,7 +2339,11 @@ document.querySelector('#guideBox [data-close]').innerHTML = icon('x');
 const guideLink = () => location.origin + location.pathname + '#guide';
 $('guideBox').onclick = e => {
   e.stopPropagation();
-  if (e.target.closest('[data-close]')) { if (location.hash.startsWith('#guide')) history.replaceState(null, '', location.pathname + location.search); return closePops(); }
+  if (e.target.closest('[data-close]')) { // 닫으면 주소의 #guide 를 지우고 앱으로 (한 페이지로 보던 중이면 앱 화면을 보여 줌)
+    if (location.hash.startsWith('#guide')) history.replaceState(null, '', location.pathname + location.search);
+    document.documentElement.classList.remove('guide-page');
+    return closePops();
+  }
   if (e.target.closest('[data-guide-link]')) {
     const done = () => flash('사용설명서 링크를 복사했어요');
     return navigator.clipboard?.writeText(guideLink()).then(done, () => prompt('이 링크를 복사해서 보내세요', guideLink())) ?? prompt('이 링크를 복사해서 보내세요', guideLink());
