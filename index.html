@@ -124,10 +124,17 @@
   #verTabs .tab[data-ver]:hover { color: var(--fg); border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   #verTabs .tab[data-ver].on { background: var(--fg); border-color: var(--fg); color: var(--page); }
   #verTabs .tab:not([data-ver]) { font-size: 12.5px; }
-  .par .head .gl-toggle { height: 20px; margin-left: 6px; padding: 0 6px; border: 1px dashed var(--line); border-radius: 4px; background: none; font: 600 11px var(--sans); color: var(--muted); vertical-align: 1px; cursor: pointer; }
-  .par .head .gl-toggle.on { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-  #verTabs .gl-toggle { flex: none; height: 26px; margin-left: -2px; padding: 0 8px; border: 1px dashed var(--line); border-radius: 4px; font-size: 12px; color: var(--muted); }
-  #verTabs .gl-toggle.on { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  /* 영어 뜻·발음 뜻 스위치 */
+  .gl-switch { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px; border: 0; border-radius: 4px; background: none; font: 600 11.5px/1 var(--sans); color: var(--muted); letter-spacing: 0; cursor: pointer; transition: color .15s, background .15s; }
+  .gl-switch:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 5%, transparent); }
+  .gl-switch .sw { position: relative; width: 26px; height: 15px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 35%, var(--line)); transition: background .2s; }
+  .gl-switch .sw i { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .2s cubic-bezier(.16,1,.3,1); }
+  .gl-switch[aria-checked="true"] { color: var(--accent); }
+  .gl-switch[aria-checked="true"] .sw { background: var(--accent); }
+  .gl-switch[aria-checked="true"] .sw i { transform: translateX(11px); }
+  .gl-switch.in-tabs { margin-left: 2px; padding: 6px 6px; }
+  .par .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .par .head .hname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .word-mode { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
   .word-mode select { height: 32px; padding: 0 28px 0 12px; border: 1px solid var(--line); border-radius: 4px; background-color: var(--surface); color: var(--fg); font-size: 13px; font-weight: 600; } /* 번역본 N개 ▾ 와 같은 모양 */
   .help-q { flex: none; width: 22px; height: 22px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--muted); font: 700 12px/1 var(--sans); cursor: help; }
@@ -425,8 +432,10 @@
   .hit { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 12px 12px; margin: 0 -12px; border-radius: 10px; font: calc(var(--fs) - 2px)/1.7 var(--read); transition: background .15s; }
   .hit:hover { background: var(--surface); }
   .hit .ref { font: 600 12px var(--sans); color: var(--accent); margin-right: 8px; }
-  .hit .o, .hit .k { display: block; } .hit .o.heb { font-size: 1.2em; } .hit .k { color: var(--muted); margin-top: 2px; }
+  .hit .o, .hit .k { display: block; } .hit .k .o { color: var(--muted); } .hit .o.heb { font-size: 1.2em; } .hit .k { color: var(--muted); margin-top: 2px; }
   .hit .tr, .hit .gl, .hit .fn { display: none; }
+  .hits-lines { margin: 2px 0 4px; font-size: 12.5px; color: var(--muted); } .hits-lines b { color: var(--fg); font-weight: 600; }
+  .hits-warn { margin: 0 0 8px; padding: 6px 10px; border-radius: 4px; background: color-mix(in srgb, var(--amber) 14%, transparent); font-size: 12px; line-height: 1.55; color: var(--fg); }
   .hit .sh { color: var(--accent); background: var(--accent-soft); font-weight: 700; border-radius: 3px; padding: 0 2px; }
   .hit .sw { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 8px; }
   .note-text { white-space: pre-wrap; font-family: var(--sans); font-size: 14px; }
@@ -899,7 +908,7 @@
     <ul>
       <li><b>성경·주석 검색</b> 칸(키보드 <kbd>/</kbd> 키로 바로)에 적고 <kbd>Enter</kbd>.</li>
       <li>여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로 찾아요.</li>
-      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 원어 단어를 강조하고 아래에 개역개정을 함께 보여 줘요. <b>원전분해</b>가 있으면 그것을 기준으로 찾아 가장 정확하고(처음 한 번만 정리하느라 몇 초 걸려요), 개역개정S처럼 번호가 붙은 개역개정이 있으면 한국어 단어도 같은 색으로 칠해져요. 결과 위에는 그 번호가 <b>나오는 절 수</b>와 <b>나오는 단어 수</b>가 함께 나와요(한 절에 두 번 나오면 절은 1개, 단어는 2번).</li>
+      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 그 번호가 붙은 단어를 강조해요. 원어 번호가 파일에 들어 있는 <b>원전분해</b>, <b>개역개정S</b>, <b>TRa+I</b> 중에서 기준을 고르고(처음 한 번은 원전분해를 정리하느라 몇 초 걸려요), 결과의 <b>위 줄은 기준</b>, <b>아래 줄은 짝</b>(원전분해 ↔ 개역개정S)이에요. 두 파일은 사람이 직접 번호를 붙여서 같은 단어에 번호가 다르거나 틀린 곳이 있으니(예: 삼하 19:5 원전분해 H3001 / 개역개정S H954) 참고용으로 보세요. 결과 위에는 그 번호가 <b>나오는 절 수</b>와 <b>나오는 단어 수</b>가 함께 나와요(한 절에 두 번 나오면 절은 1개, 단어는 2번).</li>
       <li>결과에서 번역본과 범위(전체·구약·신약·현재 책)를 바꿀 수 있고, 주석에서도 찾아요(여러 주석을 한꺼번에).</li>
     </ul></section>
 <section id="g-view"><h3>보기 · 내 세팅 · 화면 설정</h3>
@@ -1313,9 +1322,10 @@ function renderBible() {
   const inter = S.versions.some(n => bibles[n] && (bibles[n].inter ??= bibles[n].some(l => l?.includes('<Q>'))));
   const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
   // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
+  const glossSwitch = (n, cls = '') => glossBtn(n) ? `<button class="gl-switch ${cls}" data-gloss role="switch" aria-checked="${gloss}" title="${glossBtn(n)[1]}"><span class="sw"><i></i></span>${glossBtn(n)[0]}</button>` : '';
   const glossBtn = n => bibles[n]?.rtl ? ['발음·뜻', '원어 아래에 발음과 기본형 뜻 보이기'] : bibles[n]?.inter ? ['영어 뜻', '헬라어 옆에 영어 뜻 보이기 (끄면 헬라어만)'] : null;
   $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>` +
-    (glossBtn(n) && (S.versions.length === 1 || phone()) ? `<button class="tab gl-toggle ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${glossBtn(n)[1]}">${glossBtn(n)[0]} ${gloss ? '켬' : '끔'}</button>` : '')).join('') +
+    (S.versions.length === 1 || phone() ? glossSwitch(n, 'in-tabs') : '')).join('') +
     (words ? `<span class="word-mode spacer"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
     '';
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>개 ▾`;
@@ -1337,7 +1347,7 @@ function renderBible() {
       return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${isHebLine(vs[0], v) ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span><span class="t">${cellHtml(vs[0], v)}</span>${m.badge}</p>`;
     }).join('') + notice;
   } else {
-    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><div class="heads"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}${glossBtn(x) ? ` <button class="gl-toggle ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${glossBtn(x)[1]}">${glossBtn(x)[0]} ${gloss ? '켬' : '끔'}</button>` : ''}</span>`).join('')}</div>` +
+    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><div class="heads"><span class="head"></span>${vs.map(x => `<span class="head"><span class="hname">${esc(nm(x))}</span>${glossSwitch(x)}</span>`).join('')}</div>` +
       ids.map(v => {
         const m = verseMark(v);
         return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)} data-name="${esc(nm(x))}"><span class="t">${cellHtml(x, v)}</span>${i ? '' : m.badge}</span>`).join('')}</div>`;
@@ -2233,16 +2243,22 @@ function renderHits() {
     const kor = korVersion();
     const show = h.Q.strong ? kor : h.ver;
     if (show) plain[show] ||= bibles[show].map(plainVerse);
-    const korTag = h.Q.strong && allVersions().find(n => readable(n) && hasOriginal(n, h.Q.strong[0]) && /개역개정/.test(n + nm(n)));
-    const line = i => h.Q.strong
-      ? hitOrigHtml(h.ver, i, h.Q.strong) + (korTag && korTag !== h.ver ? `<span class="k">${korHl(korTag, i, h.Q.strong)}</span>`
-        : show && show !== h.ver ? `<span class="k">${esc(plain[show][i])}</span>` : '')
-      : mk(plain[show][i]);
+    const num = h.Q.strong, korTag = num && allVersions().find(n => readable(n) && realStrong(n) && hasOriginal(n, num[0]) && /개역개정/.test(n + nm(n)));
+    const ana = num && searchOnly()[0];
+    // 아래 줄: 기준이 한국어(개역개정S)면 원전분해 원어, 그 밖(원전분해·TRa+I 등)이면 개역개정S (없으면 개역개정)
+    const lower = !num ? '' : h.ver === korTag ? (ana || '') : korTag || (show !== h.ver ? show : '');
+    const lowerHtml = i => !lower ? '' : lower === korTag ? korHl(korTag, i, num)
+      : bibles[lower]?.searchOnly ? hitOrigHtml(lower, i, num) : esc(plain[lower][i] || '');
+    const topHtml = i => readable(h.ver) ? `<span class="o">${korHl(h.ver, i, num)}</span>` : hitOrigHtml(h.ver, i, num);
+    if (lower && !bibles[lower]?.searchOnly) plain[lower] ||= bibles[lower].map(plainVerse);
+    const line = i => num ? topHtml(i) + (lower ? `<span class="k">${lowerHtml(i)}</span>` : '') : mk(plain[show][i]);
     const byBook = {};
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
     const wordN = h.Q.strong && h.bible.words ? bibleList.reduce((a, i) => a + (h.bible.words.get(i) || 0), 0) : 0;
-    html += `<p class="hits-sum">${qLabel(h.q)} ${h.Q.strong ? `나오는 절 ${bibleList.length}개` : `${bibleList.length}절`} (구약 ${ot}, 신약 ${bibleList.length - ot})${wordN ? ` · 나오는 단어 ${wordN}번` : ''}${h.Q.strong ? ` · ${esc(nm(h.ver))}의 원어 기준${bibles[h.ver]?.searchOnly || bibles[h.ver]?.some?.(l => l?.includes('<W')) ? '' : ' (번호가 없는 성경이라 같은 철자 단어는 영어 뜻으로 골라요, 드물게 다를 수 있음)'}` : ''}</p>` +
+    if (num) html += `<p class="hits-lines">위: <b>${esc(nm(h.ver))}</b>${lower ? ` · 아래: <b>${esc(nm(lower))}</b>` : ''}</p>` +
+      '<p class="hits-warn">원전분해와 개역개정S의 원어 번호는 만든 사람이 직접 붙인 것이라 서로 다르거나 틀린 곳이 있어요 (예: 삼하 19:5 원전분해 H3001 / 개역개정S H954). 참고용으로 보세요.</p>';
+    html += `<p class="hits-sum">${qLabel(h.q)} ${h.Q.strong ? `나오는 절 ${bibleList.length}개` : `${bibleList.length}절`} (구약 ${ot}, 신약 ${bibleList.length - ot})${wordN ? ` · 나오는 단어 ${wordN}번` : ''}${h.Q.strong ? ` · ${esc(nm(h.ver))} 기준` : ''}</p>` +
       (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
         .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
       (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
