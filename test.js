@@ -55,6 +55,14 @@ assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In t
   assert.match(verseHtml(bdbText('하나님이<WH430> 이르시되<WH559>')), /<span class="w" data-strong="H430">하나님이<\/span>/);
 }
 
+// 인터리니어(TRa+I): 영어 뜻 <Q>…<q> 는 작은 뜻 칸으로, 번호는 영어가 아니라 헬라어 단어에, 복사·검색 글자에서는 영어 빼기
+{
+  const { verseHtml, plainVerse } = require('./decode.js');
+  const t = 'γὰρ<Q>FOR SO<q><WG1063><WTCONJ> ἠγάπησεν<WG25><WTV-AAI-3S>';
+  assert.strictEqual(verseHtml(t), '<span class="w" data-strong="G1063">γὰρ</span><span class="gl">FOR SO</span> <span class="w" data-strong="G25">ἠγάπησεν</span>');
+  assert.strictEqual(plainVerse(t), 'γὰρ ἠγάπησεν');
+}
+
 // 번호 때문에 쪼개진 띄어쓰기를 일반 본문에 맞춤 (글자가 조금 다른 판이어도 같은 부분은 맞춤)
 {
   const { respace, plainVerse } = require('./decode.js');

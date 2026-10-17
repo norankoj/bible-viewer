@@ -292,6 +292,7 @@ const TAGS = {
   FR: '<span class="red">', Fr: '</span>', FI: '<i>', Fi: '</i>', FO: '<span class="ot">', Fo: '</span>', TS: '<b class="ts">', Ts: '</b>',
   TRANS: '<span class="tr">', trans: '</span>', K: '<span class="kt">[', k: ']</span>', R: '<span class="qr">', r: '</span>', // 음역, 케티브/케레
   sub: '<span class="gl">', '/sub': '</span>', font: '', '/font': '', // 기본형·뜻
+  Q: '<span class="gl">', q: '</span>', // 인터리니어 영어 뜻 (TRa+I 등)
 };
 const tagHtml = t => esc(t)
   // 스트롱 번호 태그: 단어<WH430><WH853> → 누르면 사전이 뜨는 단어
@@ -344,8 +345,11 @@ const fnHtml = (h, notes) => h.replace(FN, (_, i) =>
   `<sup class="fn" tabindex="0" title="${esc(notes[i].text)}" data-fn="${esc(notes[i].text)}">${esc(notes[i].label)}</sup>`);
 
 // theWord는 <FR> 등을 절 끝에서 안 닫는 경우가 많음 → 절 단위로 닫아줌
+// 인터리니어(TRa+I 등): "단어<Q>영어 뜻<q><WG1063><WTCONJ>" → 번호가 영어가 아니라 원어 단어에 붙도록 뜻을 번호 뒤로
+const interFirst = t => t.replace(/<Q>([\s\S]*?)<q>((?:<W[^>]*>)*)/g, '$2<Q>$1<q>');
 function verseHtml(raw) {
-  const { t, notes } = splitNotes(raw);
+  let { t, notes } = splitNotes(raw);
+  t = interFirst(t);
   let h = '', last = 0;
   for (const m of t.matchAll(BHS_WORD)) { h += tagHtml(t.slice(last, m.index)) + bhsWord(m); last = m.index + m[0].length; }
   h = fnHtml(h + tagHtml(t.slice(last)), notes);
@@ -377,7 +381,7 @@ function lemmaFinder(entries) {
 
 // 복사·검색용 글자만 (각주·음역·기본형 풀이는 빼고, 태그 제거)
 const plainVerse = s => splitNotes(s || '').t.replace(FN, '')
-  .replace(/<TRANS>[\s\S]*?<trans>/g, '').replace(/<sub>[\s\S]*?<\/sub>/g, '')
+  .replace(/<TRANS>[\s\S]*?<trans>/g, '').replace(/<sub>[\s\S]*?<\/sub>/g, '').replace(/<Q>[\s\S]*?<q>/g, '')
   .replace(/<[^>]*>/g, '').replace(/¶\s*/g, '').replace(/\s+/g, ' ').trim();
 
 // 검색어: 띄어 쓴 단어는 모두 들어 있어야, "따옴표"는 붙은 그대로, H430·G26은 원어 번호 검색. 영어는 대소문자 무시

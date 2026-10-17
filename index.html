@@ -165,6 +165,10 @@
   :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-split]) { background: none; color: var(--fg); font-weight: 700; }
   :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-split])::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: -8px; height: 2px; border-radius: 2px; background: var(--accent); }
   .tabs { scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } /* 탭 줄은 밀어서 넘기고 스크롤바는 숨김 */
+  /* 자료 칸 탭 줄(주석·사전 탭)은 탭이 많으니 얇은 가로 스크롤 막대를 보여 줌 */
+  :is(#comTabs, #comTabs2) { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent; }
+  :is(#comTabs, #comTabs2)::-webkit-scrollbar { display: block; height: 6px; }
+  :is(#comTabs, #comTabs2)::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 3px; }
   .tabs .spacer { margin-left: auto; }
   .tabs [draggable="true"] { cursor: grab; } .tabs [draggable="true"]:active { cursor: grabbing; } /* 끌어서 순서 바꾸기 */
   /* 탭이 넘치면 가려진 쪽 끝을 흐리게 (더 있다는 표시) */
@@ -301,6 +305,10 @@
   body.no-bibles .ver-pick { display: none; }
   [data-design="classic"] .ver-pick { height: 30px; border-radius: var(--r); }
   :is(#verBox, #tabBox) { width: min(280px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+  #verBox.open { display: flex; flex-direction: column; overflow: hidden; }
+  #verBox .vb-top { flex: none; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  #verBox .vb-top .help { margin-bottom: 0; }
+  #verBox .vb-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px 8px 0; margin: 0 -8px; }
   :is(#verBox, #tabBox) label { display: flex; align-items: center; gap: 8px; padding: 7px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
   :is(#verBox, #tabBox) label:hover { background: var(--bg); }
   :is(#verBox, #tabBox) input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
@@ -887,7 +895,7 @@
     <ul>
       <li><b>성경·주석 검색</b> 칸(키보드 <kbd>/</kbd> 키로 바로)에 적고 <kbd>Enter</kbd>.</li>
       <li>여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로 찾아요.</li>
-      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 원어 단어를 강조하고 아래에 개역개정을 함께 보여 줘요. <b>원전분해</b>가 있으면 그것을 기준으로 찾아 가장 정확하고(처음 한 번만 정리하느라 몇 초 걸려요), 개역개정S처럼 번호가 붙은 개역개정이 있으면 한국어 단어도 같은 색으로 칠해져요.</li>
+      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 원어 단어를 강조하고 아래에 개역개정을 함께 보여 줘요. <b>원전분해</b>가 있으면 그것을 기준으로 찾아 가장 정확하고(처음 한 번만 정리하느라 몇 초 걸려요), 개역개정S처럼 번호가 붙은 개역개정이 있으면 한국어 단어도 같은 색으로 칠해져요. 결과 위에는 그 번호가 <b>나오는 절 수</b>와 <b>나오는 단어 수</b>가 함께 나와요(한 절에 두 번 나오면 절은 1개, 단어는 2번).</li>
       <li>결과에서 번역본과 범위(전체·구약·신약·현재 책)를 바꿀 수 있고, 주석에서도 찾아요(여러 주석을 한꺼번에).</li>
     </ul></section>
 <section id="g-view"><h3>보기 · 내 세팅 · 화면 설정</h3>
@@ -1297,11 +1305,13 @@ function cellHtml(name, v) {
 function renderBible() {
   const names = allVersions();
   // 발음·뜻 보기은 BHS 기본형 성경만, 단어 뜻 위치는 단어를 누를 수 있는 성경(원어·스트롱 번호)이면
+  // 인터리니어(헬라어 + <Q>영어 뜻<q>, TRa+I 등)도 BHS 발음·뜻처럼 끄고 켤 수 있게
+  const inter = S.versions.some(n => bibles[n] && (bibles[n].inter ??= bibles[n].some(l => l?.includes('<Q>'))));
   const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
   // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
   $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>`).join('') +
-    (bhs ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="원어 아래에 발음과 기본형 뜻 보이기">발음·뜻 보기</button>` : '') +
-    (words ? `<span class="word-mode ${bhs ? '' : 'spacer'}"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
+    (bhs || inter ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${bhs ? '원어 아래에 발음과 기본형 뜻 보이기' : '원어 옆에 영어 뜻 보이기 (끄면 원어만)'}">${bhs ? '발음·뜻 보기' : '영어 뜻 보기'}</button>` : '') +
+    (words ? `<span class="word-mode ${bhs || inter ? '' : 'spacer'}"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
     '';
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>개 ▾`;
   $('verPick').hidden = names.length < 2;
@@ -2076,7 +2086,9 @@ async function runBibleSearch() {
 
 // 원전분해(.sdb)를 원어 번호 검색용 원어 본문으로: 절마다 "단어<WH430> 단어<WH…>" (단어와 번호가 정확히 짝지어 있어 검색이 정확함)
 // 처음 한 번만 파일을 열어 만들고 브라우저에 보관 (다음부터는 바로). 읽는 번역본 목록에는 안 나옴
-async function anaSources(onBuild) {
+let anaBusy = null;
+const anaSources = onBuild => anaBusy ||= anaBuild(onBuild).finally(() => anaBusy = null);
+async function anaBuild(onBuild) {
   for (const name of commNames().filter(n => commKind[n] === 'sdb')) {
     if (bibles[name]) continue;
     const key = `ana:${name}:${fileInfo[name]?.size}`;
@@ -2096,22 +2108,26 @@ async function anaSources(onBuild) {
 }
 
 // 원어 번호가 나오는 절: <WH430> 태그, 또는 BHS 기본형을 사전 표제어와 맞대어 (같은 철자 단어도 함께 나올 수 있음)
+// BHS 기본형(번호 없음) → 같은 철자 후보 중 영어 뜻이 가장 맞는 번호 하나 (יָבֵשׁ: H3001 마르다 / H3002 마른 → "dry" 면 H3002)
+const bestId = (find, lemma, gloss, memo) => {
+  const key = lemma + '|' + gloss;
+  if (!memo.has(key)) memo.set(key, rankCandidates(find(lemma), gloss.replace(/[^sA-Za-z-]/g, ''), S.dict)[0] || '');
+  return memo.get(key);
+};
 async function strongVerses(num, ver) {
-  const L = bibles[ver], lang = num[0], tag = new RegExp(`<W${lang}0*${num.slice(1)}[a-z]?>`);
+  const L = bibles[ver], lang = num[0], tag = new RegExp(`<W${lang}0*${num.slice(1)}[a-z]?>`, 'g');
   const find = S.dict ? (await liteOf(S.dict), finderOf(S.dict, lang)) : null;
   const auto = needsTag(ver); // 번호 없는 원어 성경이면 STEPBible 자료로 붙여서 찾음
   if (auto) await loadOrig(lang === 'H' ? 'ot' : 'nt');
   const memo = new Map(), out = [];
+  out.words = new Map(); // 절 → 그 절에 나온 단어 수
   for (let i = 0; i < L.length; i++) {
     const line = auto ? (L[i] && taggedLine(ver, i)) : L[i];
     if (!line) continue;
-    if (tag.test(line)) { out.push(i); continue; }
-    if (!find || !line.includes('<sub>')) continue;
-    for (const m of line.matchAll(/<sub>(?:<font[^>]*>)?([֐-׿]+)/g)) {
-      let ids = memo.get(m[1]);
-      if (!ids) memo.set(m[1], ids = find(m[1]));
-      if (ids.includes(num)) { out.push(i); break; }
-    }
+    let n = (line.match(tag) || []).length;
+    if (!n && find && line.includes('<sub>'))
+      for (const m of line.matchAll(/<sub>(?:<font[^>]*>)?([֐-׿]+)([^<]*)/g)) if (bestId(find, m[1], m[2], memo) === num) n++;
+    if (n) { out.push(i); out.words.set(i, n); }
   }
   return out;
 }
@@ -2174,11 +2190,12 @@ async function searchComm() {
 }
 
 // 원어 번호 검색 결과의 원어 본문: 그 번호 단어만 강조하고, 누르면 사전이 아니라 그 절로 가도록 단어 속성은 뺌
+const hitMemo = new Map();
 function hitOrigHtml(ver, i, num) {
   const find = S.dict && dictLite[S.dict] ? finderOf(S.dict, num[0]) : null;
   const html = verseHtml((needsTag(ver) ? taggedLine(ver, i) : bibles[ver][i]) || '')
-    .replace(/<span class="w"( data-strong="([^"]*)")?( data-lemma="([^"]*)")?[^>]*>/g, (_, a, ids, b, lemma) =>
-      (ids ? ids.split(',').includes(num) : lemma && find?.(lemma).includes(num)) ? '<span class="sh">' : '<span>');
+    .replace(/<span class="w"(?: data-strong="([^"]*)")?(?: data-lemma="([^"]*)" data-gloss="([^"]*)")?[^>]*>/g, (_, ids, lemma, gloss) =>
+      (ids ? ids.split(',').includes(num) : lemma && find && bestId(find, lemma, gloss, hitMemo) === num) ? '<span class="sh">' : '<span>');
   return `<span class="o${isHeb(ver, i) ? ' heb" dir="rtl' : ''}">${html}</span>`;
 }
 // 한국어 줄(스트롱 번호가 붙은 개역개정): 찾는 번호의 단어만 강조, 각주는 뺌
@@ -2216,7 +2233,8 @@ function renderHits() {
     const byBook = {};
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
-    html += `<p class="hits-sum">${qLabel(h.q)} ${bibleList.length}절 (구약 ${ot}, 신약 ${bibleList.length - ot})${h.Q.strong ? ` · ${esc(nm(h.ver))}의 원어 기준${bibles[h.ver]?.searchOnly ? '' : ', 같은 철자 단어가 함께 나올 수 있음'}` : ''}</p>` +
+    const wordN = h.Q.strong && h.bible.words ? bibleList.reduce((a, i) => a + (h.bible.words.get(i) || 0), 0) : 0;
+    html += `<p class="hits-sum">${qLabel(h.q)} ${h.Q.strong ? `나오는 절 ${bibleList.length}개` : `${bibleList.length}절`} (구약 ${ot}, 신약 ${bibleList.length - ot})${wordN ? ` · 나오는 단어 ${wordN}번` : ''}${h.Q.strong ? ` · ${esc(nm(h.ver))}의 원어 기준${bibles[h.ver]?.searchOnly || bibles[h.ver]?.some?.(l => l?.includes('<W')) ? '' : ' (번호가 없는 성경이라 같은 철자 단어는 영어 뜻으로 골라요, 드물게 다를 수 있음)'}` : ''}</p>` +
       (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
         .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
       (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
@@ -2636,18 +2654,27 @@ const phone = () => matchMedia('(max-width: 760px)').matches;
 matchMedia('(max-width: 760px)').addEventListener('change', () => { applyFont(); renderComm(); renderBible(); }); // 창 크기가 모바일↔PC로 바뀌면 이름·대조 개수 다시
 function toggleVer(n) {
   if (!S.versions.includes(n) && phone() && S.versions.length >= 3) { flash('모바일에서는 3개까지 대조할 수 있어요'); return renderVerBox(); }
+  if (!S.versions.includes(n) && S.versions.length) { // 새로 고른 것은 지금 고른 번역본들 맨 뒤 칸으로
+    const list = allVersions().filter(x => x !== n), last = Math.max(...S.versions.map(x => list.indexOf(x)));
+    list.splice(last + 1, 0, n); tabOrder.bible = list; prefs.set('order', tabOrder);
+  }
   S.versions = S.versions.includes(n) ? S.versions.filter(x => x !== n) : [...S.versions, n];
   sortVersions(); save(); refreshBible();
 }
 // 번역본이 많을 때: 체크 목록으로 고르기
 const KO = new Intl.Collator('ko', { numeric: true });
 // 위: 고른 번역본의 대조 순서(▲▼로 옮기기, 터치에서도 됨) / 아래: 전체 번역본 체크 목록(가나다순)
-const renderVerBox = () => $('verBox').innerHTML =
+// 위(대조 순서 + '번역본 고르기' 제목)는 고정, 아래 번역본 목록만 스크롤 (체크해도 목록 스크롤 위치 유지)
+const renderVerBox = () => {
+  const keep = $('verBox').querySelector('.vb-list')?.scrollTop || 0;
+  $('verBox').innerHTML = '<div class="vb-top">' +
   (S.versions.length > 1 ? '<b>대조 순서</b><ol class="vorder">' + S.versions.map((n, i) => `<li><span>${esc(nm(n))}</span>` +
     `<button data-vmove="${esc(n)}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="${esc(nm(n))} 앞으로">▲</button>` +
     `<button data-vmove="${esc(n)}" data-dir="1" ${i < S.versions.length - 1 ? '' : 'disabled'} aria-label="${esc(nm(n))} 뒤로">▼</button></li>`).join('') + '</ol>' : '') +
-  '<b>번역본 고르기</b><p class="help">체크한 번역본을 나란히 대조해서 봐요.</p>' +
-  allVersions().sort((a, b) => KO.compare(nm(a), nm(b))).map(n => `<label><input type="checkbox" value="${esc(n)}" ${S.versions.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('');
+  '<b>번역본 고르기</b><p class="help">체크한 번역본을 나란히 대조해서 봐요.</p></div><div class="vb-list">' +
+  allVersions().sort((a, b) => KO.compare(nm(a), nm(b))).map(n => `<label><input type="checkbox" value="${esc(n)}" ${S.versions.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('') + '</div>';
+  $('verBox').querySelector('.vb-list').scrollTop = keep;
+};
 $('verPick').onclick = e => togglePop(e, $('verBox'), $('verPick'), renderVerBox);
 $('verBox').onclick = e => {
   e.stopPropagation();
@@ -2792,7 +2819,7 @@ for (const id of ['comm', 'comm2', 'wordPop']) {
   $(id).onmouseleave = () => $('tip').classList.remove('open');
 }
 
-$('q').onkeydown = e => { if (e.key === 'Enter') search(e.target.value); if (e.key === 'Escape') { e.target.value = ''; search(''); e.target.blur(); } };
+$('q').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) search(e.target.value); if (e.key === 'Escape') { e.target.value = ''; search(''); e.target.blur(); } };
 document.onkeydown = e => {
   if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (sel.size) { sel.clear(); refreshBible(); } }
   if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
