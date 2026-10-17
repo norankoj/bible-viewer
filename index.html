@@ -124,6 +124,8 @@
   #verTabs .tab[data-ver]:hover { color: var(--fg); border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   #verTabs .tab[data-ver].on { background: var(--fg); border-color: var(--fg); color: var(--page); }
   #verTabs .tab:not([data-ver]) { font-size: 12.5px; }
+  .par .head .gl-toggle { height: 20px; margin-left: 6px; padding: 0 6px; border: 1px dashed var(--line); border-radius: 4px; background: none; font: 600 11px var(--sans); color: var(--muted); vertical-align: 1px; cursor: pointer; }
+  .par .head .gl-toggle.on { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
   #verTabs .gl-toggle { flex: none; height: 26px; margin-left: -2px; padding: 0 8px; border: 1px dashed var(--line); border-radius: 4px; font-size: 12px; color: var(--muted); }
   #verTabs .gl-toggle.on { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
   .word-mode { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
@@ -1313,7 +1315,7 @@ function renderBible() {
   // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
   const glossBtn = n => bibles[n]?.rtl ? ['발음·뜻', '원어 아래에 발음과 기본형 뜻 보이기'] : bibles[n]?.inter ? ['영어 뜻', '헬라어 옆에 영어 뜻 보이기 (끄면 헬라어만)'] : null;
   $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>` +
-    (glossBtn(n) ? `<button class="tab gl-toggle ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${glossBtn(n)[1]}">${glossBtn(n)[0]} ${gloss ? '켬' : '끔'}</button>` : '')).join('') +
+    (glossBtn(n) && (S.versions.length === 1 || phone()) ? `<button class="tab gl-toggle ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${glossBtn(n)[1]}">${glossBtn(n)[0]} ${gloss ? '켬' : '끔'}</button>` : '')).join('') +
     (words ? `<span class="word-mode spacer"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
     '';
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>개 ▾`;
@@ -1335,7 +1337,7 @@ function renderBible() {
       return `<p class="verse${m.cls}${sel.has(v) ? ' on' : ''}${isHebLine(vs[0], v) ? ' heb" dir="rtl' : ''}" data-v="${v}"><span class="vn">${v}</span><span class="t">${cellHtml(vs[0], v)}</span>${m.badge}</p>`;
     }).join('') + notice;
   } else {
-    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><div class="heads"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}</span>`).join('')}</div>` +
+    $('bible').innerHTML = title + `<div class="par" style="--n:${vs.length}"><div class="heads"><span class="head"></span>${vs.map(x => `<span class="head">${esc(nm(x))}${glossBtn(x) ? ` <button class="gl-toggle ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${glossBtn(x)[1]}">${glossBtn(x)[0]} ${gloss ? '켬' : '끔'}</button>` : ''}</span>`).join('')}</div>` +
       ids.map(v => {
         const m = verseMark(v);
         return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)} data-name="${esc(nm(x))}"><span class="t">${cellHtml(x, v)}</span>${i ? '' : m.badge}</span>`).join('')}</div>`;
@@ -2711,6 +2713,7 @@ document.querySelectorAll('.tabs').forEach(el => {
   new MutationObserver(edge).observe(el, { childList: true });
 });
 $('bible').onclick = e => {
+  if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); } // 칸 머리의 영어 뜻·발음 뜻 켜고 끄기
   const nb = e.target.closest('[data-note]');
   if (nb) { e.stopPropagation(); select(+nb.dataset.note, undefined, true);return openNote(+nb.dataset.note, nb); }
   const fn = e.target.closest('.fn');
