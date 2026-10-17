@@ -51,7 +51,10 @@ assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In t
 // 베들레헴 개역개정S(.sdb): 단어 뒤 스트롱 번호는 남기고 번호 없음(<WH0>)은 지움
 {
   const { bdbText, verseHtml } = require('./decode.js');
-  assert.strictEqual(bdbText('빛이<WH216> 있으라<WH1961> 하시니<WH0> 다<WG 3956> 그<WG>'), '빛이<WH216> 있으라<WH1961> 하시니 다<WG3956> 그');
+  assert.strictEqual(bdbText('빛이<WH216> 있으라<WH1961> 하시니<WH0> 다<WG 3956> 그<WG>'), '빛이<WH216> 있으라<WH1961> 하시니<WX> 다<WG3956> 그<WX>');
+  // 한국어는 번호 하나가 앞 묶음 전체의 것: "마르게 하사<WH3001>" 전체가 한 단어 (번호 없음 표시 <WX> 는 묶음 경계)
+  assert.strictEqual(verseHtml(bdbText('물을<WH4325> 마르게 하사<WH3001> 너희가<WH0> 애굽에서<WH4714>')),
+    '<span class="w" data-strong="H4325">물을</span> <span class="w" data-strong="H3001">마르게 하사</span> 너희가 <span class="w" data-strong="H4714">애굽에서</span>');
   assert.match(verseHtml(bdbText('하나님이<WH430> 이르시되<WH559>')), /<span class="w" data-strong="H430">하나님이<\/span>/);
 }
 

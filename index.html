@@ -124,6 +124,8 @@
   #verTabs .tab[data-ver]:hover { color: var(--fg); border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   #verTabs .tab[data-ver].on { background: var(--fg); border-color: var(--fg); color: var(--page); }
   #verTabs .tab:not([data-ver]) { font-size: 12.5px; }
+  #verTabs .gl-toggle { flex: none; height: 26px; margin-left: -2px; padding: 0 8px; border: 1px dashed var(--line); border-radius: 4px; font-size: 12px; color: var(--muted); }
+  #verTabs .gl-toggle.on { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
   .word-mode { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
   .word-mode select { height: 32px; padding: 0 28px 0 12px; border: 1px solid var(--line); border-radius: 4px; background-color: var(--surface); color: var(--fg); font-size: 13px; font-weight: 600; } /* 번역본 N개 ▾ 와 같은 모양 */
   .help-q { flex: none; width: 22px; height: 22px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--muted); font: 700 12px/1 var(--sans); cursor: help; }
@@ -1309,9 +1311,10 @@ function renderBible() {
   const inter = S.versions.some(n => bibles[n] && (bibles[n].inter ??= bibles[n].some(l => l?.includes('<Q>'))));
   const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
   // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
-  $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>`).join('') +
-    (bhs || inter ? `<button class="tab spacer ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${bhs ? '원어 아래에 발음과 기본형 뜻 보이기' : '원어 옆에 영어 뜻 보이기 (끄면 원어만)'}">${bhs ? '발음·뜻 보기' : '영어 뜻 보기'}</button>` : '') +
-    (words ? `<span class="word-mode ${bhs || inter ? '' : 'spacer'}"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
+  const glossBtn = n => bibles[n]?.rtl ? ['발음·뜻', '원어 아래에 발음과 기본형 뜻 보이기'] : bibles[n]?.inter ? ['영어 뜻', '헬라어 옆에 영어 뜻 보이기 (끄면 헬라어만)'] : null;
+  $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>` +
+    (glossBtn(n) ? `<button class="tab gl-toggle ${gloss ? 'on' : ''}" data-gloss aria-pressed="${gloss}" title="${glossBtn(n)[1]}">${glossBtn(n)[0]} ${gloss ? '켬' : '끔'}</button>` : '')).join('') +
+    (words ? `<span class="word-mode spacer"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
     '';
   $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>개 ▾`;
   $('verPick').hidden = names.length < 2;
@@ -1993,7 +1996,7 @@ const sheetClose = `<button class="ws-close" data-close aria-label="닫기" titl
 const occCache = new Map();
 async function wordOccurrences(num) {
   const box = () => $('wordPop').classList.contains('open') && $('wordPop').dataset.ids?.split(',').includes(num) && $('wordOcc');
-  const lang = num[0], ver = [...searchOnly(), ...S.versions, ...allVersions()].find(n => hasOriginal(n, lang));
+  const lang = num[0], ver = [...searchOnly(), ...S.versions, ...allVersions()].find(n => realStrong(n) && hasOriginal(n, lang));
   if (!ver) { const b = box(); if (b) b.innerHTML = '<p class="muted">원어 번호가 있는 성경(BHS, 원어 성경 등)을 넣으면 나오는 곳을 보여 드려요.</p>'; return; }
   const key = num + ':' + ver;
   if (!occCache.has(key)) occCache.set(key, await strongVerses(num, ver).catch(() => []));
@@ -2066,6 +2069,8 @@ const hasOriginal = (n, lang) => bibles[n] && (bibles[n].orig ??= {
   G: bibles[n].some(l => l.includes('<WG')) || needsTag(n) && bibles[n].some(l => /[Ͱ-Ͽἀ-῿]/.test(l)),
 })[lang];
 
+// 파일에 스트롱 번호(<WH430>)가 실제로 들어 있는 성경 (추측해서 붙이는 것 말고)
+const realStrong = n => bibles[n] && (bibles[n].realW ??= bibles[n].some(l => /<W[HG]\d/.test(l || '')));
 async function runBibleSearch() {
   const h = hits;
   if (h.Q.strong) {
@@ -2073,8 +2078,9 @@ async function runBibleSearch() {
     // 원전분해가 있으면 그것을 먼저 (BHSSBL 등은 번호가 단어에서 떨어진 곳이 있어 못 찾는 경우가 많음)
     const ana = await anaSources(name => { h.building = name; if (hits === h && S.tab === 'search') renderHits(); }).catch(() => []);
     h.building = '';
-    h.ver = hasOriginal(h.ver, lang) ? h.ver : [...ana, ...allVersions()].find(n => hasOriginal(n, lang)) || '';
-    if (!h.ver) { h.bible = []; h.note = `원어 번호 검색은 ${lang === 'H' ? 'BHS처럼 원어 기본형' : '스트롱 번호 태그'}이 있는 성경이 필요합니다.`; return renderHits(); }
+    const ok = n => realStrong(n) && hasOriginal(n, lang);
+    h.ver = ok(h.ver) ? h.ver : [...ana, ...allVersions()].find(ok) || '';
+    if (!h.ver) { h.bible = []; h.note = '원어 번호 검색은 원전분해나, 원어 번호가 들어 있는 성경(개역개정S, TRa+I 등)이 필요합니다.'; return renderHits(); }
     h.bible = await strongVerses(h.Q.strong, h.ver).catch(() => []);
   } else {
     h.ver ||= firstLocal() || '';
@@ -2208,7 +2214,7 @@ function renderHits() {
   const inR = b => inRange(b, h.range);
   const bibleList = (h.bible || []).filter(i => inR(REF[i][0]));
   const commList = h.comm ? h.comm.list.filter(x => inR(x.e.b)) : null, cns = commNames();
-  const locals = [...(h.Q.strong ? searchOnly() : []), ...allVersions()].filter(n => bibles[n] && (!h.Q.strong || hasOriginal(n, h.Q.strong[0])));
+  const locals = [...(h.Q.strong ? searchOnly() : []), ...allVersions()].filter(n => bibles[n] && (!h.Q.strong || realStrong(n) && hasOriginal(n, h.Q.strong[0])));
   let html = `<div class="seg">
     ${locals.length ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 ${h.bible ? bibleList.length : '…'}</button>` : ''}
     ${cns.length && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 ${commList ? commList.length : '…'}</button>` : ''}</div>

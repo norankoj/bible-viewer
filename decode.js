@@ -346,13 +346,16 @@ const fnHtml = (h, notes) => h.replace(FN, (_, i) =>
 
 // theWord는 <FR> 등을 절 끝에서 안 닫는 경우가 많음 → 절 단위로 닫아줌
 // 인터리니어(TRa+I 등): "단어<Q>영어 뜻<q><WG1063><WTCONJ>" → 번호가 영어가 아니라 원어 단어에 붙도록 뜻을 번호 뒤로
+const KO_SP = '\u0007';
+const koPhrases = t => /[가-힣]/.test(t) && /<W[HG]\d/.test(t)
+  ? t.replace(/(^|>)(\s*)([^<>]*?\S)(?=(?:<W[HG]\d+[a-z]?>)+)/g, (_, gt, sp, ph) => gt + sp + ph.replace(/ /g, KO_SP)) : t;
 const interFirst = t => t.replace(/<Q>([\s\S]*?)<q>((?:<W[^>]*>)*)/g, '$2<Q>$1<q>');
 function verseHtml(raw) {
   let { t, notes } = splitNotes(raw);
-  t = interFirst(t);
+  t = koPhrases(interFirst(t));
   let h = '', last = 0;
   for (const m of t.matchAll(BHS_WORD)) { h += tagHtml(t.slice(last, m.index)) + bhsWord(m); last = m.index + m[0].length; }
-  h = fnHtml(h + tagHtml(t.slice(last)), notes);
+  h = fnHtml(h + tagHtml(t.slice(last)), notes).replaceAll(KO_SP, ' ');
   const open = tag => (h.match(new RegExp(`<${tag}[ >]`, 'g')) || []).length - (h.match(new RegExp(`</${tag}>`, 'g')) || []).length;
   return h + '</i>'.repeat(Math.max(0, open('i'))) + '</span>'.repeat(Math.max(0, open('span')));
 }
@@ -413,8 +416,8 @@ function bdbText(t) {
     .replace(/<sup>([^<]+)<\/sup>/g, (all, k) => notes[k] ? `<RF>${notes[k]}<Rf>` : '')
     .replace(/<i>/gi, '<FI>').replace(/<\/i>/gi, '<Fi>')
     .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<W([HG]) +(\d)/g, '<W$1$2').replace(/<W[HG]0*>/g, '') // 띄어 쓴 번호는 붙이고, 번호 없음 표시(<WH0>, <WH>)는 지움 (베들레헴 개역개정S 등)
-    .replace(/<(?!\/?(?:FI|Fi|RF|Rf)>|W[HG]\d)[^>]*>/g, '') // 그 밖의 HTML 태그는 지움 (단어 뒤 스트롱 번호 <WH430>은 남김)
+    .replace(/<W([HG]) +(\d)/g, '<W$1$2').replace(/<W[HG]0*>/g, '<WX>') // 띄어 쓴 번호는 붙이고, 번호 없음 표시(<WH0>, <WH>)는 지움 (베들레헴 개역개정S 등)
+    .replace(/<(?!\/?(?:FI|Fi|RF|Rf)>|W[HG]\d|WX>)[^>]*>/g, '') // 그 밖의 HTML 태그는 지움 (단어 뒤 스트롱 번호 <WH430>은 남김)
     .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ').trim();
 }
@@ -471,6 +474,7 @@ function tagOriginal(line, data, lang) {
     // 앞에서 이어지는 자리부터 같은 글자인 단어를 찾고, 없으면 처음부터 (사본 차이로 순서가 조금 다를 수 있음)
     let i = list.findIndex((e, j) => j >= p && !e.used && e.f === k);
     if (i < 0) i = list.findIndex(e => !e.used && e.f === k);
+    if (i < 0) i = list.findIndex((e, j) => j >= p && !e.used && (e.f === k + 'p' || e.f === k + 's')); // 출 17:13 חָרֶב׃ ף 처럼 단락 표시가 붙은 것
     if (i < 0) return w;
     list[i].used = true; p = i + 1;
     return `${w}<W${list[i].s}>`;
