@@ -1,0 +1,5 @@
+#!/bin/sh
+# 커밋할 때 커피성경 소개의 "배포" 날짜·시각을 지금으로 (index.html 이 커밋에 들어갈 때만)
+git diff --cached --quiet -- index.html && exit 0
+d=$(date '+%Y-%m-%d %H:%M')
+sed -i "s|<span id=\"buildAt\">[^<]*</span>|<span id=\"buildAt\">$d</span>|" index.html && git add index.html

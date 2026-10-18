@@ -128,7 +128,7 @@
   .gl-switch { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px; border: 0; border-radius: 4px; background: none; font: 600 11.5px/1 var(--sans); color: var(--muted); letter-spacing: 0; cursor: pointer; transition: color .15s, background .15s; }
   .gl-switch:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 5%, transparent); }
   .gl-switch .sw { position: relative; width: 26px; height: 15px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 35%, var(--line)); transition: background .2s; }
-  .gl-switch .sw i { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .2s cubic-bezier(.16,1,.3,1); }
+  .gl-switch .sw i { position: absolute; top: 0; bottom: 0; margin: auto 0; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .2s cubic-bezier(.16,1,.3,1); }
   .gl-switch[aria-checked="true"] { color: var(--accent); }
   .gl-switch[aria-checked="true"] .sw { background: var(--accent); }
   .gl-switch[aria-checked="true"] .sw i { transform: translateX(11px); }
@@ -231,7 +231,7 @@
   .tr { color: var(--accent); font-style: italic; }
   .gl { color: var(--muted); }
   .kt { color: var(--muted); } .qr { color: var(--accent); }
-  body.no-gloss .tr, body.no-gloss .gl { display: none; }
+  body.no-gloss .heb :is(.tr, .gl), body.no-gloss-g .gl:not(.heb .gl) { display: none; }
   /* 각주: 누르는 위첨자 */
   .fn { font: 600 .62em var(--sans); color: var(--accent); vertical-align: super; line-height: 0; padding: 0 2px; margin: 0 1px; border-radius: 4px; cursor: pointer; }
   .fn:hover, .fn:focus-visible { background: var(--accent-soft); outline: none; }
@@ -830,7 +830,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.</p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-18 11:48</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1041,8 +1041,9 @@ const fileInfo = {};
 const DEFAULT_NAMES = { 메튜: '매튜헨리', 호크마주석: '호크마', Hokma2: '호크마' };
 let displayNames = prefs.get('names', {});
 const nm = n => displayNames[n] || DEFAULT_NAMES[n] || n;
+const baseName = f => f.name.replace(/(\.(cmt|gbk|dct|bbl))?\.(twm|ont|ot|nt|bdb|mybible|dct|sdb)$/i, '');
 async function addFile(f) {
-  const name = f.name.replace(/(\.(cmt|gbk|dct|bbl))?\.(twm|ont|ot|nt|bdb|mybible|dct|sdb)$/i, '');
+  const name = baseName(f);
   if (/\.mybible$/i.test(f.name) && !/\.bbl\.mybible$/i.test(f.name)) throw new Error('MySword는 성경(.bbl.mybible)만 읽을 수 있습니다');
   fileInfo[name] = { key: f.name, size: f.size };
   const kind = f.name.match(/\.(ont|ot|nt)$/i)?.[1].toLowerCase();
@@ -1161,7 +1162,10 @@ async function load(files, persist, picked, quiet) {
     if (!quiet) progress(`불러오는 중 ${i + 1}/${files.length} · ${f.name}`, i / files.length);
     await new Promise(r => setTimeout(r)); // 막대가 그려질 틈
     try {
+      // 이름이 같은 다른 파일(개역개정.ont ↔ 개역개정.bdb)은 새것으로 바꿈: 둘 다 두면 앱을 켤 때마다 나중에 읽힌 쪽이 이겨 뒤바뀜
+      const old = fileInfo[baseName(f)]?.key;
       await addFile(f);
+      if (old && old !== f.name && bibles[baseName(f)]) idb('files', 'readwrite', s => s.delete(old)).catch(() => {});
       if (persist) await storeFile(f).catch(err => unsaved.push(`${f.name} (${err?.name === 'QuotaExceededError' ? '저장 공간 부족' : err?.message || '저장 실패'})`));
     } catch (err) { alert(`${f.name}: 읽을 수 없습니다 (${err.message})`); }
   }
@@ -1322,7 +1326,7 @@ function renderBible() {
   const inter = S.versions.some(n => bibles[n] && (bibles[n].inter ??= bibles[n].some(l => l?.includes('<Q>'))));
   const bhs = S.versions.some(n => bibles[n]?.rtl), words = S.versions.some(n => hasOriginal(n, 'H') || hasOriginal(n, 'G'));
   // 고른 번역본만 (더 고르기는 앞의 '번역본 ▾', 빼기는 × 또는 목록에서). 주석 탭처럼 눌러도 사라지지 않음
-  const glossSwitch = (n, cls = '') => glossBtn(n) ? `<button class="gl-switch ${cls}" data-gloss role="switch" aria-checked="${gloss}" title="${glossBtn(n)[1]}"><span class="sw"><i></i></span>${glossBtn(n)[0]}</button>` : '';
+  const glossSwitch = (n, cls = '') => glossBtn(n) ? `<button class="gl-switch ${cls}" role="switch" data-gloss="${bibles[n]?.rtl ? 'h' : 'g'}" aria-checked="${bibles[n]?.rtl ? gloss : glossG}" title="${glossBtn(n)[1]}"><span class="sw"><i></i></span>${glossBtn(n)[0]}</button>` : '';
   const glossBtn = n => bibles[n]?.rtl ? ['발음·뜻', '원어 아래에 발음과 기본형 뜻 보이기'] : bibles[n]?.inter ? ['영어 뜻', '헬라어 옆에 영어 뜻 보이기 (끄면 헬라어만)'] : null;
   $('verTabs').innerHTML = S.versions.map(n => `<span class="tab on" data-ver="${esc(n)}" draggable="true" data-drag="bible:${esc(n)}" title="끌어서 순서 바꾸기">${esc(nm(n))}${names.length > 1 ? `<button class="ver-x" data-ver-x="${esc(n)}" aria-label="${esc(nm(n))} 빼기" title="빼기">×</button>` : ''}</span>` +
     (S.versions.length === 1 || phone() ? glossSwitch(n, 'in-tabs') : '')).join('') +
@@ -1803,7 +1807,9 @@ const isDct = name => dictKind[name] === 'dct';
 const dictRow = (subject, name = S.dict) => rows(dicts[name], isDct(name)
   ? 'select scode, dtext from Lexicon where scode = ?'
   : 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
-const entryHtml = (name, s, data) => isDct(name) ? dctHtml(data) : linkStrong(toHtml(data), s[0]);
+// theWord 사전은 구절 링크 글자를 'vref' 로만 적어 둠 (theWord 프로그램이 구절 이름으로 바꿔 보여줌) → 창 1:1
+const fillVref = html => html.replace(/(<a href="#" data-ref="([^"]*)">(?:<[^>]*>)*)s*vrefs*(?=<)/gi, (m, a, r) => { const [b, c, v] = parseRef(r); return b ? a + refName(b, c, v) : m; });
+const entryHtml = (name, s, data) => isDct(name) ? dctHtml(data) : linkStrong(fillVref(toHtml(data)), s[0]);
 // 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
 // (본문은 "אָב(1, 아브)  아버지 father  아브(명남)는…" 처럼 큰 공백으로 나뉨 → 제목은 앞의 두 덩어리, 나머지는 풀이)
 function dictParts(text) {
@@ -2257,7 +2263,7 @@ function renderHits() {
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
     const wordN = h.Q.strong && h.bible.words ? bibleList.reduce((a, i) => a + (h.bible.words.get(i) || 0), 0) : 0;
     if (num) html += `<p class="hits-lines">위: <b>${esc(nm(h.ver))}</b>${lower ? ` · 아래: <b>${esc(nm(lower))}</b>` : ''}</p>` +
-      '<p class="hits-warn">원전분해와 개역개정S의 원어 번호는 만든 사람이 직접 붙인 것이라 서로 다르거나 틀린 곳이 있어요 (예: 삼하 19:5 원전분해 H3001 / 개역개정S H954). 참고용으로 보세요.</p>';
+      '<p class="hits-warn">원전분해와 개역개정S는 파일마다 원어 번호를 붙인 곳이 조금씩 달라서, 같은 번호라도 찾아지는 절이 다를 수 있어요. 참고용으로 보세요.</p>';
     html += `<p class="hits-sum">${qLabel(h.q)} ${h.Q.strong ? `나오는 절 ${bibleList.length}개` : `${bibleList.length}절`} (구약 ${ot}, 신약 ${bibleList.length - ot})${wordN ? ` · 나오는 단어 ${wordN}번` : ''}${h.Q.strong ? ` · ${esc(nm(h.ver))} 기준` : ''}</p>` +
       (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
         .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
@@ -2653,7 +2659,7 @@ $('back').onclick = back;
 $('fwd').onclick = forward;
 $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
-let gloss = prefs.get('gloss', true), wordSide = prefs.get('wordSide', false), wordOver = prefs.get('wordOver', false);
+let gloss = prefs.get('gloss', true), glossG = prefs.get('glossG', gloss), wordSide = prefs.get('wordSide', false), wordOver = prefs.get('wordOver', false);
 // 단어 뜻 보기(번역본 줄의 목록): 오른쪽 창 / 단어 바로 아래 / 자료 칸 사전. 기존 디자인은 오른쪽 창이 곧 단어 옆 창이라 둘
 const classic = () => document.documentElement.dataset.design === 'classic';
 // 단어 뜻 보기 목록: 지금 방식과 고를 수 있는 것 (기존 디자인은 오른쪽 창이 곧 단어 옆 창이라 둘)
@@ -2667,9 +2673,12 @@ $('verTabs').addEventListener('change', e => {
 });
 const setWordMode = (side, over) => { wordSide = side; wordOver = over; prefs.set('wordSide', side); prefs.set('wordOver', over); document.documentElement.dataset.word = over ? 'over' : ''; };
 document.documentElement.dataset.word = wordOver ? 'over' : '';
-document.body.classList.toggle('no-gloss', !gloss);
+// gloss: 히브리어 발음·뜻, glossG: 헬라어 영어 뜻
+const setGloss = (h, g = glossG) => { gloss = h; glossG = g; prefs.set('gloss', h); prefs.set('glossG', g); document.body.classList.toggle('no-gloss', !h); document.body.classList.toggle('no-gloss-g', !g); };
+const toggleGloss = el => el.dataset.gloss === 'g' ? setGloss(gloss, !glossG) : setGloss(!gloss);
+setGloss(gloss);
 $('verTabs').onclick = e => {
-  if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); }
+  if (e.target.closest('.gl-switch')) { toggleGloss(e.target.closest('.gl-switch')); return renderBible(); }
   const q = e.target.closest('[data-word-help]');
   if (q) return togglePop(e, $('helpPop'), q, () => $('helpPop').textContent = WORD_HELP);
   const x = e.target.closest('[data-ver-x]'); if (x) toggleVer(x.dataset.verX);
@@ -2729,7 +2738,7 @@ document.querySelectorAll('.tabs').forEach(el => {
   new MutationObserver(edge).observe(el, { childList: true });
 });
 $('bible').onclick = e => {
-  if (e.target.closest('[data-gloss]')) { gloss = !gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss); return renderBible(); } // 칸 머리의 영어 뜻·발음 뜻 켜고 끄기
+  if (e.target.closest('.gl-switch')) { toggleGloss(e.target.closest('.gl-switch')); return renderBible(); } // 칸 머리의 영어 뜻·발음 뜻 켜고 끄기
   const nb = e.target.closest('[data-note]');
   if (nb) { e.stopPropagation(); select(+nb.dataset.note, undefined, true);return openNote(+nb.dataset.note, nb); }
   const fn = e.target.closest('.fn');
@@ -3032,7 +3041,7 @@ let presets = prefs.get('presets', [null, null]);
 const capture = () => ({
   versions: [...S.versions], comm: S.comm, comm2: S.comm2, split: S.split, hideComm: !!S.hideComm, dict: S.dict,
   tab: ['comm', 'dict', 'xref', 'saved'].includes(S.tab) ? S.tab : 'comm',
-  fs, font, cols: { ...cols }, gloss, wordSide, wordOver,
+  fs, font, cols: { ...cols }, gloss, glossG, wordSide, wordOver,
 });
 const presetSummary = p => [
   p.versions.map(nm).join('+') || '성경 없음',
@@ -3051,7 +3060,7 @@ function applyPreset(i) {
   S.tab = p.tab === 'dict' && !S.dict ? 'comm' : p.tab;
   fs = p.fs; font = p.font ?? (p.serif ? 'myeongjo' : 'gothic'); applyFont(); // 예전 세팅은 명조/고딕만
   cols = { ...COLS, ...p.cols }; applyCols(); prefs.set('cols', cols);
-  gloss = p.gloss; prefs.set('gloss', gloss); document.body.classList.toggle('no-gloss', !gloss);
+  setGloss(p.gloss, p.glossG ?? p.gloss);
   setWordMode(!!p.wordSide, !!p.wordOver);
   sortVersions(); save(); refreshBible(); renderComm(); if (S.v) syncComm(S.v);
   flash(`세팅 ${i + 1}로 바꿨습니다`);
@@ -3075,7 +3084,7 @@ addEventListener('keydown', e => { if (e.altKey && (e.code === 'Digit1' || e.cod
 Promise.all([
   idb('marks', 'readonly', s => s.getAll()).then(list => list.forEach(m => marks.set(m.id, m))).catch(() => {}),
   idb('files', 'readonly', s => s.getAll()).catch(() => []),
-]).then(([, files]) => load((files || []).map(fromStore).filter(Boolean), false)).then(() => {
+]).then(([, files]) => load((files || []).map(fromStore).filter(Boolean).sort((a, b) => a.lastModified - b.lastModified), false)).then(() => { // 새로 받은 것이 나중에 (같은 이름이면 새것이 남게)
   // 드라이브: 로그인 창이 버튼 누를 때 바로 뜨도록 미리 불러 두고, 로그인이 살아 있으면 조용히 맞춤
   renderDrive();
   if (GOOGLE_CLIENT_ID && navigator.onLine) loadGis().then(() => driveSync(false)).catch(() => {});
