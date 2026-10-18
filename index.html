@@ -201,6 +201,8 @@
   .vn { font: 700 11px var(--sans); color: var(--accent); margin-right: 7px; vertical-align: 2px; font-variant-numeric: tabular-nums; opacity: .85; }
   .red { color: var(--red); } .ot { color: var(--ot); }
   .ts { display: block; font: 600 13px var(--sans); color: var(--muted); margin: 14px 0 2px; }
+  /* 나란히 볼 때 소제목은 본문 첫 줄 앞에 작게 (그 칸만 아래로 밀려 칸끼리 높이가 어긋나지 않게) */
+  @media (min-width: 761px) { .par .row .ts { display: inline; margin: 0 6px 0 0; font-size: 11.5px; } .par .row .ts::after { content: ' ·'; } }
   /* 칸 사이 간격은 칸 안쪽 여백으로 (선택·하이라이트가 한 줄 띠로 이어지게) */
   .par { display: grid; grid-template-columns: 34px repeat(var(--n), minmax(0, 1fr)); column-gap: 0; } /* 절 번호 칸: 세 자리(119편 176절)까지 한 줄 */
   .par .head:not(:first-child) { padding-left: 10px; padding-right: 10px; }
@@ -840,7 +842,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-18 12:11</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-18 14:08</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
