@@ -424,7 +424,17 @@
   .entry:last-child { border-bottom: 0; }
   .entry h3 { font: 700 13px var(--sans); color: var(--accent); margin: 0 0 10px -10px; padding: 5px 10px; border-radius: 4px; display: inline-block; letter-spacing: -.005em; transition: background .2s; }
   .entry.on h3 { background: var(--accent-soft); }
-  .entry a[data-ref] { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  .entry :is(a[data-ref], a[data-strong]) { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+  /* KJV 번역 목록: 단어 · 횟수 · 구절 칩 */
+  .occ { display: grid; grid-template-columns: minmax(6.5em, max-content) 2.2em 1fr; align-items: baseline; column-gap: 10px; padding: 7px 0; border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); font-family: var(--sans); line-height: 1.5; }
+  .occ + :not(.occ) { margin-top: 6px; }
+  .occ-w { font-weight: 600; color: var(--fg); }
+  .occ-n { font: 600 11px/1 var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+  .occ-r { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+  .occ-r a[data-ref], .entry .occ-r a[data-ref] { padding: 1px 7px; border: 0; border-radius: 4px; background: color-mix(in srgb, var(--accent) 11%, transparent); color: color-mix(in srgb, var(--accent) 75%, var(--fg)); font-size: .88em; font-weight: 600; white-space: nowrap; transition: background .15s; }
+  .occ-r small { font-size: .85em; font-weight: 700; opacity: .7; }
+  .occ-r a[data-ref]:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  @media (max-width: 760px) { .occ { grid-template-columns: max-content 1fr; } .occ-n { text-align: left; } .occ-r { grid-column: 1 / -1; margin-top: 4px; } }
 
   /* 검색 결과·보관함 목록 */
   .seg { display: flex; gap: 4px; margin: 0 0 16px; flex-wrap: wrap; }
@@ -830,7 +840,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-18 11:48</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-18 12:11</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1808,7 +1818,15 @@ const dictRow = (subject, name = S.dict) => rows(dicts[name], isDct(name)
   ? 'select scode, dtext from Lexicon where scode = ?'
   : 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
 // theWord 사전은 구절 링크 글자를 'vref' 로만 적어 둠 (theWord 프로그램이 구절 이름으로 바꿔 보여줌) → 창 1:1
-const fillVref = html => html.replace(/(<a href="#" data-ref="([^"]*)">(?:<[^>]*>)*)s*vrefs*(?=<)/gi, (m, a, r) => { const [b, c, v] = parseRef(r); return b ? a + refName(b, c, v) : m; });
+const fillVref = html => html.replace(/(<a href="#" data-ref="([^"]*)">(?:<[^>]*>)*)\s*\[?vref\]?\s*(?=<)/gi, (m, a, r) => { const [b, c, v] = parseRef(r); return b ? a + refName(b, c, v) : m; })
+  // 같은 사전의 다른 번호로 가는 링크 (tw://[self]?H8130) → 누르면 그 번호 풀이로
+  .replace(/<a href="#" data-ref="tw:\/\/\[self\]\?([HG]\d+)[^"]*">/g, '<a href="#" data-strong="$1">')
+  // KJV 번역 목록 "?again, 2 ⏎ 링크; 링크 ⏎⏎" (글머리표가 '?' 로 깨져 있음) → 단어 · 횟수 · 구절 한 줄씩
+  .replace(/(?:<span style="">\s*<\/span>)?<span style="font-weight:bold;">\?<\/span><span style="">([^<]*?),\s*(\d+)\s*<\/span><br>((?:<span style="">[;\s]*(?:\(\d+\)[;\s]*)?<\/span>|<a [^>]*><span style="">[^<]*<\/span><\/a>)*)(?:<br>(?:<span style="">\s*<\/span>)?)*/g,
+    (_, w, n, refs) => `<span class="occ"><span class="occ-w">${w}</span><span class="occ-n">${n}</span><span class="occ-r">${refs
+      .replace(/<\/span><\/a><span style="">[;\s]*\((\d+)\)[;\s]*<\/span>/g, ' <small>×$1</small></span></a>') // "(2)" = 그 절에 두 번
+      .replace(/<span style="">[;\s]*<\/span>/g, '')}</span></span>`)
+  .replace(/(<span style="font-weight:bold;">)\?(<\/span>)/g, '$1•$2'); // 그 밖의 깨진 글머리표
 const entryHtml = (name, s, data) => isDct(name) ? dctHtml(data) : linkStrong(fillVref(toHtml(data)), s[0]);
 // 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
 // (본문은 "אָב(1, 아브)  아버지 father  아브(명남)는…" 처럼 큰 공백으로 나뉨 → 제목은 앞의 두 덩어리, 나머지는 풀이)
