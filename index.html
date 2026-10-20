@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>커피성경 (Community People's Bible)</title>
+<!-- 링크 미리보기(카톡·문자 등): 그림·제목·설명을 지정 (없으면 앱이 페이지 속 아무 그림이나 고름) -->
+<meta name="description" content="여러 번역을 나란히 보고, 주석과 원어 사전으로 함께 묵상하는 성경">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://hana-bible-viewer.vercel.app/">
+<meta property="og:title" content="커피성경 (Community People's Bible)">
+<meta property="og:description" content="여러 번역을 나란히 보고, 주석과 원어 사전으로 함께 묵상하는 성경">
+<meta property="og:image" content="https://hana-bible-viewer.vercel.app/icons/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
 <!-- 색 설정을 화면 그리기 전에 (깜빡임 없게) -->
 <script>try { const d = document.documentElement; d.dataset.accent = JSON.parse(localStorage.getItem('accent')) || 'green'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; } catch {}
   if (location.hash.startsWith('#guide')) document.documentElement.classList.add('guide-page'); // 사용설명서 링크로 오면 설명서만 한 페이지로</script>
@@ -873,7 +882,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-20 22:40</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-20 22:44</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
