@@ -346,6 +346,16 @@
   .rail-logo-btn { border: 0; padding: 0; background: none; border-radius: 50%; cursor: pointer; margin-bottom: 12px; }
   .rail-logo-btn .rail-logo { margin-bottom: 0; display: block; transition: transform .15s; }
   .rail-logo-btn:hover .rail-logo { transform: scale(1.06); }
+  /* 끼니 창: 날짜 ‹ › / 묵상 · 통독 줄 (누르면 그 구절로) */
+  #kkiniBox { width: min(300px, calc(100vw - 32px)); }
+  .kk-head { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; }
+  .kk-head b { flex: 1; text-align: center; font-size: 14px; }
+  .kk-head b span { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .kk-row { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 10px 12px; margin: 0 0 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--page); color: var(--fg); font: 600 14px/1.4 var(--sans); text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+  .kk-row:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .kk-row small { flex: none; font-size: 11.5px; font-weight: 600; color: var(--accent); }
+  .kk-today { display: block; margin: 4px auto 0; padding: 4px 10px; border: 0; background: none; color: var(--accent); font: 600 12.5px var(--sans); cursor: pointer; }
+  .kk-none { margin: 6px 0; text-align: center; font-size: 13px; }
   #aboutBox { width: min(340px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; text-align: center; line-height: 1.65; }
   .about-badge { width: 72px; height: 72px; border-radius: 50%; display: block; margin: 4px auto 10px; }
   .about-name { display: block; font-size: 20px; letter-spacing: -.02em; }
@@ -433,7 +443,8 @@
   /* 주석 본문: 한글은 낱말 중간에서 줄을 바꾸지 않음, 문단 사이를 띄움 */
   .entry .note { line-height: 1.8; word-break: keep-all; overflow-wrap: anywhere; max-width: 40em; }
   .entry .note p { margin: 0 0 .7em; }
-  .entry .note p.pt { margin: 1.4em 0 .35em; color: var(--accent); }  .entry .note p:first-child { margin-top: 0; }
+  .entry .note p.pt { margin: 1.4em 0 .35em; color: var(--accent); font-weight: 700; }
+  .entry .note p:first-child { margin-top: 0; }
   .entry .note p.topic { margin: 0 0 .15em; font: 600 .84em/1.6 var(--sans); color: var(--muted); }
   .entry .note p.topic + p:not(.topic) { margin-top: .9em; }
   .entry .note .lost { color: var(--muted); font-size: .72em; opacity: .7; }
@@ -755,11 +766,13 @@
   <button class="rb" data-rail="xref" data-icon="link" title="관련 구절 (이 절과 비슷한 내용의 다른 구절)"><span>관련절</span></button>
   <button class="rb" data-rail="saved" data-icon="bookmarks" title="보관함 (책갈피·메모·하이라이트)"><span>보관함</span></button>
   <button class="rb" id="commToggle" data-icon="layout-sidebar-right" aria-pressed="true" title="자료 칸(주석·원어 사전·관련 구절·보관함) 열기·닫기"><span>자료</span></button>
+  <button class="rb" id="kkiniBtn" data-icon="coffee" aria-haspopup="dialog" title="끼니: 공동체가 함께 묵상하는 오늘의 구절로"><span>끼니</span></button>
   <i class="rail-gap" aria-hidden="true"></i>
   <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="글자 크기·글꼴"><span>글자</span></button>
   <button class="rb" id="presetBtn" data-icon="adjustments-horizontal" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)"><span>내 세팅</span></button>
   <button class="rb" id="menuBtn" data-icon="menu-2" aria-haspopup="menu" title="설정: 파일 추가·관리, 구글 드라이브, 백업, 화면, 도움말"><span>설정</span></button>
 </nav>
+<div class="pop" id="kkiniBox" role="dialog" aria-label="오늘의 끼니"></div>
 <div class="pop" id="viewBox" role="dialog" aria-label="글자 크기·글꼴">
   <b>글자</b>
   <div class="view-row">글자 크기
@@ -855,7 +868,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-20 14:58</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-20 19:43</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -892,6 +905,7 @@
       <li>제목 양옆 <b>‹ ›</b> 또는 키보드 <kbd>←</kbd> <kbd>→</kbd>로 앞뒤 장, <kbd>↑</kbd> <kbd>↓</kbd>로 앞뒤 절로 움직여요.</li>
       <li>링크나 검색으로 건너뛴 뒤에는 <b>뒤로 · 앞으로</b>(<kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>→</kbd>)로 돌아가요.</li>
       <li>주석 속 성경 구절에 마우스를 올리면 본문을 미리 볼 수 있어요.</li>
+      <li><b>끼니</b> 버튼을 누르면 공동체가 함께 묵상하는 <b>오늘의 구절</b>로 바로 가요. 작은 창에서 그날의 <b>묵상·통독</b>을 누르면 그 자리로 가고, <b>‹ ›</b>로 다른 날을 볼 수 있어요.</li>
     </ul></section>
 <section id="g-compare"><h3>번역본 대조</h3>
     <figure><img src="img/guide/compare.jpg" alt="번역본 N개 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기" loading="lazy"><figcaption>번역본 N개 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기</figcaption></figure>
@@ -951,6 +965,7 @@
       <li>구글 드라이브에 <b>커피성경</b> 폴더(띄어쓰기 없이)를 만들고 파일을 넣어요. 하위 폴더도 괜찮아요.</li>
       <li><b>설정 › 구글 드라이브 연결</b>(또는 첫 화면 <b>구글 드라이브에서</b>)을 누르고 로그인해요. 드라이브 권한은 모두 체크해 주세요.</li>
       <li>폴더의 파일을 받아 오고, 메모·책갈피·하이라이트·내 세팅이 기기끼리 맞춰져요.</li>
+      <li>'커피성경' 안의 <b>참고</b> 폴더에 둔 파일은 자동으로 받지 않아요. <b>설정 › 파일 관리</b>의 '참고' 폴더 목록에서 필요한 것만 <b>받기</b>로 받아요.</li>
       <li>드라이브에 파일을 더 넣었으면 <b>최신 성경본 불러오기</b>를 눌러요. 새로 올라오거나 바뀐 파일만 받아요.</li>
     </ol>
     <ul>
@@ -1597,14 +1612,16 @@ async function driveList(q, fields, spaces = 'drive') {
 }
 // 폴더 안(하위 폴더 포함)의 성경·주석·사전 파일. 바로가기는 원본을 따라감 → [{ id, name, size }]
 const FOLDER = 'application/vnd.google-apps.folder';
-async function driveFiles(id, seen = new Set()) {
+// ref: '참고' 폴더(안의 하위 폴더 포함) 파일 → 자동으로 받지 않고 파일 관리에서 하나씩
+const REF_FOLDER = '참고';
+async function driveFiles(id, seen = new Set(), ref = false) {
   if (seen.has(id)) return []; // 바로가기가 서로 가리켜도 한 번만
   seen.add(id);
   const out = [];
   for (const f of await driveList(`'${id}' in parents and trashed=false`, 'id,name,mimeType,size,shortcutDetails(targetId,targetMimeType)')) {
     const t = f.shortcutDetails;
-    if (f.mimeType === FOLDER || t?.targetMimeType === FOLDER) out.push(...await driveFiles(t?.targetId || f.id, seen));
-    else if (MODULE.test(f.name)) out.push(t ? { id: t.targetId, name: f.name, size: 0 } : f);
+    if (f.mimeType === FOLDER || t?.targetMimeType === FOLDER) out.push(...await driveFiles(t?.targetId || f.id, seen, ref || f.name.trim() === REF_FOLDER));
+    else if (MODULE.test(f.name)) out.push({ ...(t ? { id: t.targetId, name: f.name, size: 0 } : f), ref });
   }
   // 바로가기는 크기를 몰라서 원본에서 확인
   // (원본을 볼 수 없는 바로가기는 건너뜀: 하나 때문에 전체 맞추기가 멈추지 않게)
@@ -1645,9 +1662,9 @@ const haveKeys = () => new Set(Object.values(fileInfo).map(i => `${i.key}:${i.si
 // 새로 생겼거나 바뀐(크기가 다른) 파일만 받음. 파일 관리에서 지운 것은 건너뜀 (파일 관리에서 다시 받을 수 있음)
 async function syncFiles(folder) {
   const list = await driveFiles(folder), have = haveKeys();
-  driveIdx = Object.fromEntries(list.map(f => [dKey(f), { id: f.id, name: f.name, size: +f.size }]));
+  driveIdx = Object.fromEntries(list.map(f => [dKey(f), { id: f.id, name: f.name, size: +f.size, ref: f.ref || undefined }]));
   prefs.set('driveIdx', driveIdx);
-  return getDriveFiles(list.filter(f => !have.has(dKey(f)) && !driveSkip[dKey(f)]));
+  return getDriveFiles(list.filter(f => !f.ref && !have.has(dKey(f)) && !driveSkip[dKey(f)]));
 }
 async function syncMarks() {
   const [f] = await driveList("name='marks.json'", 'id', 'appDataFolder');
@@ -1732,19 +1749,42 @@ function commHtml(name) {
   // TEXT로 받으면 UTF-8 디코딩에서 RVF 바이트가 깨지므로 blob으로 받음
   const list = rows(db, 'select r.fvi, r.tvi, cast(c.data as blob) from bible_refs r join content c using(topic_id) where r.bi=? and r.ci=? order by r.fvi, r.topic_id', [b, c]);
   return list.length
-    ? list.map(([f, t, d]) => `<article class="entry" data-f="${f}" data-t="${t}"><h3>${BOOKS[b - 1]} ${c}:${f === t ? f : f + '-' + t}</h3><div class="note">${commFmt(toHtml(d))}</div></article>`).join('')
+    ? list.map(([f, t, d]) => `<article class="entry" data-f="${f}" data-t="${t}"><h3>${BOOKS[b - 1]} ${c}:${f === t ? f : f + '-' + t}</h3><div class="note">${commFmt(toHtml(d), b)}</div></article>`).join('')
     : `<p class="empty small">${esc(nm(name))}에는 ${BOOKS[b - 1]} ${c}장 주석이 없습니다.</p>`;
 }
 // 주석 읽기 좋게: 줄바꿈(<br>)마다 문단으로 나눠 사이를 띄우고(빈 줄은 하나로), "☞" 로 시작하는 풀이 문단은 위를 더 띄움,
 // "주제1:" 같은 줄은 작은 머리글로. 옛 파일의 `낱말' 따옴표는 ‘낱말’로, 원어 글자가 빠진 자리 (*) 는 흐리게
-const commFmt = html => html
+// b: 지금 보는 책 (책 이름 없이 "(2:1)" 처럼 적은 같은 책 구절을 링크로)
+const commFmt = (html, b) => linkRefs(html, b)
   .replace(/`([^`'<\n]{1,120})'/g, '‘$1’')
   .replace(/\(\*\)/g, '<span class="lost" title="원본 파일에서 원어 글자가 빠진 자리">(*)</span>')
   .replace(/(<span style="font-weight:bold;">☞[^<]*<\/span>)<span style="">\s*-\s*/g, '$1<br><span style="">') // "☞본문 구절- 풀이" → 구절을 제목 줄로
   .split(/(?:<br>\s*)+/)
   .filter(p => p.replace(/<[^>]*>/g, '').trim())
-  .map(p => { const s = p.replace(/<[^>]*>/g, '').trim(); return `<p${/^☞/.test(s) ? ' class="pt"' : /^주제\s*\d*\s*:/.test(s) ? ' class="topic"' : ''}>${p}</p>`; })
+  .map(p => {
+    const s = p.replace(/<[^>]*>/g, '').trim();
+    if (/^☞/.test(s)) {
+      // 창~신(다른 형식)은 "☞ 천지 - 풀이…" 가 한 문단: 첫 " - " 앞을 제목 줄로 떼어 냄 (제목이 너무 길면 그대로)
+      const m = p.match(/^([^<>]*(?:<[^>]*>[^<>]*)*?)\s+-\s+([\s\S]*)$/);
+      return m && m[1].replace(/<[^>]*>/g, '').length < 160 ? `<p class="pt">${m[1]}</p><p>${m[2]}</p>` : `<p class="pt">${p}</p>`;
+    }
+    return `<p${/^주제\s*\d*\s*:/.test(s) ? ' class="topic"' : ''}>${p}</p>`;
+  })
   .join('');
+// 주석 속 성경 구절 글자 "출 6:3", "시편 23:1-6", 책 이름 없는 "(2:1)"(= 지금 책)을 미리보기·이동 링크로.
+// 이미 링크인 것과 태그 안은 그대로 (만나주석처럼 링크가 없는 주석도 마우스를 올리면 본문이 뜨게)
+const REF_BOOK = [...BOOKS, ...SHORT].map((n, i) => [n, i % 66 + 1]).sort((a, b) => b[0].length - a[0].length);
+const BOOK_NO = Object.fromEntries(REF_BOOK);
+const REF_RE = new RegExp(`(?:(?<![가-힣])(${REF_BOOK.map(x => x[0]).join('|')})\\s?)?(?<![\\d:.])(\\d{1,3}):(\\d{1,3})(?:\\s?[-~]\\s?(\\d{1,3})(?![\\d:]))?(?:(,\\s?)(\\d{1,3})(?![\\d:장절편]))?`, 'g');
+// "마 10:30, 31" 처럼 쉼표 뒤 다음 절: 바로 다음 절이면 "마 10:30~31" 한 링크로, 떨어진 절이면 같은 장의 절로 따로 링크
+const linkRefs = (html, b) => html.split(/(<a\b[\s\S]*?<\/a>|<[^>]+>)/).map((part, i) => i % 2 ? part : part.replace(REF_RE, (all, bk, c, v, v2, comma, w) => {
+  const n = bk ? BOOK_NO[bk] : b, last = VERSES[n - 1]?.[c - 1];
+  if (!n || !(last >= +v)) return all;
+  const link = (from, to, text) => `<a href="#" data-ref="tw://bible.*?id=${n}.${+c}.${from}${to > from ? `-${n}.${+c}.${to}` : ''}">${text}</a>`;
+  const head = w ? all.slice(0, all.length - comma.length - w.length) : all, end = +v2 > +v ? +v2 : +v;
+  if (!w || +w <= end || +w > last) return link(+v, end, head) + (w ? comma + w : '');
+  return +w === end + 1 ? link(+v, +w, v2 ? all : `${head}~${w}`) : link(+v, end, head) + comma + link(+w, +w, w);
+})).join('');
 
 let tabHide = prefs.get('tabHide', []); // 탭 줄에서 뺀 주석·사전 ["comm:이름", "dict:이름"]
 const renderTabBox = () => $('tabBox').innerHTML = '<b>탭 줄에 보일 자료</b><p class="help">체크한 것만 위 탭 줄에 보여요.</p>' +
@@ -2356,6 +2396,47 @@ function renderSaved() {
     section('최근 본 곳', recent, '') + '</div>';
 }
 
+/* ---------- 끼니: 공동체가 날마다 함께 묵상하는 구절 (data/kkini.js, 해마다 새 표) ----------
+   버튼을 누르면 오늘 묵상 구절로 바로 가고, 작은 창에 묵상·통독과 다른 날(‹ ›)을 보여줌 */
+let kkiniAt = null; // 작은 창에 보이는 날
+const loadKkini = () => window.KKINI ? Promise.resolve() : new Promise((ok, no) => {
+  const s = document.createElement('script'); s.src = 'data/kkini.js'; s.onload = ok; s.onerror = () => no(new Error('끼니 표를 불러오지 못했습니다')); document.head.append(s);
+});
+const kkiniOf = d => d.getFullYear() === window.KKINI?.year ? KKINI.days[`${d.getMonth() + 1}-${d.getDate()}`] : null;
+// 묵상 구절로: 그 절부터 (같은 장 안이면) 끝 절까지 고름
+function goKkini([b, c, v, c2, v2]) {
+  go(b, c, v || 1, true); // 첫 절로 가서 고름 (화면도 첫 절에)
+  if (!v || c2 !== c || !(v2 > v)) return;
+  sel = new Set(Array.from({ length: v2 - v + 1 }, (_, i) => v + i)); // 끝 절까지 고르되 화면은 그대로
+  $('bible').querySelectorAll('[data-v]').forEach(e => e.classList.toggle('on', sel.has(+e.dataset.v)));
+  renderSelbar();
+}
+function renderKkini() {
+  const d = kkiniAt, k = kkiniOf(d), wd = '일월화수목금토'[d.getDay()];
+  const today = d.toDateString() === new Date().toDateString();
+  $('kkiniBox').innerHTML = `<div class="kk-head"><button class="btn icon sm" data-kk-day="-1" aria-label="전날">‹</button>` +
+    `<b>${today ? '오늘의 끼니' : '끼니'} <span>${d.getMonth() + 1}월 ${d.getDate()}일 (${wd})</span></b>` +
+    `<button class="btn icon sm" data-kk-day="1" aria-label="다음날">›</button></div>` +
+    (k ? `<button class="kk-row" data-kk="0"><small>묵상</small>${esc(k[0])}</button>` +
+      (k[2] ? `<button class="kk-row" data-kk="2"><small>통독</small>${esc(k[2])}</button>` : '') +
+      (today ? '' : '<button class="kk-today" data-kk-day="0">오늘로</button>')
+      : `<p class="muted kk-none">${d.getFullYear()}년 끼니 표가 아직 없어요.</p>` + (today ? '' : '<button class="kk-today" data-kk-day="0">오늘로</button>'));
+}
+$('kkiniBtn').onclick = async e => {
+  if ($('kkiniBox').classList.contains('open')) return closePops();
+  try { await loadKkini(); } catch (err) { return flash(err.message); }
+  kkiniAt = new Date(); const k = kkiniOf(kkiniAt);
+  if (k?.[1] && allVersions().length) goKkini(k[1]);
+  renderKkini(); openPop($('kkiniBox'), $('kkiniBtn'));
+};
+$('kkiniBox').onclick = e => {
+  const day = e.target.closest('[data-kk-day]');
+  if (day) { kkiniAt = +day.dataset.kkDay ? new Date(kkiniAt.getFullYear(), kkiniAt.getMonth(), kkiniAt.getDate() + +day.dataset.kkDay) : new Date(); renderKkini(); return placePop($('kkiniBox')); }
+  const row = e.target.closest('[data-kk]'); if (!row) return;
+  const k = kkiniOf(kkiniAt), r = k[+row.dataset.kk + 1];
+  if (r) { goKkini(r.length > 2 ? r : [r[0], r[1], 0]); if (phone()) closePops(); }
+};
+
 /* ---------- 팝오버 ---------- */
 function openPop(el, anchor) {
   closePops();
@@ -2589,10 +2670,13 @@ function renderManage() {
 // 드라이브에는 있는데 이 브라우저에는 없는 파일 (지웠거나 아직 안 받은 것): 하나씩 받기
 function driveOnlyHtml() {
   if (!driveOn()) return '';
-  const have = haveKeys(), list = Object.entries(driveIdx).filter(([k]) => !have.has(k));
-  return list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">지운 파일은 '최신 성경본 불러오기'를 해도 다시 받지 않아요. 필요하면 여기서 받으세요.</p>` +
-    list.map(([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`).join('') +
-    (list.length > 1 ? `<div class="drive-row"><span></span><button class="btn sm primary" data-drive-get="*">${list.length}개 모두 받기</button></div>` : '') : '';
+  const have = haveKeys(), all = Object.entries(driveIdx).filter(([k]) => !have.has(k));
+  const list = all.filter(([, f]) => !f.ref), refs = all.filter(([, f]) => f.ref);
+  const row = ([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`;
+  return (list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">지운 파일은 '최신 성경본 불러오기'를 해도 다시 받지 않아요. 필요하면 여기서 받으세요.</p>` +
+    list.map(row).join('') +
+    (list.length > 1 ? `<div class="drive-row"><span></span><button class="btn sm primary" data-drive-get="*">${list.length}개 모두 받기</button></div>` : '') : '') +
+    (refs.length ? `<h4>드라이브 '${REF_FOLDER}' 폴더</h4><p class="help">'${REF_FOLDER}' 폴더의 파일은 자동으로 받지 않아요. 필요한 것만 받으세요.</p>` + refs.map(row).join('') : '');
 }
 async function removeModules(items) {
   for (const it of items) {
@@ -2635,7 +2719,7 @@ $('manageBox').addEventListener('click', async e => {
   if (get) {
     if (driveBusy) return flash('드라이브와 맞추는 중입니다. 끝난 뒤 다시 눌러 주세요');
     const have = haveKeys(), k = get.dataset.driveGet;
-    const list = k === '*' ? Object.entries(driveIdx).filter(([x]) => !have.has(x)).map(([, f]) => f) : [driveIdx[k]];
+    const list = k === '*' ? Object.entries(driveIdx).filter(([x, f]) => !f.ref && !have.has(x)).map(([, f]) => f) : [driveIdx[k]];
     driveBusy = true; get.disabled = true;
     try { const n = await getDriveFiles(list); flash(`드라이브에서 ${n}개를 받았습니다`); }
     catch (err) { alert(`구글 드라이브: ${err.message}`); }
