@@ -114,7 +114,8 @@
   .search:focus, .btn:focus-visible, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   /* 번역본: 알약 모양 스위치 (고른 것은 짙게). 발음·뜻 보기 등 나머지 버튼은 작은 글자 버튼 */
   /* safe: 번역본이 넘치면 오른쪽 맞춤을 풀어 첫 탭부터 보이고 밀어서 봄 (그냥 flex-end면 왼쪽이 잘려 못 봄) */
-  .page-head .tabs { flex: 1 1 auto; min-width: 0; border: 0; padding: 0; min-height: 0; justify-content: safe flex-end; gap: 6px; }
+  .page-head .tabs { flex: 1 1 auto; min-width: 0; border: 0; padding: 0; min-height: 0; justify-content: flex-start; gap: 6px; } /* 고른 번역본은 "번역본 N개 ▾" 바로 옆부터 */
+  #verTabs .word-mode.spacer { margin-left: auto; } /* 단어 뜻 고르기는 오른쪽 끝(검색 옆) */
   /* 오른쪽 칸 탭 줄 높이를 성경 칸 머리와 맞춤 (본문이 같은 높이에서 시작) */
   @media (min-width: 761px) {
     :root:not([data-design="classic"]) :is(#comTabs, #comTabs2) { min-height: 64px; }
@@ -854,7 +855,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-20 14:47</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-20 14:58</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
