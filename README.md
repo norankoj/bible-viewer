@@ -7,9 +7,8 @@
 | 앱 | 성경 | 주석 | 사전 |
 |---|---|---|---|
 | theWord | `.ont` `.ot` `.nt` | `.cmt.twm` | `.gbk.twm` `.dct.twm` |
-| Bible Analyzer | `.bdb` | | `.dct` |
 | MySword | `.bbl.mybible` | | |
-| 베들레헴 | `.sdb` | `.sdb` 원전분해 (주석 칸 탭) | |
+| 베들레헴 | `.bdb` `.sdb` | `.sdb` 원전분해 (주석 칸 탭) | `.dct` |
 
 ## 사용법
 
