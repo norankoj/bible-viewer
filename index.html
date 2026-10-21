@@ -492,7 +492,25 @@
   .search-opts .chk { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
   .hit .o, .hit .k { display: block; } .hit .k .o { color: var(--muted); } .hit .o.heb { font-size: 1.2em; } .hit .k { color: var(--muted); margin-top: 2px; }
   .hit .tr, .hit .gl, .hit .fn { display: none; }
-  .hits-lines { margin: 2px 0 4px; font-size: 12.5px; color: var(--muted); } .hits-lines b { color: var(--fg); font-weight: 600; }
+  /* 원어 번호 검색 머리: 번호 · 절 수 크게, 그 아래 한 줄 안내, 접는 주의 */
+  .hits-head { margin: 0 0 14px; }
+  .hh-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .hh-title > b { font: 700 20px/1.2 var(--sans); color: var(--accent); letter-spacing: -.01em; }
+  .hh-title span { font-size: 14px; color: var(--muted); } .hh-title span b { color: var(--fg); font-weight: 700; }
+  .hh-sub { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); } .hh-sub b { color: var(--fg); font-weight: 600; }
+  .hh-note { margin-top: 4px; font-size: 12px; color: var(--muted); }
+  .hh-note summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 4px; }
+  .hh-note summary::-webkit-details-marker { display: none; }
+  .hh-note summary::before { content: 'i'; display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid currentColor; font: 700 9px/1 var(--sans); }
+  .hh-note[open] { line-height: 1.6; }
+  .hits-more { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  /* 원전분해 보기 스위치 */
+  .sw-label input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .sw-label .sw { position: relative; width: 26px; height: 15px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 35%, var(--line)); transition: background .2s; }
+  .sw-label .sw i { position: absolute; top: 0; bottom: 0; margin: auto 0; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .2s cubic-bezier(.16,1,.3,1); }
+  .sw-label input:checked + .sw { background: var(--accent); }
+  .sw-label input:checked + .sw i { transform: translateX(11px); }
+  .sw-label input:focus-visible + .sw { outline: 2px solid var(--accent); outline-offset: 2px; }
   .hits-warn { margin: 0 0 8px; padding: 6px 10px; border-radius: 4px; background: color-mix(in srgb, var(--amber) 14%, transparent); font-size: 12px; line-height: 1.55; color: var(--fg); }
   .hit .sh { color: var(--accent); background: var(--accent-soft); font-weight: 700; border-radius: 3px; padding: 0 2px; }
   .hit .sw { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 8px; }
@@ -506,6 +524,7 @@
   .search-opts { display: flex; flex-wrap: wrap; gap: 12px; margin: -6px 0 12px; font-size: 13px; color: var(--muted); }
   .search-opts select { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--fg); margin-left: 4px; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
+  .hits-head ~ .chips .chip { height: 24px; padding: 0 8px; border-color: transparent; background: color-mix(in srgb, var(--fg) 5%, transparent); }
   .chip { height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); font-size: 12px; font-weight: 500; }
   .chip:hover { background: var(--bg); }
   .chip.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
@@ -890,7 +909,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-21 11:08</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-21 11:15</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -2361,12 +2380,13 @@ function renderHits() {
   const bibleList = (h.bible || []).filter(i => inR(REF[i][0]));
   const commList = h.comm ? h.comm.list.filter(x => inR(x.e.b)) : null, cns = commNames();
   const locals = [...(h.Q.strong ? searchOnly() : []), ...allVersions()].filter(n => bibles[n] && (!h.Q.strong || realStrong(n) && hasOriginal(n, h.Q.strong[0])));
-  let html = `<div class="seg">
+  // 원어 번호 검색은 '성경' 탭 하나뿐이라 탭 줄을 빼고 바로 옵션
+  let html = `${h.Q.strong ? '' : `<div class="seg">
     ${locals.length ? `<button class="tab ${h.scope === 'bible' ? 'on' : ''}" data-scope="bible">성경 ${h.bible ? bibleList.length : '…'}</button>` : ''}
-    ${cns.length && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 ${commList ? commList.length : '…'}</button>` : ''}</div>
+    ${cns.length ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 ${commList ? commList.length : '…'}</button>` : ''}</div>`}
     <div class="search-opts">
       ${h.scope === 'bible' && locals.length > 1 ? `<label>번역본 <select data-sopt="ver">${locals.map(n => `<option value="${esc(n)}" ${n === h.ver ? 'selected' : ''}>${esc(nm(n))}</option>`).join('')}</select></label>` : ''}
-      ${h.scope === 'bible' && h.Q.strong && searchOnly().length ? `<label class="chk"><input type="checkbox" data-sopt="ana" ${anaShow ? 'checked' : ''}> 원전분해 보기</label>` : ''}
+      ${h.scope === 'bible' && h.Q.strong && searchOnly().length ? `<label class="chk sw-label"><input type="checkbox" data-sopt="ana" ${anaShow ? 'checked' : ''}><span class="sw"><i></i></span>원전분해 보기</label>` : ''}
       <label>범위 <select data-sopt="range">${[['all', '전체'], ['ot', '구약'], ['nt', '신약'], ['book', `현재 책 (${BOOKS[S.b - 1]})`]]
         .map(([v, t]) => `<option value="${v}" ${v === h.range ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
     </div>`;
@@ -2391,12 +2411,13 @@ function renderHits() {
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
     const wordN = h.Q.strong && h.bible.words ? bibleList.reduce((a, i) => a + (h.bible.words.get(i) || 0), 0) : 0;
-    if (num) html += `<p class="hits-lines">위: <b>${esc(nm(h.ver))}</b>${lower ? ` · 아래: <b>${esc(nm(lower))}</b>` : ''}</p>` +
-      '<p class="hits-warn">원전분해와 개역개정S는 파일마다 원어 번호를 붙인 곳이 조금씩 달라서, 같은 번호라도 찾아지는 절이 다를 수 있어요. 참고용으로 보세요.</p>';
-    html += `<p class="hits-sum">${qLabel(h.q)} ${h.Q.strong ? `나오는 절 ${bibleList.length}개` : `${bibleList.length}절`} (구약 ${ot}, 신약 ${bibleList.length - ot})${wordN ? ` · 나오는 단어 ${wordN}번` : ''}${h.Q.strong ? ` · ${esc(nm(h.ver))} 기준` : ''}</p>` +
-      (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
+    if (num) html = `<div class="hits-head"><div class="hh-title"><b>${esc(num)}</b><span>나오는 절 <b>${bibleList.length.toLocaleString()}</b>${wordN ? ` · 단어 <b>${wordN.toLocaleString()}</b>번` : ''}</span></div>` +
+      `<p class="hh-sub">구약 ${ot} · 신약 ${bibleList.length - ot} · 위 <b>${esc(nm(h.ver))}</b>${lower ? ` · 아래 <b>${esc(nm(lower))}</b>` : ''}</p>` +
+      '<details class="hh-note"><summary>번호는 파일마다 조금 달라요</summary>원전분해와 개역개정S는 원어 번호를 붙인 곳이 조금씩 달라서, 같은 번호라도 찾아지는 절이 다를 수 있어요. 참고용으로 보세요.</details></div>' + html;
+    else html += `<p class="hits-sum">${qLabel(h.q)} ${h.Q.strong ? `나오는 절 ${bibleList.length}개` : `${bibleList.length}절`} (구약 ${ot}, 신약 ${bibleList.length - ot})${wordN ? ` · 나오는 단어 ${wordN}번` : ''}${h.Q.strong ? ` · ${esc(nm(h.ver))} 기준` : ''}</p>`;
+    html += (Object.keys(byBook).length > 1 ? `<div class="chips">${h.book ? '<button class="chip" data-sbook="0">전체</button>' : ''}${Object.entries(byBook)
         .map(([b, n]) => `<button class="chip ${+b === h.book ? 'on' : ''}" data-sbook="${b}">${SHORT[b - 1]} ${n}</button>`).join('')}</div>` : '') +
-      (shown.length > 500 ? '<p class="muted">처음 500절만 표시합니다. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
+      (shown.length > 500 ? '<p class="hits-more">처음 500절만 보여요. 범위나 책을 골라 좁혀 보세요.</p>' : '') +
       shown.slice(0, 500).map(i => `<button class="hit" data-i="${i}"><span class="ref">${refName(...REF[i])}</span>${line(i)}</button>`).join('') +
       (!bibleList.length ? '<p class="muted">여러 단어는 모두 들어 있는 절을, "따옴표"는 붙은 그대로, H430·G26은 원어 번호로 찾습니다.</p>' : '');
   } else if (!cns.length) {
@@ -3013,7 +3034,7 @@ $('comm').onclick = e => {
 $('comm2').onclick = e => anaWord(e) || linkClick(e);
 // 원전분해의 스트롱 번호: 성경 단어를 누른 것처럼 그 자리에 사전 팝업
 function anaWord(e) {
-  const a = e.target.closest('.ana [data-strong]'); if (!a) return false;
+  const a = e.target.closest('.ana [data-strong], .ana-hit [data-strong]'); if (!a) return false; // 원전분해 탭·검색 결과의 원전분해 보기: 번호를 누르면 그 자리 작은 창 (보던 화면 그대로)
   e.preventDefault(); e.stopPropagation(); showWord(a, true); return true;
 }
 function linkClick(e) {
