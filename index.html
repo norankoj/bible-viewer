@@ -487,6 +487,9 @@
   .hit { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 12px 12px; margin: 0 -12px; border-radius: 10px; font: calc(var(--fs) - 2px)/1.7 var(--read); transition: background .15s; }
   .hit:hover { background: var(--surface); }
   .hit .ref { font: 600 12px var(--sans); color: var(--accent); margin-right: 8px; }
+  .hit .ana-hit { display: block; margin-top: 6px; padding: 6px 10px; border-left: 2px solid color-mix(in srgb, var(--accent) 35%, transparent); background: color-mix(in srgb, var(--accent) 5%, transparent); font-size: .92em; }
+  .hit .ana-hit .aw { margin: 0; }
+  .search-opts .chk { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
   .hit .o, .hit .k { display: block; } .hit .k .o { color: var(--muted); } .hit .o.heb { font-size: 1.2em; } .hit .k { color: var(--muted); margin-top: 2px; }
   .hit .tr, .hit .gl, .hit .fn { display: none; }
   .hits-lines { margin: 2px 0 4px; font-size: 12.5px; color: var(--muted); } .hits-lines b { color: var(--fg); font-weight: 600; }
@@ -887,7 +890,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-20 23:07</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-21 11:08</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1235,7 +1238,7 @@ async function load(files, persist, picked, quiet) {
   if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
   sortVersions();
   if (!commFiles[S.comm]) S.comm = cn[0] || '';
-  if (!dictFiles[S.dict]) S.dict = dictNames()[0] || '';
+  if (!dictFiles[S.dict]) S.dict = dictNames().find(isKorDict) || dictNames()[0] || '';
   if (S.tab === 'dict' && !S.dict) S.tab = 'comm';
   // 오프라인 대비: 원어 성경이 있으면 구약·신약 단어 번호 자료를 앱 보관함에 미리 받아 둠 (없을 때 한 번만)
   if (window.caches && Object.keys(bibles).some(needsTag))
@@ -1331,6 +1334,9 @@ const commNames = () => ordered('comm', Object.keys(commFiles));
 // 오른쪽 칸 탭 줄 순서: 주석·사전을 함께 ("comm:이름", "dict:이름")
 const rightKeys = () => ordered('right', [...commNames().map(n => 'comm:' + n), ...dictNames().map(n => 'dict:' + n)]);
 const dictNames = () => ordered('dict', Object.keys(dictFiles));
+// 한글 원어 사전(StrongBniel, 이름에 '한글' 등)을 먼저: 단어를 누르면 뜨는 창은 사전 탭에서 무엇을 봤든 늘 이것, 처음 여는 사전 탭도 이것
+const isKorDict = n => /한글|한국|bniel|kor/i.test(n + ' ' + nm(n));
+const wordDict = () => dictNames().find(isKorDict) || S.dict;
 // 대조 보기 칸·복사 순서도 탭 순서를 따름
 const sortVersions = () => { S.versions = allVersions().filter(n => S.versions.includes(n)); };
 
@@ -2072,7 +2078,7 @@ function rankCandidates(ids, gloss, name) {
 
 // popOnly: 원전분해처럼 주석 칸 안에서 누른 단어는 '옆 사전' 설정이어도 팝업으로 (보던 탭이 사전으로 바뀌지 않게)
 async function showWord(w, popOnly) {
-  const pop = $('wordPop'), name = S.dict;
+  const pop = $('wordPop'), name = wordDict();
   const show = html => { pop.innerHTML = sheetClose + html; openPop(pop, w); }; // 오른쪽 단어 공부 노트
   if (!name) return show('<p class="muted">원어 사전 파일(.gbk.twm)을 추가하면 단어 뜻이 나옵니다.</p>');
   show('<p class="muted">사전 준비 중… (처음 한 번, 몇 초 걸립니다)</p>');
@@ -2086,7 +2092,7 @@ async function showWord(w, popOnly) {
   if (wordSide && !popOnly && !S.hideComm && ids.length) { // 주석 칸을 숨겼으면 팝업으로
     closePops();
     const info = byIdOf(name);
-    D.q = lemma; D.entry = ids[0]; D.scroll = 0;
+    S.dict = name; D.q = lemma; D.entry = ids[0]; D.scroll = 0;
     D.list = ids.length > 1 ? ids.map(s => info.get(s)).filter(Boolean).map(e => ({ s: e.s, h: e.h, text: e.title })) : null;
     S.tab = 'dict'; return renderComm();
   }
@@ -2094,7 +2100,7 @@ async function showWord(w, popOnly) {
 }
 
 function wordPopAt(i, lemma = '') {
-  const pop = $('wordPop'), ids = pop.dataset.ids ? pop.dataset.ids.split(',') : [], info = byIdOf(S.dict), e = info.get(ids[i]);
+  const pop = $('wordPop'), ids = pop.dataset.ids ? pop.dataset.ids.split(',') : [], info = byIdOf(wordDict()), e = info.get(ids[i]);
   if (!e) {
     // 한 글자짜리 접두어(וְ 그리고, הַ 정관사 등)는 스트롱 사전에 번호가 없음
     const prefix = /^[א-ת][֑-ׇ]*$/.test(lemma);
@@ -2113,9 +2119,9 @@ function wordPopAt(i, lemma = '') {
     <div class="body" id="wordBody">${esc(body)}…</div>
     <h5 class="ws-h">이 단어가 나오는 곳</h5><div id="wordOcc"><p class="muted">찾는 중…</p></div>`;
   pop.scrollTop = 0; placePop(pop);
-  const name = S.dict;
+  const name = wordDict();
   openDict(name).then(() => {
-    const row = dictRow(e.s), box = $('wordBody');
+    const row = dictRow(e.s, name), box = $('wordBody');
     if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = entryHtml(name, e.s, row[1]); pop.querySelector('.ws-title')?.remove(); placePop(pop); }
   }).catch(() => {});
   wordOccurrences(e.s);
@@ -2158,7 +2164,7 @@ $('wordPop').onclick = e => {
   const ss = e.target.closest('[data-search-strong]');
   if (ss) { closePops(); return searchStrong(ss.dataset.searchStrong); }
   const open = e.target.closest('[data-open]');
-  if (open) { closePops(); S.tab = 'dict'; S.hideComm = false; save(); D.entry = open.dataset.open; D.list = null; renderComm(); renderBible(); return; }
+  if (open) { closePops(); S.dict = wordDict(); S.tab = 'dict'; S.hideComm = false; save(); D.entry = open.dataset.open; D.list = null; renderComm(); renderBible(); return; }
   // 풀이 속 링크: 번호 참조는 팝업 안에서 그 항목으로, 성경 구절은 그 구절로
   const st = e.target.closest('[data-strong]');
   if (st) { e.preventDefault(); $('wordPop').dataset.ids = st.dataset.strong; return wordPopAt(0); }
@@ -2339,6 +2345,16 @@ const korHl = (ver, i, num) => verseHtml(bibles[ver][i] || '').replace(/<sup cla
   .replace(/<span class="w" data-strong="([^"]*)"[^>]*>/g, (_, ids) => ids.split(',').includes(num) ? '<span class="sh">' : '<span>');
 const isHeb = (ver, i) => /[֐-׿]/.test(bibles[ver][i] || '');
 
+// 원어 번호 검색 결과에 원전분해 풀이(찾는 번호의 단어만: 원어 · 기본형 · 문법 · 뜻)를 함께 (검색 칸의 '원전분해 보기')
+let anaShow = prefs.get('anaShow', false);
+function anaHit(ana, i, num) {
+  if (!anaShow || !ana) return '';
+  const db = comms[ana];
+  if (!db) { if (!anaHit.opening) anaHit.opening = openComm(ana).then(() => { anaHit.opening = null; if (S.tab === 'search') renderHits(); }, () => (anaHit.opening = null)); return '<span class="ana-hit muted">원전분해 여는 중…</span>'; }
+  const t = rows(db, 'select btext from Bible where book = ? and chapter = ? and verse = ?', REF[i])[0]?.[0] || '';
+  const lines = t.split(/[\r\n]+/).filter(l => l.trim() && anaWords(l)[0]?.num === num.toUpperCase());
+  return lines.length ? `<span class="ana-hit">${anaHtml(lines.join('\n'))}</span>` : '';
+}
 function renderHits() {
   const h = hits, mk = s => h.Q.re && !h.Q.strong ? esc(s).replace(h.Q.re, m => `<mark>${m}</mark>`) : esc(s);
   const inR = b => inRange(b, h.range);
@@ -2350,6 +2366,7 @@ function renderHits() {
     ${cns.length && !h.Q.strong ? `<button class="tab ${h.scope === 'comm' ? 'on' : ''}" data-scope="comm">주석 ${commList ? commList.length : '…'}</button>` : ''}</div>
     <div class="search-opts">
       ${h.scope === 'bible' && locals.length > 1 ? `<label>번역본 <select data-sopt="ver">${locals.map(n => `<option value="${esc(n)}" ${n === h.ver ? 'selected' : ''}>${esc(nm(n))}</option>`).join('')}</select></label>` : ''}
+      ${h.scope === 'bible' && h.Q.strong && searchOnly().length ? `<label class="chk"><input type="checkbox" data-sopt="ana" ${anaShow ? 'checked' : ''}> 원전분해 보기</label>` : ''}
       <label>범위 <select data-sopt="range">${[['all', '전체'], ['ot', '구약'], ['nt', '신약'], ['book', `현재 책 (${BOOKS[S.b - 1]})`]]
         .map(([v, t]) => `<option value="${v}" ${v === h.range ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
     </div>`;
@@ -2369,7 +2386,7 @@ function renderHits() {
       : bibles[lower]?.searchOnly ? hitOrigHtml(lower, i, num) : esc(plain[lower][i] || '');
     const topHtml = i => readable(h.ver) ? `<span class="o">${korHl(h.ver, i, num)}</span>` : hitOrigHtml(h.ver, i, num);
     if (lower && !bibles[lower]?.searchOnly) plain[lower] ||= bibles[lower].map(plainVerse);
-    const line = i => num ? topHtml(i) + (lower ? `<span class="k">${lowerHtml(i)}</span>` : '') : mk(plain[show][i]);
+    const line = i => num ? topHtml(i) + (lower ? `<span class="k">${lowerHtml(i)}</span>` : '') + anaHit(ana, i, num) : mk(plain[show][i]);
     const byBook = {};
     for (const i of bibleList) byBook[REF[i][0]] = (byBook[REF[i][0]] || 0) + 1;
     const ot = bibleList.filter(i => REF[i][0] <= 39).length, shown = h.book ? bibleList.filter(i => REF[i][0] === h.book) : bibleList;
@@ -2602,7 +2619,7 @@ document.querySelectorAll('[data-rail]').forEach(b => b.onclick = e => {
   e.stopPropagation(); closePops();
   const t = b.dataset.rail;
   if (t === 'dict' && !dictNames().length) return flash('원어 사전 파일(.gbk.twm, .dct)을 넣으면 쓸 수 있어요');
-  if (t === 'dict') S.dict ||= dictNames()[0];
+  if (t === 'dict') S.dict ||= dictNames().find(isKorDict) || dictNames()[0];
   S.tab = S.tab === t && !S.hideComm ? 'comm' : t;
   S.hideComm = false; save(); renderComm(); renderBible(); if (S.v) syncComm(S.v);
 });
@@ -2684,8 +2701,8 @@ function moveTab(from, to, after) {
 const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + 'MB';
 function renderManage() {
   const groups = [['bible', '성경', allVersions().filter(n => bibles[n])], ['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length);
-  $('manageBox').innerHTML = '<b>불러온 파일</b><p class="help">이름 칸을 고치면 화면에 보이는 이름이 바뀝니다(비우면 원래 이름). 지울 파일은 체크하세요. 원본 파일과 메모·책갈피는 그대로 남습니다. 순서는 탭을 끌어서 바꿉니다.</p>' +
-    (groups.length ? groups.map(([k, t, ns]) => `<h4>${t}</h4>` + ns.map(n =>
+  $('manageBox').innerHTML = '<b>불러온 파일</b><p class="help">이름 칸을 고치면 화면에 보이는 이름이 바뀝니다(비우면 원래 이름). 지울 파일은 체크하세요. 원본 파일과 메모·책갈피는 그대로 남습니다. 목록은 가나다순이고, 화면에 보이는 순서는 탭을 끌어서 바꿉니다.</p>' +
+    (groups.length ? groups.map(([k, t, ns]) => `<h4>${t}</h4>` + [...ns].sort((a, b) => KO.compare(nm(a), nm(b))).map(n => // 목록은 가나다순 (보는 순서는 탭에서)
       `<label><input type="checkbox" value="${k}:${esc(n)}" aria-label="${esc(nm(n))} 고르기">
         <input class="rename" data-rename="${esc(n)}" value="${esc(nm(n))}" placeholder="${esc(n)}" title="보이는 이름 (원래 파일: ${esc(n)})" aria-label="${esc(n)} 이름">
         <small>${fileInfo[n] ? mb(fileInfo[n].size) : ''}</small></label>`).join('')).join('')
@@ -2700,7 +2717,7 @@ function renderManage() {
 // 드라이브에는 있는데 이 브라우저에는 없는 파일 (지웠거나 아직 안 받은 것): 하나씩 받기
 function driveOnlyHtml() {
   if (!driveOn()) return '';
-  const have = haveKeys(), all = Object.entries(driveIdx).filter(([k]) => !have.has(k));
+  const have = haveKeys(), all = Object.entries(driveIdx).filter(([k]) => !have.has(k)).sort((a, b) => KO.compare(a[1].name, b[1].name));
   const list = all.filter(([, f]) => !f.ref), refs = all.filter(([, f]) => f.ref);
   const row = ([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`;
   return (list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">지운 파일은 '최신 성경본 불러오기'를 해도 다시 받지 않아요. 필요하면 여기서 받으세요.</p>` +
@@ -2954,6 +2971,7 @@ $('comTabs2').onclick = e => {
 $('comm').onchange = e => {
   const o = e.target.dataset.sopt; if (!o || !hits) return;
   hits.book = 0;
+  if (o === 'ana') { anaShow = e.target.checked; prefs.set('anaShow', anaShow); return renderHits(); }
   if (o === 'ver') { hits.ver = e.target.value; hits.bible = null; renderHits(); runBibleSearch(); }
   else { hits.range = e.target.value; renderHits(); }
 };
