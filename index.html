@@ -817,6 +817,9 @@
     :root:not([data-design="classic"]):not([data-word="over"]) #wordPop.open { animation-name: sheet-up; }
     main, main.split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 55% 45%; }
     main.split #pane2, [data-split], .resizer { display: none !important; }
+    /* 첫 화면(성경을 아직 안 넣음): 빈 자료 칸이 아래 절반을 가리지 않게 인사말을 화면 가득 */
+    body.no-bibles main { grid-template-rows: minmax(0, 1fr); }
+    body.no-bibles main > .pane:not(#biblePane) { display: none; }
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
     .scroll { padding: 18px 16px 88px; }
     .chapter-title { font-size: 22px; margin-bottom: 16px; }
@@ -1025,7 +1028,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 17:11</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 17:36</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
