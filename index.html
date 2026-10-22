@@ -909,7 +909,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-21 23:15</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 14:23</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1007,7 +1007,7 @@
       <li><b>설정 › 구글 드라이브 연결</b>(또는 첫 화면 <b>구글 드라이브에서</b>)을 누르고 로그인해요. 드라이브 권한은 모두 체크해 주세요.</li>
       <li>폴더의 파일을 받아 오고, 메모·책갈피·하이라이트·내 세팅이 기기끼리 맞춰져요.</li>
       <li>'커피성경' 안의 <b>참고</b> 폴더에 둔 파일은 자동으로 받지 않아요. <b>설정 › 파일 관리</b>의 '참고' 폴더 목록에서 필요한 것만 <b>받기</b>로 받아요.</li>
-      <li>드라이브에 파일을 더 넣었으면 <b>최신 성경본 불러오기</b>를 눌러요. 새로 올라오거나 바뀐 파일만 받아요.</li>
+      <li><b>최신 성경본 불러오기</b>를 누르면 이 기기를 드라이브 '커피성경' 폴더와 <b>똑같이 맞춰요</b>. 새 파일·고친 파일은 받고, 이 기기에서 지운 파일도 다시 받고, 드라이브에서 지운 파일은 이 기기에서도 지워요. 직접 추가한 파일과 메모·책갈피는 그대로예요.</li>
     </ol>
     <ul>
       <li>로그인은 1시간 유지돼요. 그동안은 앱을 켤 때·메모를 고칠 때 저절로 맞추고, 그 뒤에는 <b>최신 성경본 불러오기</b>를 한 번 눌러 주세요. 받아 둔 파일과 메모는 로그인 없이도 열려요.</li>
@@ -1017,7 +1017,7 @@
 <section id="g-files"><h3>파일 관리 · 백업</h3>
     <figure><img src="img/guide/files.jpg" alt="설정 › 파일 관리" loading="lazy"><figcaption>설정 › 파일 관리</figcaption></figure>
     <ul>
-      <li><b>설정 › 파일 관리</b>: 보이는 이름 바꾸기, 골라서 지우기, 이 기기 저장 공간 보기. 드라이브에서 받은 파일을 지우면 다시 받지 않고, <b>드라이브에만 있는 파일</b>에서 하나씩(또는 모두) 다시 받을 수 있어요.</li>
+      <li><b>설정 › 파일 관리</b>: 보이는 이름 바꾸기, 골라서 지우기, 이 기기 저장 공간 보기. 드라이브에서 받은 파일을 지우면 앱을 켤 때 저절로 다시 받지는 않아요. <b>드라이브에만 있는 파일</b>에서 하나씩 받거나 <b>최신 성경본 불러오기</b>로 모두 다시 받아요. 이 기기에서 계속 안 쓸 파일은 드라이브의 <b>참고</b> 폴더로 옮겨 두세요.</li>
       <li><b>메모·책갈피 백업</b>은 파일로 저장하고 <b>백업 불러오기</b>로 되살려요. 드라이브를 연결하면 드라이브가 백업 역할을 해요.</li>
       <li><b>저장된 파일 모두 지우기</b>는 성경·주석 파일만 지워요(메모·책갈피는 남아요). 그 뒤 <b>최신 성경본 불러오기</b>를 누르면 드라이브 파일을 모두 다시 받아요.</li>
     </ul></section>
@@ -1679,14 +1679,14 @@ async function driveFiles(id, seen = new Set(), ref = false) {
   if (seen.has(id)) return []; // 바로가기가 서로 가리켜도 한 번만
   seen.add(id);
   const out = [];
-  for (const f of await driveList(`'${id}' in parents and trashed=false`, 'id,name,mimeType,size,shortcutDetails(targetId,targetMimeType)')) {
+  for (const f of await driveList(`'${id}' in parents and trashed=false`, 'id,name,mimeType,size,modifiedTime,shortcutDetails(targetId,targetMimeType)')) {
     const t = f.shortcutDetails;
     if (f.mimeType === FOLDER || t?.targetMimeType === FOLDER) out.push(...await driveFiles(t?.targetId || f.id, seen, ref || f.name.trim() === REF_FOLDER));
     else if (MODULE.test(f.name)) out.push({ ...(t ? { id: t.targetId, name: f.name, size: 0 } : f), ref });
   }
   // 바로가기는 크기를 몰라서 원본에서 확인
   // (원본을 볼 수 없는 바로가기는 건너뜀: 하나 때문에 전체 맞추기가 멈추지 않게)
-  for (const f of out) if (!f.size) f.size = await gfetch(`${DRIVE}/${f.id}?fields=size&supportsAllDrives=true`).then(r => r.json()).then(j => +j.size || 0, () => 0);
+  for (const f of out) if (!f.size) Object.assign(f, await gfetch(`${DRIVE}/${f.id}?fields=size,modifiedTime&supportsAllDrives=true`).then(r => r.json()).then(j => ({ size: +j.size || 0, modifiedTime: j.modifiedTime }), () => ({ size: 0 })));
   return out.filter(f => +f.size);
 }
 // 드라이브 파일 목록(마지막 맞춤 때)과, 파일 관리에서 지워서 다시 받지 않을 것: 둘 다 "이름:크기" 열쇠
@@ -1704,10 +1704,10 @@ async function getDriveFiles(list) {
       const reader = (await gfetch(`${DRIVE}/${f.id}?alt=media&supportsAllDrives=true`)).body.getReader(), parts = [];
       for (let c; !(c = await reader.read()).done;) { parts.push(c.value); sum += c.value.length; progress(label, sum / total); }
       await load([new File(parts, f.name)], true, false, true); // 받자마자 저장 (중간에 실패해도 받은 건 남게), 막대는 그대로
-      delete driveSkip[dKey(f)]; n++;
+      delete driveSkip[dKey(f)]; driveGot[f.name] = f.modifiedTime || ''; n++;
     } catch (err) { failed.push(`${f.name} (${err.message})`); sum += +f.size; }
   }
-  prefs.set('driveSkip', driveSkip); progress(); reportUnsaved();
+  prefs.set('driveSkip', driveSkip); prefs.set('driveGot', driveGot); progress(); reportUnsaved();
   if (failed.length) throw new Error(`${n}개는 받았지만 ${failed.length}개를 받지 못했습니다: ${failed.join(', ')}`);
   return n;
 }
@@ -1721,11 +1721,36 @@ async function driveFolder() {
 }
 const haveKeys = () => new Set(Object.values(fileInfo).map(i => `${i.key}:${i.size}`));
 // 새로 생겼거나 바뀐(크기가 다른) 파일만 받음. 파일 관리에서 지운 것은 건너뜀 (파일 관리에서 다시 받을 수 있음)
-async function syncFiles(folder) {
-  const list = await driveFiles(folder), have = haveKeys();
+// 드라이브에서 받은 파일: 파일 이름 → 드라이브 수정 시각 (고친 파일을 알아보고, 드라이브에서 지운 파일을 이 기기에서도 지우는 데 씀)
+let driveGot = prefs.get('driveGot', {});
+// mirror(버튼): 드라이브 '커피성경' 폴더와 똑같이 — 새·고친 파일 받기, 이 기기에서 지운 것도 다시 받기, 드라이브에서 지운 것은 이 기기에서도 지우기
+// 자동(앱을 켤 때): 새·고친 파일만 받고, 이 기기에서 지운 것은 건너뜀, 지우지는 않음
+// '참고' 폴더 파일은 둘 다 받지 않음 (파일 관리에서 하나씩). 직접 추가한 파일(드라이브에서 받지 않은 것)은 건드리지 않음
+async function syncFiles(folder, mirror) {
+  const list = await driveFiles(folder), have = haveKeys(), local = new Set(Object.values(fileInfo).map(i => i.key));
+  const fromDrive = new Set([...Object.keys(driveGot), ...Object.values(driveIdx).map(x => x.name)]); // 예전 목록에 있던 것도 드라이브에서 받은 것으로
   driveIdx = Object.fromEntries(list.map(f => [dKey(f), { id: f.id, name: f.name, size: +f.size, ref: f.ref || undefined }]));
   prefs.set('driveIdx', driveIdx);
-  return getDriveFiles(list.filter(f => !f.ref && !have.has(dKey(f)) && !driveSkip[dKey(f)]));
+  const main = list.filter(f => !f.ref);
+  const want = main.filter(f => {
+    if (!local.has(f.name)) return mirror || !driveSkip[dKey(f)]; // 없음: 새 파일이거나 이 기기에서 지운 것
+    if (!have.has(dKey(f))) return true; // 크기가 바뀜 = 드라이브에서 고침
+    if (!(f.name in driveGot)) { driveGot[f.name] = f.modifiedTime || ''; return false; } // 예전에 받은 것: 지금 시각만 기억
+    return !!f.modifiedTime && driveGot[f.name] !== f.modifiedTime; // 크기는 같아도 고친 시각이 다름
+  });
+  prefs.set('driveGot', driveGot);
+  const got = await getDriveFiles(want);
+  let removed = 0;
+  if (mirror && main.length) { // 드라이브 목록을 못 읽어 0개면 지우지 않음
+    const names = new Set(list.map(f => f.name)); // '참고' 폴더에 있는 것도 드라이브에 있는 것 (참고에서 받은 파일은 지우지 않음)
+    const gone = Object.entries(fileInfo).filter(([, i]) => fromDrive.has(i.key) && !names.has(i.key)).map(([n]) => n);
+    if (gone.length) {
+      await removeModules(gone.map(n => `${commFiles[n] ? 'comm' : dictFiles[n] ? 'dict' : 'bible'}:${n}`));
+      for (const n of gone) delete driveGot[n];
+      prefs.set('driveGot', driveGot); removed = gone.length;
+    }
+  }
+  return { got, removed };
 }
 async function syncMarks() {
   const [f] = await driveList("name='marks.json'", 'id', 'appDataFolder');
@@ -1770,20 +1795,10 @@ async function driveSync(asked) {
     // 버튼을 누르자마자 보이게 (파일 목록 확인에 몇 초 걸림). 메모 맞추기는 그동안 같이
     progress('드라이브에서 파일 목록을 확인하는 중…');
     const marksDone = syncMarks().then(() => null, err => err);
-    const n = await syncFiles(d.folder);
+    const r = await syncFiles(d.folder, asked);
     const merr = await marksDone; if (merr) throw merr;
     prefs.set('drive', { ...d, at: Date.now() }); driveErr('');
-    if (asked) {
-      // 이 기기에서 지워서 건너뛴 파일이 있으면 다시 받을지 물어봄 ('참고' 폴더는 원래 자동으로 안 받으므로 셈에서 뺌)
-      const have = haveKeys(), skipped = Object.entries(driveIdx).filter(([k, f]) => !f.ref && driveSkip[k] && !have.has(k));
-      let m = 0;
-      if (skipped.length && confirm(`${n ? `새 파일 ${n}개를 받았습니다.\n\n` : ''}이 기기에서 지운 드라이브 파일이 ${skipped.length}개 있어요. 이것도 다시 받을까요?`)) {
-        for (const [k] of skipped) delete driveSkip[k];
-        prefs.set('driveSkip', driveSkip);
-        m = await getDriveFiles(skipped.map(([, f]) => f));
-      }
-      flash(n + m ? `드라이브에서 파일 ${n + m}개를 받았습니다` : '이미 최신 성경본이에요');
-    }
+    if (asked) flash(r.got || r.removed ? `드라이브와 맞췄어요${r.got ? ` · 받은 파일 ${r.got}개` : ''}${r.removed ? ` · 지운 파일 ${r.removed}개` : ''}` : '이미 드라이브와 같아요');
     maybeTour(); // 드라이브에서 다 받은 뒤 처음이면 사용법 둘러보기
   } catch (err) { progress(); driveErr(err.message); if (asked) alert(`구글 드라이브: ${err.message}`); }
   finally { driveBusy = false; }
@@ -1796,7 +1811,7 @@ function renderDrive() {
   document.body.classList.toggle('drive', !!GOOGLE_CLIENT_ID);
   $('driveBtn').hidden = !GOOGLE_CLIENT_ID; $('driveOff').hidden = !d;
   $('driveBtn').innerHTML = !d ? `구글 드라이브 연결<small>로그인하면 드라이브 '커피성경' 폴더의 파일과 메모를 어느 기기에서나</small>`
-    : `최신 성경본 불러오기<small>새로 올라온 파일·메모 받기${d.at ? ` · 마지막 ${when(d.at)}` : ''}</small>` +
+    : `최신 성경본 불러오기<small>드라이브 '커피성경' 폴더와 똑같이 맞추기${d.at ? ` · 마지막 ${when(d.at)}` : ''}</small>` +
       (err ? `<small class="warn">불러오지 못했어요: ${esc(err)}</small>` : '');
 }
 
@@ -2759,7 +2774,7 @@ function driveOnlyHtml() {
   const have = haveKeys(), all = Object.entries(driveIdx).filter(([k]) => !have.has(k)).sort((a, b) => KO.compare(a[1].name, b[1].name));
   const list = all.filter(([, f]) => !f.ref), refs = all.filter(([, f]) => f.ref);
   const row = ([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`;
-  return (list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">지운 파일은 '최신 성경본 불러오기'를 해도 다시 받지 않아요. 필요하면 여기서 받으세요.</p>` +
+  return (list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">이 기기에서 지운 드라이브 파일이에요. 여기서 하나씩 받거나, '최신 성경본 불러오기'를 누르면 모두 다시 받아요.</p>` +
     list.map(row).join('') +
     (list.length > 1 ? `<div class="drive-row"><span></span><button class="btn sm primary" data-drive-get="*">${list.length}개 모두 받기</button></div>` : '') : '') +
     (refs.length ? `<h4>드라이브 '${REF_FOLDER}' 폴더</h4><p class="help">'${REF_FOLDER}' 폴더의 파일은 자동으로 받지 않아요. 필요한 것만 받으세요.</p>` + refs.map(row).join('') : '');
