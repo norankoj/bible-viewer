@@ -371,6 +371,9 @@
   .tab-pick:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   .tab-pick b { color: var(--accent); }
   [data-design="classic"] .tab-pick { border-radius: var(--r); }
+  .drive-row input.drive-pick { margin: 0 4px 0 0; }
+  .drive-acts { justify-content: flex-end; gap: 6px; margin-top: 6px; }
+  .drive-ref-h { margin-top: 10px; }
   .drive-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
   .drive-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .drive-row small { color: var(--muted); }
@@ -388,12 +391,15 @@
   .kk-row small { flex: none; font-size: 11.5px; font-weight: 600; color: var(--accent); }
   .kk-today { display: block; margin: 4px auto 0; padding: 4px 10px; border: 0; background: none; color: var(--accent); font: 600 12.5px var(--sans); cursor: pointer; }
   .kk-none { margin: 6px 0; text-align: center; font-size: 13px; }
-  /* 사용설명서: 번역본·자료 소개 (이름 | 설명) */
-  .guide-dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 6px 0 16px; }
-  .guide-body .guide-dl dt { margin: 0; font-weight: 700; white-space: nowrap; }
+  /* 사용설명서: 번역본·자료 소개 — 줄마다 이름(+언어 칩) | 설명, 옅은 구분선 */
+  .guide-body h4 { margin: 22px 0 6px; font: 700 13px var(--sans); color: var(--accent); letter-spacing: .02em; }
+  .guide-dl { margin: 0 0 8px; border-top: 1px solid var(--line); }
+  .guide-dl .gv-row { display: grid; grid-template-columns: 11em 1fr; gap: 4px 18px; padding: 10px 2px; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+  .guide-body .guide-dl dt { margin: 0; font-weight: 700; color: var(--fg); line-height: 1.5; }
   .guide-body .guide-dl dt::before, .guide-body .guide-dl dd::before { content: none; }
-  .guide-body .guide-dl dd { margin: 0; color: var(--muted); line-height: 1.6; }
-  @media (max-width: 760px) { .guide-dl { grid-template-columns: 1fr; gap: 2px; } .guide-body .guide-dl dd { margin-bottom: 8px; } }
+  .guide-dl .gv-tag { display: block; margin-top: 3px; font: 500 11px/1.4 var(--sans); color: var(--muted); }
+  .guide-body .guide-dl dd { margin: 0; color: color-mix(in srgb, var(--fg) 82%, var(--muted)); line-height: 1.65; word-break: keep-all; }
+  @media (max-width: 760px) { .guide-dl .gv-row { grid-template-columns: 1fr; gap: 2px; } .guide-dl .gv-tag { display: inline; margin: 0 0 0 6px; } }
   #aboutBox { width: min(340px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; text-align: center; line-height: 1.65; }
   .about-badge { width: 72px; height: 72px; border-radius: 50%; display: block; margin: 4px auto 10px; }
   .about-name { display: block; font-size: 20px; letter-spacing: -.02em; }
@@ -702,6 +708,8 @@
   .seg-sw { display: flex; gap: 4px; }
   .seg-sw button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); font: 500 13px var(--sans); cursor: pointer; }
   .seg-sw button small { font-size: 10.5px; color: var(--muted); font-weight: 500; }
+  .seg-sw#accentSw button { flex-direction: row; gap: 6px; }
+  .seg-sw button i { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / .25); }
   .seg-sw button:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
   .seg-sw button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
   .seg-sw button.on small { color: var(--accent); }
@@ -837,7 +845,7 @@
   <button class="rb" id="commToggle" data-icon="layout-sidebar-right" aria-pressed="true" title="자료 칸(주석·원어 사전·관련 구절·보관함) 열기·닫기"><span>자료</span></button>
   <button class="rb" id="kkiniBtn" data-icon="bowl-rice" aria-haspopup="dialog" title="끼니: 공동체가 함께 묵상하는 오늘의 구절로"><span>끼니</span></button>
   <i class="rail-gap" aria-hidden="true"></i>
-  <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="보기: 글자 크기·글꼴, 화면 밝기, 디자인"><span>보기</span></button>
+  <button class="rb" id="viewBtn" data-icon="text-size" aria-haspopup="dialog" title="보기: 글자 크기·글꼴, 화면 밝기, 디자인, 색, 배경 화면"><span>보기</span></button>
   <button class="rb" id="presetBtn" data-icon="adjustments-horizontal" aria-haspopup="dialog" title="보는 구성을 두 가지로 저장해 두고 바꾸기 (Alt+1, Alt+2)"><span>내 세팅</span></button>
   <button class="rb" id="menuBtn" data-icon="menu-2" aria-haspopup="menu" title="설정: 파일 추가·관리, 구글 드라이브, 백업, 화면, 도움말"><span>설정</span></button>
 </nav>
@@ -852,6 +860,9 @@
     <span class="seg-sw" id="themeSw" role="group" aria-label="화면 밝기"><button data-theme="auto">자동</button><button data-theme="light">라이트</button><button data-theme="dark">다크</button></span></div>
   <div class="view-row col">디자인
     <span class="seg-sw" id="designSw" role="group" aria-label="디자인"><button data-design="new">새 디자인</button><button data-design="classic">기존 디자인<small>성진 목사님 버전</small></button></span></div>
+  <div class="view-row col">색
+    <span class="seg-sw" id="accentSw" role="group" aria-label="강조 색"><button data-accent="green"><i style="background:#035b36"></i>초록</button><button data-accent="blue"><i style="background:#2c4aa8"></i>파랑</button><button data-accent="black"><i style="background:#1d2027"></i>검정</button></span></div>
+  <div class="view-row">배경 화면 <button class="btn sm" id="bgBtn" title="성경 뒤에 사진 깔기, 진하기·흐림 조절">사진 고르기 ›</button></div>
 </div>
 <span class="status" id="status" role="status"></span>
 <div class="app">
@@ -896,7 +907,7 @@
 <div class="pop" id="menu" role="menu">
   <div class="menu-head"><b>설정</b><button class="ws-close" data-close aria-label="닫기"></button></div>
   <h6 class="mobile-only">보기·내 세팅</h6>
-  <button id="viewMenu" class="mobile-only">보기<small>글자 크기·글꼴, 화면 밝기(라이트·다크), 디자인</small></button>
+  <button id="viewMenu" class="mobile-only">보기<small>글자 크기·글꼴, 화면 밝기, 디자인, 색, 배경 화면</small></button>
   <button id="presetMenu" class="mobile-only">내 세팅<small>보는 구성을 두 가지로 저장해 두고 바꾸기</small></button>
   <h6>성경·주석 파일</h6>
   <button id="addFolder">폴더 열기<small>성경·주석·사전 파일을 모아 둔 폴더를 고르면 한 번에 추가</small></button>
@@ -909,10 +920,6 @@
   <h6>메모·책갈피</h6>
   <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
   <button id="importMarks">백업 불러오기</button>
-  <h6>화면</h6>
-  <div class="accent-row" role="group" aria-label="색 설정"><span>색 설정<small>버튼·선택·강조 색</small></span>
-    <span class="accent-sw"><button data-accent="green"><i style="background:#035b36"></i>초록</button><button data-accent="blue"><i style="background:#2c4aa8"></i>파랑</button><button data-accent="black"><i style="background:#1d2027"></i>검정</button></span></div>
-  <button id="bgBtn">배경 화면<small>성경 뒤에 사진 깔기, 진하기·흐림 조절</small></button>
   <h6>도움말</h6>
   <button id="guideMenu">사용설명서<small>모든 기능을 한눈에</small></button>
   <button id="tourBtn">사용법 둘러보기<small>버튼·메뉴를 하나씩 비추며 설명</small></button>
@@ -940,14 +947,14 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 16:14</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 16:27</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
   <nav class="guide-toc" aria-label="목차">
     <button data-goto="start">시작하기</button><button data-goto="screen">화면 구성</button><button data-goto="read">성경 읽기</button><button data-goto="compare">번역본 대조</button><button data-goto="versions">번역본·자료 소개</button>
     <button data-goto="verse">절 고르기·메모</button><button data-goto="side">자료 칸</button><button data-goto="word">원어 단어</button><button data-goto="search">검색</button>
-    <button data-goto="view">보기·설정</button><button data-goto="drive">구글 드라이브</button><button data-goto="files">파일 관리·백업</button><button data-goto="faq">자주 묻는 질문</button>
+    <button data-goto="view">보기·내 세팅</button><button data-goto="drive">구글 드라이브</button><button data-goto="files">파일 관리·백업</button><button data-goto="faq">자주 묻는 질문</button>
   </nav>
   <div class="guide-body">
 <section id="g-start"><h3>시작하기</h3>
@@ -965,8 +972,8 @@
     <ul>
       <li><b>성경 칸</b>: 위에 <b>책·장 제목</b>, <b>번역본 ▾</b>와 고른 번역본, <b>검색창</b>이 있고 아래에 본문이 나와요.</li>
       <li><b>자료 칸</b>(PC는 오른쪽, 모바일은 아래): 주석·원전분해·원어 사전·관련 구절·보관함을 탭으로 봐요.</li>
-      <li><b>PC 왼쪽 막대</b>: 뒤로 · 앞으로 · 사전 · 관련절 · 보관함 · 자료 · 글자 · 내 세팅 · 설정. 맨 위 로고를 누르면 커피성경 소개가 나와요.</li>
-      <li><b>모바일 아래 막대</b>: 뒤로 · 사전 · 관련절 · 보관함 · 자료 · 설정. 글자 크기·글꼴과 내 세팅은 <b>설정</b> 맨 위에 있어요. 성경 칸 위의 돋보기 아이콘으로 글자를 크게 볼 수 있어요.</li>
+      <li><b>PC 왼쪽 막대</b>: 뒤로 · 앞으로 · 사전 · 관련절 · 보관함 · 자료 · 끼니 · 보기 · 내 세팅 · 설정. 맨 위 로고를 누르면 커피성경 소개(맨 아래 <b>배포 날짜</b>로 지금 판을 확인)가 나와요.</li>
+      <li><b>모바일 아래 막대</b>: 뒤로 · 사전 · 관련절 · 보관함 · 자료 · 끼니 · 설정. 보기와 내 세팅은 <b>설정</b> 맨 위에 있어요. 성경 칸 위의 돋보기 아이콘으로 글자를 크게 볼 수 있어요.</li>
       <li><b>자료</b> 버튼은 자료 칸을 열고 닫아요. 닫으면 성경을 넓게 봐요.</li>
     </ul></section>
 <section id="g-read"><h3>성경 읽기 · 이동</h3>
@@ -976,7 +983,8 @@
       <li>모바일은 화면 전체에 <b>책 | 장 | 절</b> 세 칸이 나와요. 장을 고른 뒤 <b>○장으로 이동</b>을 누르거나 절을 바로 누르면 돼요.</li>
       <li>제목 양옆 <b>‹ ›</b> 또는 키보드 <kbd>←</kbd> <kbd>→</kbd>로 앞뒤 장, <kbd>↑</kbd> <kbd>↓</kbd>로 앞뒤 절로 움직여요.</li>
       <li>링크나 검색으로 건너뛴 뒤에는 <b>뒤로 · 앞으로</b>(<kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>→</kbd>)로 돌아가요.</li>
-      <li>주석 속 성경 구절에 마우스를 올리면 본문을 미리 볼 수 있어요.</li>
+      <li>주석 속 성경 구절에 마우스를 올리면 본문을 미리 볼 수 있고, 누르면 그 절로 가요. 미리보기는 대조 순서 <b>맨 앞 번역본</b>(원어 성경이면 그다음 번역본)으로 나와요.</li>
+      <li>링크가 없던 구절도 미리보기가 돼요: 책 이름 없이 "(2:1)"처럼 적은 <b>같은 책 구절</b>, 만나주석 같은 주석의 "렘 23:29", "마 10:30, 31"(→ 10:30~31) 같은 글자.</li>
       <li><b>끼니</b> 버튼을 누르면 공동체가 함께 묵상하는 <b>오늘의 끼니</b> 창이 떠요. 그날의 <b>묵상·통독</b>을 누르면 그 구절로 가고, <b>‹ ›</b>로 다른 날을 볼 수 있어요.</li>
     </ul></section>
 <section id="g-compare"><h3>번역본 대조</h3>
@@ -989,37 +997,37 @@
       <li>스트롱 번호가 붙은 한국어 성경(베들레헴 개역개정S 등)은 일반 개역개정을 함께 넣어 두면 띄어쓰기를 개역개정에 맞춰 보여 줘요.</li>
     </ul></section>
 <section id="g-versions"><h3>번역본 · 자료 소개</h3>
-    <p>드라이브 '커피성경' 폴더에 있는 성경·주석·사전이에요. (가지고 있는 파일에 따라 목록이 다를 수 있어요)</p>
+    <p>드라이브 '커피성경' 폴더에 있는 성경·주석·사전이에요. 가지고 있는 파일에 따라 목록이 다를 수 있어요.</p>
     <h4>성경 번역본</h4>
     <dl class="guide-dl">
-        <dt>개역개정</dt><dd>개역개정판 4판.</dd>
-        <dt>개역개정S</dt><dd>개역개정 성경에 원어 번호(스트롱 코드)를 넣은 것. 단어를 누르면 그 단어의 원어 사전 풀이가 떠요.</dd>
-        <dt>바른성경</dt><dd>한국성경공회가 보수주의 교단들의 요청으로 바른 신학의 기초 위에 번역해 펴낸 성경.</dd>
-        <dt>새번역</dt><dd>표준새번역 성경의 개정판으로, 2004년에 이름을 새번역으로 바꿨어요.</dd>
-        <dt>새한글</dt><dd>대한성서공회가 디지털 세대와 젊은이들이 성경을 더 쉽게 이해하고 삶에 적용할 수 있도록 준비한 새 번역. 2024년 출간.</dd>
-        <dt>쉬운성경</dt><dd>아가페출판사에서 펴낸 한글 성경으로, 하십시오체(하십시오, 합니다)를 처음으로 쓴 번역 성경.</dd>
-        <dt>아랍어 · 아랍어NEW</dt><dd>아랍어 성경.</dd>
-        <dt>킹제임스흠정역</dt><dd>킹제임스 성경(흠정역)을 우리말로 옮긴 것.</dd>
-        <dt>표준새번역개정</dt><dd>표준새번역 성경의 개정판.</dd>
-        <dt>현대어</dt><dd>성서원에서 펴낸 현대어 성경.</dd>
-        <dt>BHS5t</dt><dd>구약 히브리어 성경. BHS(Biblia Hebraica Stuttgartensia)는 티베리아 마소라 본문에 비평 주석을 부록으로 붙인 히브리어 성경으로, 오늘날 성경학자들이 가장 널리 쓰는 원문 출판본 중 하나예요. BHS5t는 BHS 5판에 낱말마다 발음과 기본형 뜻을 함께 넣은 것.</dd>
-        <dt>BHSSBL</dt><dd>구약 히브리어 BHS와 신약 헬라어 SBL(Society of Biblical Literature) 신약을 합친 파일.</dd>
-        <dt>BHSStp</dt><dd>구약 히브리어 BHS와 신약 헬라어 Stephanos(스테파누스) 신약을 합친 파일.</dd>
-        <dt>ESV (2016 · 2025)</dt><dd>English Standard Version 2016년 판 · 2025년 판.</dd>
-        <dt>NAS (2020)</dt><dd>New American Standard Bible 2020년 판.</dd>
-        <dt>NKJV</dt><dd>New King James Version (1982).</dd>
-        <dt>TRa+I new</dt><dd>신약 헬라어 성경 Textus Receptus(공인 본문)에 낱말마다 영어 뜻을 넣은 것. 이름 옆 스위치로 영어 뜻을 끄고 켜요.</dd>
+        <div class="gv-row"><dt>개역개정<span class="gv-tag">한국어</span></dt><dd>개역개정판 4판.</dd></div>
+        <div class="gv-row"><dt>개역개정S<span class="gv-tag">한국어 · 원어 번호</span></dt><dd>개역개정에 원어 번호(스트롱 코드)를 넣은 것. 단어를 누르면 원어 사전 풀이가 떠요.</dd></div>
+        <div class="gv-row"><dt>바른성경<span class="gv-tag">한국어</span></dt><dd>한국성경공회가 보수주의 교단들의 요청으로 바른 신학의 기초 위에 번역해 펴낸 성경.</dd></div>
+        <div class="gv-row"><dt>새번역<span class="gv-tag">한국어</span></dt><dd>표준새번역의 개정판. 2004년에 이름을 새번역으로 바꿨어요.</dd></div>
+        <div class="gv-row"><dt>새한글<span class="gv-tag">한국어</span></dt><dd>대한성서공회가 디지털 세대와 젊은이들이 더 쉽게 이해하고 삶에 적용하도록 준비한 새 번역. 2024년 출간.</dd></div>
+        <div class="gv-row"><dt>쉬운성경<span class="gv-tag">한국어</span></dt><dd>아가페출판사의 한글 성경. 하십시오체(하십시오, 합니다)를 처음 쓴 번역.</dd></div>
+        <div class="gv-row"><dt>킹제임스흠정역<span class="gv-tag">한국어</span></dt><dd>킹제임스 성경(흠정역)을 우리말로 옮긴 것.</dd></div>
+        <div class="gv-row"><dt>표준새번역개정<span class="gv-tag">한국어</span></dt><dd>표준새번역의 개정판.</dd></div>
+        <div class="gv-row"><dt>현대어<span class="gv-tag">한국어</span></dt><dd>성서원에서 펴낸 현대어 성경.</dd></div>
+        <div class="gv-row"><dt>ESV<span class="gv-tag">영어</span></dt><dd>English Standard Version. 2016년 판 · 2025년 판.</dd></div>
+        <div class="gv-row"><dt>NAS<span class="gv-tag">영어</span></dt><dd>New American Standard Bible 2020년 판.</dd></div>
+        <div class="gv-row"><dt>NKJV<span class="gv-tag">영어</span></dt><dd>New King James Version (1982).</dd></div>
+        <div class="gv-row"><dt>BHS5t<span class="gv-tag">히브리어</span></dt><dd>BHS 5판에 낱말마다 발음과 기본형 뜻을 함께 넣은 구약. BHS(Biblia Hebraica Stuttgartensia)는 티베리아 마소라 본문에 비평 주석을 붙인 히브리어 성경으로, 학자들이 가장 널리 쓰는 원문 출판본 중 하나예요.</dd></div>
+        <div class="gv-row"><dt>BHSSBL<span class="gv-tag">히브리어 · 헬라어</span></dt><dd>구약 BHS + 신약 SBL(Society of Biblical Literature) 헬라어 본문.</dd></div>
+        <div class="gv-row"><dt>BHSStp<span class="gv-tag">히브리어 · 헬라어</span></dt><dd>구약 BHS + 신약 Stephanos(스테파누스) 헬라어 본문.</dd></div>
+        <div class="gv-row"><dt>TRa+I new<span class="gv-tag">헬라어 · 영어</span></dt><dd>신약 Textus Receptus(공인 본문)에 낱말마다 영어 뜻을 넣은 것. 이름 옆 스위치로 영어 뜻을 끄고 켜요.</dd></div>
+        <div class="gv-row"><dt>아랍어 · 아랍어NEW<span class="gv-tag">아랍어</span></dt><dd>아랍어 성경.</dd></div>
     </dl>
     <h4>주석</h4>
     <dl class="guide-dl">
-        <dt>매튜헨리</dt><dd>매튜 헨리 주석.</dd>
-        <dt>호크마 / 만나</dt><dd>호크마 주석. 호크마에 없는 절은 만나주석으로 채운 파일도 있어요(주석 맨 위에 [만나주석] 표시).</dd>
-        <dt>원전분해</dt><dd>원어 성경을 낱말마다 나눠 원어 번호 · 기본형 · 문법 · 뜻을 풀어 놓은 자료.</dd>
+        <div class="gv-row"><dt>호크마 / 만나</dt><dd>호크마 주석. 호크마에 없는 절은 만나주석으로 채운 파일도 있어요(주석 맨 위에 [만나주석]).</dd></div>
+        <div class="gv-row"><dt>매튜헨리</dt><dd>매튜 헨리 주석.</dd></div>
+        <div class="gv-row"><dt>원전분해</dt><dd>원어 성경을 낱말마다 나눠 원어 번호 · 기본형 · 문법 · 뜻을 풀어 놓은 자료.</dd></div>
     </dl>
     <h4>원어 사전</h4>
     <dl class="guide-dl">
-        <dt>Strong(한글)</dt><dd>원어 단어 한글 사전. 단어를 누르면 이 사전이 먼저 떠요.</dd>
-        <dt>Strong(영어)</dt><dd>원어 단어 영어 사전.</dd>
+        <div class="gv-row"><dt>Strong(한글)</dt><dd>원어 단어 한글 사전. 단어를 누르면 이 사전이 먼저 떠요.</dd></div>
+        <div class="gv-row"><dt>Strong(영어)</dt><dd>원어 단어 영어 사전.</dd></div>
     </dl></section>
 <section id="g-verse"><h3>절 고르기 · 하이라이트 · 메모 · 책갈피</h3>
     <figure><img src="img/guide/verse.jpg" alt="절을 고르면 아래에 작업 막대 (복사 · 하이라이트 · 메모 · 책갈피)" loading="lazy"><figcaption>절을 고르면 아래에 작업 막대 (복사 · 하이라이트 · 메모 · 책갈피)</figcaption></figure>
@@ -1028,12 +1036,14 @@
       <li>선택하면 나오는 막대에서 <b>복사</b>(<kbd>Ctrl</kbd>+<kbd>C</kbd>), <b>하이라이트</b>(노랑·초록·파랑·분홍, 지우기), <b>메모</b>, <b>책갈피</b>를 해요.</li>
       <li>하이라이트는 글자 줄마다 형광펜처럼 칠해지고, 메모가 있는 절에는 <b>메모</b> 표시가 붙어요.</li>
       <li>모아 보기는 <b>보관함</b>에서 해요. 책갈피·메모·하이라이트를 누르면 그 절로 가요.</li>
+      <li>절이 아닌 곳(빈 곳, 자료 칸 등)을 누르면 고른 표시가 풀려요. PC에서는 아래 작업 막대가 평소 반투명이고, 마우스를 올리면 진해져요.</li>
     </ul></section>
 <section id="g-side"><h3>자료 칸 (주석 · 원전분해 · 사전 · 관련 구절 · 보관함)</h3>
     <figure><img src="img/guide/side.jpg" alt="두 개 나란히: 가운데 주석, 오른쪽은 고른 절의 원어 단어 사전 풀이" loading="lazy"><figcaption>두 개 나란히: 가운데 주석, 오른쪽은 고른 절의 원어 단어 사전 풀이</figcaption></figure>
     <ul>
       <li><b>주석</b>: 고른 절의 주석으로 저절로 따라가요.</li>
-      <li><b>원전분해</b>(베들레헴 .sdb): 절마다 원어 단어·기본형·문법·뜻을 보여 줘요. 번호를 누르면 단어 노트가 열려요.</li>
+      <li><b>원전분해</b>(베들레헴 .sdb): 절마다 원어 단어·기본형·문법·뜻을 보여 줘요. 번호를 누르면 단어 노트가 열려요. 원어 번호는 biblehub에 맞춰 고친 판이에요.</li>
+      <li><b>주석</b>은 읽기 좋게 문단을 나눠 보여 줘요: ☞ 구절은 제목 줄(진한 색), 풀이는 그 아래, "주제" 줄은 작은 머리글. (*)는 원본 파일에서 원어 글자가 빠진 자리예요.</li>
       <li><b>원어 사전</b>: 번호(H430, G26)나 한글 단어로 찾고, 히브리어·헬라어 전체 목록도 볼 수 있어요.</li>
       <li><b>관련 구절</b>·<b>보관함</b>은 막대의 <b>관련절</b>·<b>보관함</b> 버튼으로 열어요. 한 번 더 누르면 주석으로 돌아와요.</li>
       <li>탭 줄 맨 앞 <b>자료 N개 ▾</b>에서 탭 줄에 보일 주석·사전을 골라요. 탭을 끌어서 순서도 바꿀 수 있어요(주석·사전 섞어서).</li>
@@ -1042,7 +1052,7 @@
 <section id="g-word"><h3>원어 단어 · 단어 노트</h3>
     <figure><img src="img/guide/word.jpg" alt="단어 노트: 번호 · 나오는 절 모두 찾기 · 사전에서 보기" loading="lazy"><figcaption>단어 노트: 번호 · 나오는 절 모두 찾기 · 사전에서 보기</figcaption></figure>
     <ul>
-      <li>원어 성경(BHS, 원어 신약 등)이나 스트롱 번호가 붙은 성경(개역개정S 등)의 <b>단어를 누르면</b> 단어 노트가 열려요.</li>
+      <li>원어 성경(BHS, 원어 신약 등)이나 스트롱 번호가 붙은 성경(개역개정S 등)의 <b>단어를 누르면</b> 단어 노트가 열려요. 사전 탭에서 무엇을 봤든 <b>Strong(한글)</b>이 먼저 나와요.</li>
       <li>단어 노트 맨 위: <b>번호</b>(마우스를 올리면 설명) · <b>나오는 절 모두 찾기</b> · <b>사전에서 보기</b>. 아래에 사전 풀이와 <b>이 단어가 나오는 곳</b>이 있어요.</li>
       <li>번역본 줄의 <b>단어 뜻</b> 목록에서 보는 곳을 골라요 — <b>오른쪽 창</b>(모바일은 아래에서 올라옴) · <b>단어 바로 아래</b>(작은 창) · <b>자료 칸 사전</b>. 기존 디자인은 단어 옆 창 · 자료 칸 사전.</li>
       <li>BHS 형식 성경은 <b>발음·뜻 보기</b>로 원어 아래 발음과 기본형 뜻을 켜고 끌 수 있어요.</li>
@@ -1052,43 +1062,44 @@
     <ul>
       <li><b>성경·주석 검색</b> 칸(키보드 <kbd>/</kbd> 키로 바로)에 적고 <kbd>Enter</kbd>.</li>
       <li>여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로 찾아요.</li>
-      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 그 번호가 붙은 단어를 강조해요. 원어 번호가 파일에 들어 있는 <b>원전분해</b>, <b>개역개정S</b>, <b>TRa+I</b> 중에서 기준을 고르고(처음 한 번은 원전분해를 정리하느라 몇 초 걸려요), 결과의 <b>위 줄은 기준</b>, <b>아래 줄은 짝</b>(원전분해 ↔ 개역개정S)이에요. 두 파일은 사람이 직접 번호를 붙여서 같은 단어에 번호가 다르거나 틀린 곳이 있으니(예: 삼하 19:5 원전분해 H3001 / 개역개정S H954) 참고용으로 보세요. 결과 위에는 그 번호가 <b>나오는 절 수</b>와 <b>나오는 단어 수</b>가 함께 나와요(한 절에 두 번 나오면 절은 1개, 단어는 2번).</li>
+      <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 그 번호가 붙은 단어를 강조해요. 원어 번호가 파일에 들어 있는 <b>원전분해</b>, <b>개역개정S</b>, <b>TRa+I</b> 중에서 기준을 고르고(처음 한 번은 원전분해를 정리하느라 몇 초 걸려요), 결과의 <b>위 줄은 기준</b>, <b>아래 줄은 짝</b>(원전분해 ↔ 개역개정S)이에요. 두 파일은 번호를 붙인 곳이 조금씩 달라 같은 번호라도 찾아지는 절이 다를 수 있으니 참고용으로 보세요. 결과 위에는 그 번호가 <b>나오는 절 수</b>와 <b>나오는 단어 수</b>가 함께 나와요(한 절에 두 번 나오면 절은 1개, 단어는 2번).</li>
+      <li>원어 번호 검색 결과의 절 이름 옆 <b>원전분해</b>를 누르면 그 절의 원전분해 풀이가 작은 창으로 떠요(찾는 단어는 칠해서). 풀이 속 번호를 누르면 단어 노트가 열리고, 검색 결과는 그대로예요.</li>
       <li>결과에서 번역본과 범위(전체·구약·신약·현재 책)를 바꿀 수 있고, 주석에서도 찾아요(여러 주석을 한꺼번에).</li>
     </ul></section>
-<section id="g-view"><h3>보기 · 내 세팅 · 화면 설정</h3>
+<section id="g-view"><h3>보기 · 내 세팅</h3>
     <figure><img src="img/guide/view.jpg" alt="내 세팅 1 · 2" loading="lazy"><figcaption>내 세팅 1 · 2</figcaption></figure><figure class="phone"><img src="img/guide/mobile-settings.jpg" alt="모바일 설정: 맨 위 보기 묶음" loading="lazy"><figcaption>모바일 설정: 맨 위 보기 묶음</figcaption></figure>
     <ul>
-      <li><b>글자</b>: 글자 크기와 글꼴(기본 프리텐다드). 모바일은 <b>설정</b> 맨 위.</li>
       <li><b>돋보기</b>(모바일): 본문 글자를 한 번에 크게. 다시 누르면 원래대로.</li>
       <li><b>내 세팅</b>: 지금 보는 구성(번역본·주석·두 개 나란히·사전·글꼴·칸 너비)을 1·2에 저장하고 한 번에 바꿔요(<kbd>Alt</kbd>+<kbd>1</kbd>, <kbd>Alt</kbd>+<kbd>2</kbd>). 구글 드라이브를 연결하면 다른 기기와도 맞춰져요.</li>
-      <li><b>보기</b>: 글자 크기·글꼴, 화면 밝기(자동 = 기기 설정을 따름 / 라이트 / 다크), 디자인(새 디자인 / 기존 디자인 · 성진 목사님 버전).</li>
-      <li><b>설정 › 화면</b>: 색(초록·파랑·검정), 배경 화면(커피 사진·내 사진, 진하기·흐림·맞춤).</li>
+      <li><b>보기</b>: 글자 크기·글꼴, 화면 밝기(자동 = 기기 설정을 따름 / 라이트 / 다크), 디자인(새 디자인 / 기존 디자인 · 성진 목사님 버전), 색(초록·파랑·검정), 배경 화면(커피 사진·내 사진, 진하기·흐림·맞춤).</li>
       <li>PC에서 칸 사이 경계를 끌면 너비를 조절해요(두 번 누르면 원래대로).</li>
     </ul></section>
 <section id="g-drive"><h3>구글 드라이브로 여러 기기에서</h3>
-    <figure><img src="img/guide/drive.jpg" alt="설정 › 구글 드라이브: 최신 성경본 불러오기 · 연결 끊기" loading="lazy"><figcaption>설정 › 구글 드라이브: 최신 성경본 불러오기 · 연결 끊기</figcaption></figure>
+    <figure><img src="img/guide/drive.jpg" alt="설정 › 구글 드라이브: 구글 드라이브와 맞추기 · 연결 끊기" loading="lazy"><figcaption>설정 › 구글 드라이브: 구글 드라이브와 맞추기 · 연결 끊기</figcaption></figure>
     <ol>
       <li>구글 드라이브에 <b>커피성경</b> 폴더(띄어쓰기 없이)를 만들고 파일을 넣어요. 하위 폴더도 괜찮아요.</li>
       <li><b>설정 › 구글 드라이브 연결</b>(또는 첫 화면 <b>구글 드라이브에서</b>)을 누르고 로그인해요. 드라이브 권한은 모두 체크해 주세요.</li>
       <li>폴더의 파일을 받아 오고, 메모·책갈피·하이라이트·내 세팅이 기기끼리 맞춰져요.</li>
       <li>'커피성경' 안의 <b>참고</b> 폴더에 둔 파일은 자동으로 받지 않아요. <b>설정 › 파일 관리</b>의 '참고' 폴더 목록에서 필요한 것만 <b>받기</b>로 받아요.</li>
-      <li><b>최신 성경본 불러오기</b>를 누르면 이 기기를 드라이브 '커피성경' 폴더와 <b>똑같이 맞춰요</b>. 새 파일·고친 파일은 받고, 이 기기에서 지운 파일도 다시 받고, 드라이브에서 지운 파일은 이 기기에서도 지워요. 직접 추가한 파일과 메모·책갈피는 그대로예요.</li>
+      <li><b>구글 드라이브와 맞추기</b>를 누르면 이 기기의 성경·주석·사전을 드라이브 '커피성경' 폴더와 <b>똑같이 맞춰요</b>. 새 파일·고친 파일·이 기기에서 지운 파일은 받고, 드라이브에 없는 파일(직접 추가한 것 포함)은 물어본 뒤 이 기기에서 지워요. 이미 같은 파일은 다시 받지 않아요. 메모·책갈피는 그대로예요.</li>
     </ol>
     <ul>
-      <li>로그인은 1시간 유지돼요. 그동안은 앱을 켤 때·메모를 고칠 때 저절로 맞추고, 그 뒤에는 <b>최신 성경본 불러오기</b>를 한 번 눌러 주세요. 받아 둔 파일과 메모는 로그인 없이도 열려요.</li>
+      <li>로그인은 1시간 유지돼요. 그동안은 앱을 켤 때·메모를 고칠 때 저절로 맞추고, 그 뒤에는 <b>구글 드라이브와 맞추기</b>를 한 번 눌러 주세요. 받아 둔 파일과 메모는 로그인 없이도 열려요.</li>
       <li>함께 사는 가족에게는 커피성경 폴더를 공유해 같이 쓸 수 있어요. 메모는 계정마다 따로예요.</li>
       <li><b>구글 드라이브 연결 끊기</b>를 해도 받아 둔 파일과 메모는 이 기기에 남아요.</li>
     </ul></section>
 <section id="g-files"><h3>파일 관리 · 백업</h3>
     <figure><img src="img/guide/files.jpg" alt="설정 › 파일 관리" loading="lazy"><figcaption>설정 › 파일 관리</figcaption></figure>
     <ul>
-      <li><b>설정 › 파일 관리</b>: 보이는 이름 바꾸기, 골라서 지우기, 이 기기 저장 공간 보기. 드라이브에서 받은 파일을 지우면 앱을 켤 때 저절로 다시 받지는 않아요. <b>드라이브에만 있는 파일</b>에서 하나씩 받거나 <b>최신 성경본 불러오기</b>로 모두 다시 받아요. 이 기기에서 계속 안 쓸 파일은 드라이브의 <b>참고</b> 폴더로 옮겨 두세요.</li>
+      <li><b>설정 › 파일 관리</b>: 보이는 이름 바꾸기, 골라서 지우기, 이 기기 저장 공간 보기(목록은 가나다순). 드라이브에서 받은 파일을 지우면 앱을 켤 때 저절로 다시 받지는 않아요. <b>드라이브에만 있는 파일</b>에서 하나씩 받거나 <b>구글 드라이브와 맞추기</b>로 모두 다시 받아요. 이 기기에서 계속 안 쓸 파일은 드라이브의 <b>참고</b> 폴더로 옮겨 두세요.</li>
       <li><b>메모·책갈피 백업</b>은 파일로 저장하고 <b>백업 불러오기</b>로 되살려요. 드라이브를 연결하면 드라이브가 백업 역할을 해요.</li>
-      <li><b>저장된 파일 모두 지우기</b>는 성경·주석 파일만 지워요(메모·책갈피는 남아요). 그 뒤 <b>최신 성경본 불러오기</b>를 누르면 드라이브 파일을 모두 다시 받아요.</li>
+      <li><b>저장된 파일 모두 지우기</b>는 성경·주석 파일만 지워요(메모·책갈피는 남아요). 그 뒤 <b>구글 드라이브와 맞추기</b>를 누르면 드라이브 파일을 모두 다시 받아요.</li>
     </ul></section>
 <section id="g-faq"><h3>자주 묻는 질문</h3>
     <dl>
-      <dt>업데이트가 안 보여요</dt><dd>새로고침해 주세요. 앱으로 설치했다면 한 번 껐다 켜면 반영돼요.</dd>
+      <dt>업데이트가 안 보여요</dt><dd>새로고침해 주세요(PC는 Ctrl+Shift+R). 앱으로 설치했다면 한 번 껐다 켜면 반영돼요. 로고를 눌러 나오는 커피성경 소개 맨 아래 <b>배포 날짜</b>로 지금 판을 확인할 수 있어요.</dd>
+      <dt>새로고침할 때 아래에 % 막대가 나와요</dt><dd>드라이브에서 받는 게 아니라, 이 기기에 저장해 둔 성경·주석 파일을 다시 여는 중이에요. 드라이브에서 받을 때는 "드라이브에서 받는 중"이라고 따로 나와요.</dd>
+      <dt>드라이브에서 파일을 고치면 바로 바뀌나요?</dt><dd>바로는 아니에요. <b>구글 드라이브와 맞추기</b>를 누르면 고친 파일을 다시 받아요(로그인 1시간 안에는 앱을 켤 때 저절로).</dd>
       <dt>모바일에서 켤 때마다 다시 받아요</dt><dd>저장 공간이 모자라 보관하지 못한 경우예요. 알림에 나온 파일을 확인하고, 파일 관리에서 큰 주석을 지우거나 공간을 확보해 주세요.</dd>
       <dt>인터넷 없이 되나요?</dt><dd>한 번 넣은 파일은 인터넷 없이 열려요. 구글 드라이브 불러오기만 인터넷이 필요해요.</dd>
       <dt>성경 파일을 다른 사람에게 줘도 되나요?</dt><dd>개역개정·주석 등은 저작권이 있어요. 본인이나 함께 사는 가족 범위에서만 쓰세요.</dd>
@@ -1697,7 +1708,7 @@ async function importMarks(file) {
 
 /* ---------- 구글 드라이브: 로그인하면 드라이브 '커피성경' 폴더의 파일을 받아 오고, 메모·책갈피를 기기끼리 맞춤 ----------
    파일은 각자 드라이브(또는 함께 사는 가족이 공유한 폴더)에서만 받음. 메모는 드라이브의 앱 전용 숨은 공간(appDataFolder)에.
-   로그인 토큰은 1시간짜리라, 지난 뒤에는 '최신 성경본 불러오기'를 눌러야 다시 맞춤 (받아 둔 파일·메모는 그대로 열림) */
+   로그인 토큰은 1시간짜리라, 지난 뒤에는 '구글 드라이브와 맞추기'를 눌러야 다시 맞춤 (받아 둔 파일·메모는 그대로 열림) */
 const GOOGLE_CLIENT_ID = '531246483239-9so51p33u3mdo80erjhb6ochm48c2f2g.apps.googleusercontent.com'; // Google Cloud > 사용자 인증 정보 > OAuth 클라이언트 ID (공개돼도 되는 값). 비우면 메뉴에 안 보임
 const DRIVE = 'https://www.googleapis.com/drive/v3/files', UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 const SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/drive.appdata'];
@@ -1786,14 +1797,13 @@ async function driveFolder() {
 }
 const haveKeys = () => new Set(Object.values(fileInfo).map(i => `${i.key}:${i.size}`));
 // 새로 생겼거나 바뀐(크기가 다른) 파일만 받음. 파일 관리에서 지운 것은 건너뜀 (파일 관리에서 다시 받을 수 있음)
-// 드라이브에서 받은 파일: 파일 이름 → 드라이브 수정 시각 (고친 파일을 알아보고, 드라이브에서 지운 파일을 이 기기에서도 지우는 데 씀)
+// 드라이브에서 받은 파일: 파일 이름 → 드라이브 수정 시각 (고친 파일을 알아보는 데 씀)
 let driveGot = prefs.get('driveGot', {});
-// mirror(버튼): 드라이브 '커피성경' 폴더와 똑같이 — 새·고친 파일 받기, 이 기기에서 지운 것도 다시 받기, 드라이브에서 지운 것은 이 기기에서도 지우기
+// mirror(구글 드라이브와 맞추기 버튼): 드라이브 '커피성경' 폴더와 똑같이 — 새·고친 파일 받기, 이 기기에서 지운 것도 다시 받기, 드라이브에 없는 파일은 물어보고 지우기
 // 자동(앱을 켤 때): 새·고친 파일만 받고, 이 기기에서 지운 것은 건너뜀, 지우지는 않음
-// '참고' 폴더 파일은 둘 다 받지 않음 (파일 관리에서 하나씩). 직접 추가한 파일(드라이브에서 받지 않은 것)은 건드리지 않음
+// '참고' 폴더 파일은 둘 다 받지 않음 (파일 관리에서 골라 받기). 같은 파일은 다시 받지 않음 (결과는 드라이브와 같음)
 async function syncFiles(folder, mirror) {
   const list = await driveFiles(folder), have = haveKeys(), local = new Set(Object.values(fileInfo).map(i => i.key));
-  const fromDrive = new Set([...Object.keys(driveGot), ...Object.values(driveIdx).map(x => x.name)]); // 예전 목록에 있던 것도 드라이브에서 받은 것으로
   driveIdx = Object.fromEntries(list.map(f => [dKey(f), { id: f.id, name: f.name, size: +f.size, ref: f.ref || undefined }]));
   prefs.set('driveIdx', driveIdx);
   const main = list.filter(f => !f.ref);
@@ -1808,8 +1818,8 @@ async function syncFiles(folder, mirror) {
   let removed = 0;
   if (mirror && main.length) { // 드라이브 목록을 못 읽어 0개면 지우지 않음
     const names = new Set(list.map(f => f.name)); // '참고' 폴더에 있는 것도 드라이브에 있는 것 (참고에서 받은 파일은 지우지 않음)
-    const gone = Object.entries(fileInfo).filter(([, i]) => fromDrive.has(i.key) && !names.has(i.key)).map(([n]) => n);
-    if (gone.length) {
+    const gone = Object.entries(fileInfo).filter(([, i]) => !names.has(i.key)).map(([n]) => n); // 드라이브에 없는 파일 (직접 추가한 것 포함)
+    if (gone.length && confirm(`드라이브 '커피성경' 폴더에 없는 파일 ${gone.length}개를 이 기기에서 지울까요?\n\n${gone.map(nm).join(', ')}\n\n(메모·책갈피는 그대로예요. 취소하면 지우지 않고 받기만 해요)`)) {
       await removeModules(gone.map(n => `${commFiles[n] ? 'comm' : dictFiles[n] ? 'dict' : 'bible'}:${n}`));
       for (const n of gone) delete driveGot[n];
       prefs.set('driveGot', driveGot); removed = gone.length;
@@ -1876,7 +1886,7 @@ function renderDrive() {
   document.body.classList.toggle('drive', !!GOOGLE_CLIENT_ID);
   $('driveBtn').hidden = !GOOGLE_CLIENT_ID; $('driveOff').hidden = !d;
   $('driveBtn').innerHTML = !d ? `구글 드라이브 연결<small>로그인하면 드라이브 '커피성경' 폴더의 파일과 메모를 어느 기기에서나</small>`
-    : `최신 성경본 불러오기<small>드라이브 '커피성경' 폴더와 똑같이 맞추기${d.at ? ` · 마지막 ${when(d.at)}` : ''}</small>` +
+    : `구글 드라이브와 맞추기<small>드라이브 '커피성경' 폴더와 똑같이 (없는 파일은 이 기기에서 지움)${d.at ? ` · 마지막 ${when(d.at)}` : ''}</small>` +
       (err ? `<small class="warn">불러오지 못했어요: ${esc(err)}</small>` : '');
 }
 
@@ -2757,9 +2767,9 @@ $('driveOff').onclick = () => {
 $('importFile').onchange =e => { if (e.target.files[0]) importMarks(e.target.files[0]); e.target.value = ''; };
 $('clearAll').onclick = async () => {
   closePops();
-  if (!confirm(`브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.${driveOn() ? '\n\n구글 드라이브 파일은 ‘최신 성경본 불러오기’를 누르면 다시 모두 받습니다.' : ''}`)) return;
+  if (!confirm(`브라우저에 저장된 성경·주석 파일을 지울까요? 원본 파일과 메모·책갈피는 그대로 남습니다.${driveOn() ? '\n\n구글 드라이브 파일은 ‘구글 드라이브와 맞추기’를 누르면 다시 모두 받습니다.' : ''}`)) return;
   await idb('files', 'readwrite', s => s.clear()).catch(() => {});
-  // 모두 지우면 하나씩 지운 기록도 비움 → '최신 성경본 불러오기'를 누르면 드라이브 파일을 전부 다시 받음
+  // 모두 지우면 하나씩 지운 기록도 비움 → '구글 드라이브와 맞추기'를 누르면 드라이브 파일을 전부 다시 받음
   // (켜자마자 저절로 받지는 않게, 버튼을 누를 때까지 멈춰 둠)
   driveSkip = {}; prefs.set('driveSkip', driveSkip); prefs.set('driveHold', true);
   // 사전·주석 색인은 지우고 배경 사진은 남김
@@ -2838,11 +2848,13 @@ function driveOnlyHtml() {
   if (!driveOn()) return '';
   const have = haveKeys(), all = Object.entries(driveIdx).filter(([k]) => !have.has(k)).sort((a, b) => KO.compare(a[1].name, b[1].name));
   const list = all.filter(([, f]) => !f.ref), refs = all.filter(([, f]) => f.ref);
-  const row = ([k, f]) => `<div class="drive-row"><span>${esc(f.name)}</span><small>${mb(f.size)}</small><button class="btn sm" data-drive-get="${esc(k)}">받기</button></div>`;
-  return (list.length ? `<h4>드라이브에만 있는 파일</h4><p class="help">이 기기에서 지운 드라이브 파일이에요. 여기서 하나씩 받거나, '최신 성경본 불러오기'를 누르면 모두 다시 받아요.</p>` +
+  const row = ([k, f]) => `<label class="drive-row"><input type="checkbox" class="drive-pick" value="${esc(k)}"><span>${esc(f.name)}</span><small>${mb(f.size)}</small></label>`;
+  const acts = n => `<div class="drive-row drive-acts"><button class="btn sm primary" data-drive-get="sel" disabled>선택한 파일 받기</button>${n > 1 ? `<button class="btn sm" data-drive-get="*">모두 고르기</button>` : ''}</div>`;
+  if (!all.length) return '';
+  return '<h4>드라이브에는 있고 이 기기에는 없는 파일</h4><p class="help">받을 파일을 체크하고 <b>선택한 파일 받기</b>를 누르세요.</p>' +
     list.map(row).join('') +
-    (list.length > 1 ? `<div class="drive-row"><span></span><button class="btn sm primary" data-drive-get="*">${list.length}개 모두 받기</button></div>` : '') : '') +
-    (refs.length ? `<h4>드라이브 '${REF_FOLDER}' 폴더</h4><p class="help">'${REF_FOLDER}' 폴더의 파일은 자동으로 받지 않아요. 필요한 것만 받으세요.</p>` + refs.map(row).join('') : '');
+    (refs.length ? `<p class="help drive-ref-h">'${REF_FOLDER}' 폴더 (자동으로 받지 않는 파일)</p>` + refs.map(row).join('') : '') +
+    acts(all.length);
 }
 async function removeModules(items) {
   for (const it of items) {
@@ -2877,15 +2889,23 @@ $('manageBox').onchange = e => {
     refreshBible(); renderComm();
     return;
   }
-  $('manageDel').disabled = !$('manageBox').querySelector('input[type=checkbox]:checked');
+  syncPick();
 };
+// 지우기 버튼은 이 기기 파일 체크만, 받기 버튼은 드라이브 파일 체크만 보고 켬
+function syncPick() {
+  $('manageDel').disabled = !$('manageBox').querySelector('input[type=checkbox]:checked:not(.drive-pick)');
+  const g = $('manageBox').querySelector('[data-drive-get="sel"]'), n = $('manageBox').querySelectorAll('.drive-pick:checked').length;
+  if (g) { g.disabled = !n; g.textContent = n ? `선택한 파일 ${n}개 받기` : '선택한 파일 받기'; }
+}
 $('manageBox').addEventListener('click', async e => {
   if (e.target.id === 'manageClose') return closePops();
   const get = e.target.closest('[data-drive-get]');
   if (get) {
     if (driveBusy) return flash('드라이브와 맞추는 중입니다. 끝난 뒤 다시 눌러 주세요');
-    const have = haveKeys(), k = get.dataset.driveGet;
-    const list = k === '*' ? Object.entries(driveIdx).filter(([x, f]) => !f.ref && !have.has(x)).map(([, f]) => f) : [driveIdx[k]];
+    const k = get.dataset.driveGet;
+    if (k === '*') { $('manageBox').querySelectorAll('.drive-pick').forEach(c => c.checked = true); return syncPick(); } // 모두 고르기
+    const list = [...$('manageBox').querySelectorAll('.drive-pick:checked')].map(c => driveIdx[c.value]).filter(Boolean);
+    if (!list.length) return;
     driveBusy = true; get.disabled = true;
     try { const n = await getDriveFiles(list); flash(`드라이브에서 ${n}개를 받았습니다`); }
     catch (err) { alert(`구글 드라이브: ${err.message}`); }
@@ -2893,7 +2913,7 @@ $('manageBox').addEventListener('click', async e => {
     return;
   }
   if (e.target.id !== 'manageDel') return;
-  const items = [...$('manageBox').querySelectorAll('input:checked')].map(i => i.value);
+  const items = [...$('manageBox').querySelectorAll('input:checked:not(.drive-pick)')].map(i => i.value);
   if (!items.length || !confirm(`${items.map(i => nm(nameOf(i))).join(', ')}\n\n${items.length}개 파일을 지울까요? 원본 파일은 그대로 남습니다.`)) return;
   await removeModules(items);
   flash(`${items.length}개 파일을 지웠습니다`);
@@ -3300,8 +3320,8 @@ $('designSw').onclick = e => {
   prefs.set('design', d); applyDesign(d); closePops(); renderComm(); // 디자인마다 '자료' 버튼 이름이 다름
   if (S.v) select(S.v); // 칸 모양이 바뀌었으니 고른 절이 보이게
 };
-document.querySelector('#menu .accent-sw').onclick = e => {
-  e.stopPropagation(); // 메뉴는 열어 둔 채 바로 바뀌는 걸 보게
+$('accentSw').onclick = e => {
+  e.stopPropagation(); // 보기 창은 열어 둔 채 바로 바뀌는 걸 보게
   const a = e.target.closest('[data-accent]')?.dataset.accent; if (!a) return;
   prefs.set('accent', a); applyAccent(a);
 };
@@ -3345,7 +3365,7 @@ function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장
   const p = BG_PRESETS[bg.mode]; // 내 사진이 사라졌으면 배경 없음
   setBg(p ? bg.mode : 'none', p ? p.src : '', true);
 })();
-$('bgBtn').onclick = e => { e.stopPropagation(); openPop($('bgBox'), $('menuBtn')); };
+$('bgBtn').onclick = e => { e.stopPropagation(); openPop($('bgBox'), $('viewBtn').offsetParent ? $('viewBtn') : $('menuBtn')); }; // 모바일은 보기 버튼이 설정 안에 있어 설정 버튼 기준
 $('bgPick').onclick = () => $('bgFile').click();
 $('bgFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = '';
@@ -3443,9 +3463,9 @@ const TOUR = [
   { sel: ['#q'], title: '검색', text: '여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로, <b>H430·G26</b>은 원어 번호로 찾아요. 키보드 <b>/</b> 로 바로 검색창으로.' },
   { sel: ['#commToggle'], title: '자료 칸 열기·닫기', text: '주석·원어 사전·관련 구절·보관함이 있는 자료 칸을 닫으면 성경을 넓게 봐요. 한 번 더 누르면 다시 열려요.' },
   { sel: ['#magHead'], title: '돋보기', text: '본문 글자를 한 번에 크게 보여 줘요. 다시 누르면 원래 크기로.' },
-  { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기</b>와 <b>글꼴</b>, 화면 밝기(<b>자동·라이트·다크</b>), <b>디자인</b>(새 디자인 / 기존 디자인)을 골라요.' },
+  { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기·글꼴</b>, 화면 밝기(<b>자동·라이트·다크</b>), <b>디자인</b>(새 디자인 / 기존 디자인), <b>색</b>, <b>배경 화면</b>을 골라요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
-  { sel: ['#menuBtn'], title: '설정', text: '<b>사용설명서</b>, 성경·주석 파일 추가와 관리, <b>구글 드라이브</b>, 메모 백업, <b>디자인·색·배경 화면</b>, 사용법 다시 보기와 <b>앱으로 설치</b>가 여기 있어요.' },
+  { sel: ['#menuBtn'], title: '설정', text: '<b>사용설명서</b>, 성경·주석 파일 추가와 관리, <b>구글 드라이브</b>, 메모 백업, 사용법 다시 보기와 <b>앱으로 설치</b>가 여기 있어요.' },
   { title: '준비 끝', text: '커피 한 잔과 함께 말씀을 천천히 읽어 보세요. 이 안내는 <b>설정 › 사용법 둘러보기</b>에서 언제든 다시 볼 수 있어요.' },
 ];
 let tourAt = -1, tourEls = null;
