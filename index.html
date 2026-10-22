@@ -86,12 +86,23 @@
   .rail-sep { width: 28px; height: 1px; background: rgb(255 255 255 / .12); margin: 8px 0; }
   .rail-gap { flex: 1; min-height: 12px; }
   /* 보기(글자 크기·글꼴) 창 */
-  #viewBox { width: 300px; }
-  #viewBox > b { display: block; margin-bottom: 10px; }
-  #viewBox .view-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; font-size: 13px; color: var(--muted); }
-  #viewBox .view-row + .view-row { border-top: 1px solid var(--line); }
-  #viewBox .view-row span { display: flex; gap: 6px; }
-  #viewBox select { max-width: 150px; color: var(--fg); }
+  /* 보기 창: 묶음 제목 + 분할 버튼 (회색 바탕 안에서 고른 것만 떠오름) */
+  #viewBox { width: 320px; padding: 16px 16px 12px; }
+  #viewBox .vb-title { display: block; margin: 0 0 12px; font: 700 15px var(--sans); }
+  #viewBox .vb-group { margin: 0 0 14px; }
+  #viewBox .vb-label { display: inline-block; margin: 0 0 8px; padding: 2px 8px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font: 700 11.5px var(--sans); letter-spacing: .02em; }
+  #viewBox .vb-line { display: flex; gap: 8px; align-items: center; }
+  #viewBox .vb-line select { flex: 1; min-width: 0; height: 34px; color: var(--fg); }
+  #viewBox .vb-step { display: inline-flex; align-items: center; height: 34px; padding: 3px; border-radius: 6px; background: color-mix(in srgb, var(--fg) 6%, transparent); }
+  #viewBox .vb-step button { width: 30px; height: 28px; border: 0; border-radius: 4px; background: none; color: var(--fg); font: 600 16px var(--sans); cursor: pointer; transition: background .15s; }
+  #viewBox .vb-step button small { font-size: 12px; }
+  #viewBox .vb-step button:hover { background: var(--surface); }
+  #viewBox .vb-step button:active { transform: scale(.94); }
+  #viewBox .vb-step output { min-width: 26px; text-align: center; font: 600 13px var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+  #viewBox .vb-link { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 2px; padding: 10px 4px 4px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--fg); font: 600 13px var(--sans); text-align: left; cursor: pointer; }
+  #viewBox .vb-link small { display: block; margin-top: 2px; font-weight: 400; font-size: 11.5px; color: var(--muted); }
+  #viewBox .vb-link b { font-size: 18px; color: var(--muted); transition: transform .15s; }
+  #viewBox .vb-link:hover b { transform: translateX(2px); color: var(--accent); }
   /* 알림(불러오는 중·복사했습니다 등): 화면 아래 가운데에 잠깐 */
   .status { position: fixed; z-index: 45; left: 50%; bottom: 22px; transform: translateX(-50%); width: max-content; max-width: min(520px, calc(100vw - 32px)); text-align: center; padding: 9px 16px; border-radius: 16px; background: var(--dock); color: var(--dock-fg); font-size: 13px; font-weight: 500; box-shadow: var(--shadow); pointer-events: none; } /* 긴 안내는 두 줄로 */
   .status:empty { display: none; }
@@ -315,13 +326,18 @@
   .tab.drop-before { box-shadow: inset 3px 0 0 var(--accent); }
   .tab.drop-after { box-shadow: inset -3px 0 0 var(--accent); }
   /* 내 세팅 */
-  #presetBox { width: min(380px, calc(100vw - 32px)); }
+  #presetBox { width: min(360px, calc(100vw - 32px)); padding: 16px; }
+  #presetBox > b { display: block; font: 700 15px var(--sans); }
   /* 성경 배경 화면: 칸 뒤에 사진 한 겹 (진하기 = opacity, 흐림 = blur) */
   #biblePane { overflow: hidden; }
   #biblePane > :not(.bg-layer) { position: relative; z-index: 1; }
   .bg-layer { position: absolute; inset: 0; z-index: 0; background-repeat: no-repeat; pointer-events: none; }
   .bg-layer[hidden] { display: none; }
   #bgBox { width: min(340px, calc(100vw - 32px)); }
+  .pop-back-head { display: flex; align-items: center; gap: 8px; margin: -4px 0 4px; }
+  .pop-back-head b { font: 700 15px var(--sans); }
+  .pop-back { flex: none; height: 28px; padding: 0 9px 0 6px; border: 0; border-radius: 6px; background: color-mix(in srgb, var(--fg) 6%, transparent); color: var(--fg); font: 600 12.5px var(--sans); cursor: pointer; }
+  .pop-back:hover { background: color-mix(in srgb, var(--fg) 10%, transparent); }
   #bgBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
   #bgBox .bg-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
   #bgBox .bg-acts .btn.on, #bgBox [data-fit].on { border-color: var(--accent); color: var(--accent); }
@@ -330,11 +346,16 @@
   #bgBox .bg-row { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-top: 8px; }
   #bgBox .bg-row input { flex: 1; accent-color: var(--accent); }
   #bgBox output { width: 40px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
-  #presetBox .help { color: var(--muted); font-size: 13px; margin: 4px 0 8px; }
-  #presetBox .slot { display: flex; align-items: center; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
-  #presetBox .slot div { flex: 1; min-width: 0; }
-  #presetBox .slot b { display: block; }
-  #presetBox .slot small { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #presetBox .help { color: var(--muted); font-size: 12.5px; line-height: 1.55; margin: 4px 0 12px; }
+  #presetBox .slot { margin: 0 0 8px; padding: 12px; border-radius: 8px; background: color-mix(in srgb, var(--fg) 4%, transparent); }
+  #presetBox .slot-top { display: flex; align-items: center; gap: 8px; }
+  #presetBox .slot-no { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 700 12px var(--sans); }
+  #presetBox .slot-top b { flex: 1; font: 700 14px var(--sans); }
+  #presetBox .slot-top kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font: 500 11px var(--sans); }
+  #presetBox .slot small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 6px 0 10px 30px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  #presetBox .slot.empty small { font-style: normal; opacity: .8; }
+  #presetBox .slot-acts { display: flex; gap: 6px; margin-left: 30px; }
+  #presetBox .slot-acts .btn { flex: 1; height: 32px; }
   /* 파일 관리 */
   #manageBox { width: min(400px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
   #manageBox h4 { font: 600 12px var(--sans); color: var(--muted); margin: 14px 0 4px; }
@@ -345,27 +366,35 @@
   .ver-pick b { color: var(--accent); }
   body.no-bibles .ver-pick { display: none; }
   [data-design="classic"] .ver-pick { height: 30px; border-radius: var(--r); }
-  :is(#verBox, #tabBox) { width: min(280px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+  /* 번역본·자료 고르기 창: 설정 메뉴처럼 제목 + 작은 묶음 제목 + 옅은 바탕 묶음(안쪽 구분선) */
+  :is(#verBox, #tabBox) { width: min(300px, calc(100vw - 32px)); max-height: 72vh; overflow-y: auto; padding: 14px 12px 12px; }
   #verBox.open { display: flex; flex-direction: column; overflow: hidden; }
-  #verBox .vb-top { flex: none; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
-  #verBox .vb-top .help { margin-bottom: 0; }
-  #verBox .vb-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px 8px 0; margin: 0 -8px; }
-  :is(#verBox, #tabBox) label { display: flex; align-items: center; gap: 8px; padding: 7px 8px; margin: 0 -8px; border-radius: var(--r); cursor: pointer; }
-  :is(#verBox, #tabBox) label:hover { background: var(--bg); }
-  :is(#verBox, #tabBox) input { width: 16px; height: 16px; flex: none; accent-color: var(--accent); }
-  .vorder { list-style: none; margin: 6px 0 14px; padding: 0; counter-reset: v; }
-  .vorder li { counter-increment: v; display: flex; align-items: center; gap: 4px; padding: 4px 0; border-bottom: 1px solid var(--line); }
-  .vorder li::before { content: counter(v); width: 1.6em; color: var(--muted); font-size: 12px; }
-  .vorder span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-  .vorder button { width: 30px; height: 28px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font-size: 11px; }
-  .vorder button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
-  .vorder button:disabled { opacity: .35; }
-  .vorder li { cursor: grab; touch-action: none; user-select: none; }
-  .vorder .grip { font-style: normal; color: var(--muted); font-size: 14px; line-height: 1; padding: 0 2px; }
+  #verBox .vb-top { flex: none; }
+  #verBox .vb-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .pk-title { display: block; padding: 0 4px; font: 700 15px var(--sans); }
+  :is(#verBox, #tabBox) .help { margin: 2px 4px 0; color: var(--muted); font-size: 12.5px; }
+  :is(#verBox, #tabBox) h6 { display: flex; align-items: baseline; gap: 6px; margin: 14px 4px 6px; font: 600 11.5px var(--sans); letter-spacing: .03em; color: var(--muted); }
+  :is(#verBox, #tabBox) h6 small { font-weight: 400; letter-spacing: 0; opacity: .8; }
+  .pk-group { margin: 0; padding: 0; border-radius: 10px; background: color-mix(in srgb, var(--fg) 3.5%, transparent); }
+  .pk-group > * + * { background-image: linear-gradient(color-mix(in srgb, var(--line) 80%, transparent), color-mix(in srgb, var(--line) 80%, transparent)); background-size: calc(100% - 40px) 1px; background-position: 40px 0; background-repeat: no-repeat; }
+  .pk-group label { display: flex; align-items: center; gap: 12px; padding: 9px 12px; cursor: pointer; font-size: 14px; transition: background-color .15s; }
+  .pk-group label:hover { background-color: color-mix(in srgb, var(--fg) 4%, transparent); }
+  .pk-group label:has(input:checked) { font-weight: 600; }
+  .pk-group input { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--accent); }
+  .vorder { list-style: none; }
+  .vorder li { display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 10px; cursor: grab; touch-action: none; user-select: none; }
+  .vorder .vno { display: grid; place-items: center; flex: none; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 700 11px var(--sans); }
+  .vorder span:not(.vno) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 14px; }
+  .vorder button { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+  .vorder button .ico { width: 16px; height: 16px; stroke-width: 2; }
+  .vorder button:hover:not(:disabled) { background: color-mix(in srgb, var(--fg) 7%, transparent); color: var(--accent); }
+  .vorder button:disabled { opacity: .25; cursor: default; }
+  .vorder .grip { display: grid; place-items: center; width: 20px; color: var(--muted); opacity: .6; }
+  .vorder .grip .ico { width: 16px; height: 16px; }
+  .vorder li:hover .grip { opacity: 1; }
   .vorder li.dragging { opacity: .5; cursor: grabbing; }
   .vorder li.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
   .vorder li.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
-  #tabBox h4 { margin: 10px 0 2px; font-size: 12px; color: var(--muted); }
   /* 오른쪽 칸 탭 줄 맨 앞 '주석 ▾': 탭을 옆으로 넘겨도 제자리에 */
   .tab-pick { position: sticky; left: 0; z-index: 1; flex: none; height: 30px; margin-right: 6px; padding: 0 11px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); font-weight: 600; white-space: nowrap; box-shadow: 8px 0 8px -4px var(--surface); }
   .tab-pick:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
@@ -697,35 +726,65 @@
   #ddPop button:hover, #ddPop button:focus-visible { background: var(--bg); outline: none; }
   #ddPop button.on { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
   #ddPop button.on::after { content: '✓'; margin-left: auto; }
-  #menu { width: 272px; padding: 6px; max-height: calc(100vh - 90px); overflow-y: auto; }
-  #menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: var(--r); }
-  #menu button:hover { background: var(--bg); }
-  #menu small { display: block; color: var(--muted); }
+  /* 설정 메뉴: 묶음마다 둥근 카드, 줄 = 아이콘 칸 · 제목/설명 · › */
+  #menu { width: 320px; padding: 10px 10px 12px; max-height: calc(100vh - 90px); overflow-y: auto; }
+  #menu .mgroup { border-radius: 10px; background: color-mix(in srgb, var(--fg) 3.5%, transparent); overflow: hidden; }
+  #menu .mgroup > button { display: grid; grid-template-columns: 20px 1fr 10px; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; border: 0; border-radius: 0; background: none; color: var(--fg); font: 600 13.5px/1.35 var(--sans); text-align: left; cursor: pointer; transition: background .15s; }
+  #menu .mgroup > button[hidden] { display: none; }
+  #menu .mgroup > button:not([hidden]) ~ button:not([hidden]) { background-image: linear-gradient(color-mix(in srgb, var(--line) 70%, transparent), color-mix(in srgb, var(--line) 70%, transparent)); background-size: calc(100% - 46px) 1px; background-position: 46px 0; background-repeat: no-repeat; } /* 줄 사이 선은 글자 아래부터 (아이콘 칸은 비움) */
+  #menu .mgroup > button::after { content: '›'; color: var(--muted); font-size: 16px; opacity: .45; transition: opacity .15s, transform .15s; }
+  #menu .mgroup > button:hover::after { opacity: .9; transform: translateX(2px); }
+  #menu .mgroup > button:hover { background: color-mix(in srgb, var(--fg) 5%, transparent); }
+  #menu .mgroup > button:active { background: color-mix(in srgb, var(--fg) 8%, transparent); }
+  #menu .mgroup .ico { width: 20px; height: 20px; color: var(--muted); stroke-width: 1.6; transition: color .15s; }
+  #menu .mgroup > button:hover .ico { color: var(--accent); }
+  #menu .mgroup.danger { margin-top: 14px; }
+  #menu .mgroup small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #menu .mgroup > button > span { min-width: 0; }
+  #menu .menu-foot { margin: 14px 0 2px; text-align: center; color: var(--muted); font-size: 11.5px; opacity: .8; }
+  #menu .mgroup.danger > button { color: var(--red); }
+  #menu .mgroup.danger .ico { color: var(--red); }
+  #menu small { display: block; margin-top: 2px; color: var(--muted); font: 400 12px/1.45 var(--sans); }
   /* 보기 창: 화면 · 디자인 고르기 (나란한 버튼) */
-  #viewBox .view-row.col { flex-direction: column; align-items: stretch; gap: 6px; }
-  #viewBox .view-row.col .seg-sw { width: 100%; }
-  #viewBox .seg-sw button span, #viewBox .seg-sw button { white-space: nowrap; }
-  .seg-sw { display: flex; gap: 4px; }
-  .seg-sw button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); font: 500 13px var(--sans); cursor: pointer; }
-  .seg-sw button small { font-size: 10.5px; color: var(--muted); font-weight: 500; }
+  /* 보기: 고르는 타일 (아이콘·미리보기 그림 + 이름), 고른 것은 강조색 테두리 */
+  .tile-sw { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tile-sw.thumbs { grid-template-columns: repeat(2, 1fr); }
+  .tile-sw button { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 0; border: 0; background: none; color: var(--muted); font: 500 12.5px var(--sans); text-align: left; cursor: pointer; }
+  .tile-sw button > .ico, .tile-sw .thumb { display: block; box-sizing: border-box; width: 100%; height: 46px; padding: 12px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); transition: border-color .15s, background .15s, color .15s; }
+  .tile-sw button:hover > .ico, .tile-sw button:hover .thumb { border-color: color-mix(in srgb, var(--muted) 45%, var(--line)); }
+  .tile-sw button.on > .ico, .tile-sw button.on .thumb { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .tile-sw button.on { color: var(--fg); font-weight: 700; }
+  .tile-sw button small { display: block; font-size: 10.5px; font-weight: 400; color: var(--muted); }
+  /* 디자인 미리보기: 새 = 왼쪽 막대 + 두 칸, 기존 = 위쪽 막대 + 두 칸 */
+  .tile-sw .thumb { position: relative; height: 62px; padding: 0; overflow: hidden; }
+  .thumb b, .thumb s { position: absolute; border-radius: 2px; background: color-mix(in srgb, var(--muted) 28%, transparent); }
+  .thumb.new b { left: 0; top: 0; bottom: 0; width: 18%; border-radius: 0; background: color-mix(in srgb, var(--accent) 70%, transparent); }
+  .thumb.new s:nth-of-type(1) { left: 26%; top: 18%; width: 34%; bottom: 14%; }
+  .thumb.new s:nth-of-type(2) { left: 66%; top: 18%; width: 26%; bottom: 14%; }
+  .thumb.classic b { left: 0; right: 0; top: 0; height: 20%; border-radius: 0; background: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .thumb.classic s:nth-of-type(1) { left: 8%; top: 32%; width: 50%; bottom: 12%; }
+  .thumb.classic s:nth-of-type(2) { left: 64%; top: 32%; width: 28%; bottom: 12%; }
+  /* 색: 네모 견본, 고른 것은 바깥 고리 */
+  .swatch-sw { display: flex; gap: 10px; }
+  .swatch-sw button { width: 40px; height: 40px; padding: 4px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; transition: border-color .15s, transform .15s; }
+  .swatch-sw button:hover { transform: translateY(-1px); }
+  .swatch-sw button.on { border-color: var(--accent); }
+  .swatch-sw i { display: block; width: 100%; height: 100%; border-radius: 6px; }
+  .seg-sw { display: flex; gap: 2px; width: 100%; padding: 3px; border-radius: 6px; background: color-mix(in srgb, var(--fg) 6%, transparent); }
+  .seg-sw button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 30px; padding: 4px 6px; border: 0; border-radius: 4px; background: none; color: var(--muted); font: 500 13px var(--sans); white-space: nowrap; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
+  .seg-sw button small { font-size: 10px; font-weight: 500; color: inherit; opacity: .8; }
+  .seg-sw button:hover { color: var(--fg); }
+  .seg-sw button.on { background: var(--surface); color: var(--fg); font-weight: 700; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 0 0 1px color-mix(in srgb, var(--line) 80%, transparent); }
   .seg-sw#accentSw button { flex-direction: row; gap: 6px; }
-  .seg-sw button i { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / .25); }
-  .seg-sw button:hover { border-color: color-mix(in srgb, var(--muted) 40%, var(--line)); }
-  .seg-sw button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-  .seg-sw button.on small { color: var(--accent); }
-  #menu .accent-row { padding: 8px 10px; }
-  #menu .accent-row > span:first-child { display: block; margin-bottom: 6px; }
-  #menu .accent-sw { display: flex; gap: 6px; }
-  #menu .accent-sw button { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 4px 10px 4px 6px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; }
-  #menu .accent-sw button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; background: var(--accent-soft); }
-  #menu .accent-sw i { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / .25); }
-  #menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+  .seg-sw button i { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(255 255 255 / .3); }
   /* 설정 메뉴 소제목 */
-  #menu h6 { margin: 10px 10px 2px; padding-top: 10px; border-top: 1px solid var(--line); font: 700 11.5px var(--sans); letter-spacing: .02em; color: var(--accent); }
+  #menu h6 { margin: 16px 6px 6px; font: 600 11.5px var(--sans); letter-spacing: .03em; color: var(--muted); }
   #menu h6:first-child, #menu .menu-head + h6:not(.mobile-only), #menu .menu-head + .mobile-only { margin-top: 4px; padding-top: 0; border-top: 0; }
+  #menu::before { content: '설정'; display: block; position: sticky; top: -10px; z-index: 2; margin: -10px -10px 0; padding: 16px 20px 10px; background: var(--surface); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); font: 700 15px var(--sans); } /* 제목은 고정, 아래만 스크롤 */
   #menu .menu-head { display: none; position: sticky; top: 0; z-index: 1; align-items: center; justify-content: space-between; padding: 14px 6px 10px; background: var(--surface); font-size: 17px; }
   #menu .menu-head button { width: 36px; height: 36px; padding: 0; float: none; margin: 0; display: grid; place-items: center; }
   #menu .mobile-only { display: none; }
+  #menu .mgroup.mobile-only { display: none; }
   #clearAll { color: var(--red); }
   #tip { max-width: 380px; padding: 12px 14px; font: 14px/1.7 var(--read); pointer-events: none; z-index: 30; } /* 사전 팝업 위에 */
   #tip b { font: 600 12px var(--sans); color: var(--accent); display: block; margin-bottom: 4px; }
@@ -781,7 +840,9 @@
     /* 설정: 화면 전체로 */
     #menu.open { position: fixed; inset: 0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important; width: auto; max-height: none !important; border: 0; border-radius: 0; padding: 0 10px 24px; animation: none; }
     #menu .menu-head { display: flex; }
+    #menu::before { display: none; }
     #menu .mobile-only { display: block; }
+    #menu .mgroup.mobile-only { display: block; }
     /* 성경 찾기: 화면 전체에 책 | 장 | 절 세 칸 */
     #picker.full.open { position: fixed; inset: 0 0 calc(60px + env(safe-area-inset-bottom)) 0 !important; width: auto; max-height: none !important; padding: 0; border: 0; border-radius: 0; display: flex; flex-direction: column; overflow: hidden; animation: none; }
   }
@@ -852,17 +913,21 @@
 <div class="pop" id="kkiniBox" role="dialog" aria-label="오늘의 끼니"></div>
 <div class="pop" id="anaPop" role="dialog" aria-label="원전분해"></div>
 <div class="pop" id="viewBox" role="dialog" aria-label="보기">
-  <b>보기</b>
-  <div class="view-row">글자 크기
-    <span><button class="btn icon" id="smaller" title="글자 작게" aria-label="글자 작게" style="font-size:13px">가</button><button class="btn icon" id="bigger" title="글자 크게" aria-label="글자 크게" style="font-size:17px">가</button></span></div>
-  <div class="view-row">글꼴 <select class="btn" id="fontSel" title="본문 글꼴" aria-label="본문 글꼴"></select></div>
-  <div class="view-row col">화면
-    <span class="seg-sw" id="themeSw" role="group" aria-label="화면 밝기"><button data-theme="auto">자동</button><button data-theme="light">라이트</button><button data-theme="dark">다크</button></span></div>
-  <div class="view-row col">디자인
-    <span class="seg-sw" id="designSw" role="group" aria-label="디자인"><button data-design="new">새 디자인</button><button data-design="classic">기존 디자인<small>성진 목사님 버전</small></button></span></div>
-  <div class="view-row col">색
-    <span class="seg-sw" id="accentSw" role="group" aria-label="강조 색"><button data-accent="green"><i style="background:#035b36"></i>초록</button><button data-accent="blue"><i style="background:#2c4aa8"></i>파랑</button><button data-accent="black"><i style="background:#1d2027"></i>검정</button></span></div>
-  <div class="view-row">배경 화면 <button class="btn sm" id="bgBtn" title="성경 뒤에 사진 깔기, 진하기·흐림 조절">사진 고르기 ›</button></div>
+  <b class="vb-title">보기</b>
+  <div class="vb-group"><span class="vb-label">글자</span>
+    <div class="vb-line">
+      <span class="vb-step" role="group" aria-label="글자 크기"><button id="smaller" title="글자 작게" aria-label="글자 작게"><small>가</small></button><output id="fsVal" aria-live="polite">17</output><button id="bigger" title="글자 크게" aria-label="글자 크게">가</button></span>
+      <select class="btn" id="fontSel" title="본문 글꼴" aria-label="본문 글꼴"></select>
+    </div></div>
+  <div class="vb-group"><span class="vb-label">화면</span>
+    <span class="tile-sw" id="themeSw" role="group" aria-label="화면 밝기"><button data-theme="light" data-icon="sun"><span>라이트</span></button><button data-theme="dark" data-icon="moon"><span>다크</span></button><button data-theme="auto" data-icon="device-desktop"><span>자동<small>기기 설정</small></span></button></span></div>
+  <div class="vb-group"><span class="vb-label">디자인</span>
+    <span class="tile-sw thumbs" id="designSw" role="group" aria-label="디자인">
+      <button data-design="new"><i class="thumb new" aria-hidden="true"><b></b><s></s><s></s></i><span>새 디자인</span></button>
+      <button data-design="classic"><i class="thumb classic" aria-hidden="true"><b></b><s></s><s></s></i><span>기존 디자인<small>성진 목사님 버전</small></span></button></span></div>
+  <div class="vb-group"><span class="vb-label">색</span>
+    <span class="swatch-sw" id="accentSw" role="group" aria-label="강조 색"><button data-accent="green" title="초록" aria-label="초록"><i style="background:#035b36"></i></button><button data-accent="blue" title="파랑" aria-label="파랑"><i style="background:#2c4aa8"></i></button><button data-accent="black" title="검정" aria-label="검정"><i style="background:#1d2027"></i></button></span></div>
+  <button class="vb-link" id="bgBtn" title="성경 뒤에 사진 깔기, 진하기·흐림 조절"><span>배경 화면<small>성경 뒤에 사진 깔기</small></span><b aria-hidden="true">›</b></button>
 </div>
 <span class="status" id="status" role="status"></span>
 <div class="app">
@@ -907,26 +972,38 @@
 <div class="pop" id="menu" role="menu">
   <div class="menu-head"><b>설정</b><button class="ws-close" data-close aria-label="닫기"></button></div>
   <h6 class="mobile-only">보기·내 세팅</h6>
-  <button id="viewMenu" class="mobile-only">보기<small>글자 크기·글꼴, 화면 밝기, 디자인, 색, 배경 화면</small></button>
-  <button id="presetMenu" class="mobile-only">내 세팅<small>보는 구성을 두 가지로 저장해 두고 바꾸기</small></button>
+  <div class="mgroup mobile-only">
+    <button id="viewMenu" data-icon="text-size"><span>보기<small>글자 · 화면 밝기 · 디자인 · 색</small></span></button>
+    <button id="presetMenu" data-icon="adjustments-horizontal"><span>내 세팅<small>보는 구성 두 가지 저장</small></span></button>
+  </div>
   <h6>성경·주석 파일</h6>
-  <button id="addFolder">폴더 열기<small>성경·주석·사전 파일을 모아 둔 폴더를 고르면 한 번에 추가</small></button>
-  <button id="addFiles">파일 선택<small>theWord·MySword·베들레헴 성경, 주석, 사전</small></button>
-  <button id="manageBtn">파일 관리<small>불러온 성경·주석·사전을 골라서 지우기</small></button>
-  <button id="fmtBtn">지원하는 파일 형식<small>어떤 확장자를 넣을 수 있는지</small></button>
+  <div class="mgroup">
+    <button id="addFolder" data-icon="folder"><span>폴더 열기<small>폴더째 한 번에 추가</small></span></button>
+    <button id="addFiles" data-icon="file-plus"><span>파일 선택<small>성경·주석·사전 파일 골라 추가</small></span></button>
+    <button id="manageBtn" data-icon="files"><span>파일 관리<small>이름 바꾸기 · 지우기 · 골라 받기</small></span></button>
+    <button id="fmtBtn" data-icon="info-circle"><span>지원하는 파일 형식<small>넣을 수 있는 확장자</small></span></button>
+  </div>
   <h6 class="drive-only">구글 드라이브</h6>
-  <button id="driveBtn" hidden></button>
-  <button id="driveOff" hidden>구글 드라이브 연결 끊기<small>받아 둔 파일과 메모는 이 브라우저에 그대로 남습니다</small></button>
+  <div class="mgroup drive-only">
+    <button id="driveBtn" data-icon="cloud" hidden></button>
+    <button id="driveOff" data-icon="logout" hidden><span>구글 드라이브 연결 끊기<small>받아 둔 파일과 메모는 남아요</small></span></button>
+  </div>
   <h6>메모·책갈피</h6>
-  <button id="exportMarks">메모·책갈피 백업<small>하이라이트, 메모, 책갈피를 파일로 저장</small></button>
-  <button id="importMarks">백업 불러오기</button>
+  <div class="mgroup">
+    <button id="exportMarks" data-icon="download"><span>메모·책갈피 백업<small>하이라이트·메모·책갈피를 파일로</small></span></button>
+    <button id="importMarks" data-icon="upload"><span>백업 불러오기<small>백업 파일로 되살리기</small></span></button>
+  </div>
   <h6>도움말</h6>
-  <button id="guideMenu">사용설명서<small>모든 기능을 한눈에</small></button>
-  <button id="tourBtn">사용법 둘러보기<small>버튼·메뉴를 하나씩 비추며 설명</small></button>
-  <button id="aboutMenu">커피성경 소개<small>만든 사람들, 커피 한 잔</small></button>
-  <button id="installBtn">앱으로 설치<small>바탕화면 아이콘, 독립 창, 인터넷 없이도 열림</small></button>
-  <hr>
-  <button id="clearAll">저장된 파일 모두 지우기<small>메모와 책갈피는 지우지 않습니다</small></button>
+  <div class="mgroup">
+    <button id="guideMenu" data-icon="book"><span>사용설명서<small>모든 기능을 한눈에</small></span></button>
+    <button id="tourBtn" data-icon="player-play"><span>사용법 둘러보기<small>버튼을 하나씩 비추며 설명</small></span></button>
+    <button id="aboutMenu" data-icon="coffee"><span>커피성경 소개<small>만든 사람들 · 커피 한 잔</small></span></button>
+    <button id="installBtn" data-icon="apps-plus"><span>앱으로 설치<small>바탕화면 아이콘 · 인터넷 없이도</small></span></button>
+  </div>
+  <div class="mgroup danger">
+    <button id="clearAll" data-icon="trash"><span>저장된 파일 모두 지우기<small>메모와 책갈피는 지우지 않아요</small></span></button>
+  </div>
+  <p class="menu-foot">커피성경 · 배포 <span id="buildAt2"></span></p>
 </div>
 <div class="pop" id="noteBox" role="dialog" aria-label="메모">
   <label for="noteText" id="noteRef"></label>
@@ -947,7 +1024,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 16:27</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 17:04</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -978,6 +1055,7 @@
     </ul></section>
 <section id="g-read"><h3>성경 읽기 · 이동</h3>
     <figure><img src="img/guide/read.jpg" alt="PC 성경 찾기: 구약 | 신약, 묶음별 목록" loading="lazy"><figcaption>PC 성경 찾기: 구약 | 신약, 묶음별 목록</figcaption></figure><figure class="phone"><img src="img/guide/mobile-picker.jpg" alt="모바일 성경 찾기: 책 | 장 | 절" loading="lazy"><figcaption>모바일 성경 찾기: 책 | 장 | 절</figcaption></figure>
+    <figure><img src="img/guide/kkini.jpg" alt="끼니: 오늘의 묵상 · 통독, ‹ ›로 다른 날" loading="lazy"><figcaption>끼니: 오늘의 묵상 · 통독, ‹ ›로 다른 날</figcaption></figure>
     <ul>
       <li><b>책 이름</b>을 누르면 책 목록(줄임말과 이름), <b>장</b>을 누르면 그 책의 장 목록이 나와요. 다른 책을 고르면 제목이 먼저 바뀌고, 장을 고르면 이동해요.</li>
       <li>모바일은 화면 전체에 <b>책 | 장 | 절</b> 세 칸이 나와요. 장을 고른 뒤 <b>○장으로 이동</b>을 누르거나 절을 바로 누르면 돼요.</li>
@@ -988,10 +1066,10 @@
       <li><b>끼니</b> 버튼을 누르면 공동체가 함께 묵상하는 <b>오늘의 끼니</b> 창이 떠요. 그날의 <b>묵상·통독</b>을 누르면 그 구절로 가고, <b>‹ ›</b>로 다른 날을 볼 수 있어요.</li>
     </ul></section>
 <section id="g-compare"><h3>번역본 대조</h3>
-    <figure><img src="img/guide/compare.jpg" alt="번역본 N개 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기" loading="lazy"><figcaption>번역본 N개 ▾: 위는 대조 순서(▲▼), 아래는 번역본 고르기</figcaption></figure>
+    <figure><img src="img/guide/compare.jpg" alt="번역본 N개 ▾: 위는 대조 순서(화살표·끌기), 아래는 번역본 고르기" loading="lazy"><figcaption>번역본 N개 ▾: 위는 대조 순서(화살표·끌기), 아래는 번역본 고르기</figcaption></figure>
     <ul>
       <li><b>번역본 N개 ▾</b>를 눌러 보고 싶은 번역본을 체크하면 나란히 대조해요. 목록은 가나다순이에요.</li>
-      <li>같은 창 맨 위 <b>대조 순서</b>에서 줄을 끌어서 옮기거나 ▲▼로 칸 순서를 바꿔요. PC에서는 위쪽 번역본 이름을 끌어서 옮겨도 돼요.</li>
+      <li>같은 창 맨 위 <b>대조 순서</b>에서 줄을 끌어서 옮기거나 화살표로 칸 순서를 바꿔요. PC에서는 위쪽 번역본 이름을 끌어서 옮겨도 돼요.</li>
       <li>번역본 이름 옆 <b>×</b>를 누르면 대조에서 빠져요. <b>이름을 누르면</b> 목록에는 둔 채로 칸만 잠깐 끄고 켤 수 있어요(끈 것은 점선 테두리).</li>
       <li>모바일은 <b>3개까지</b> 대조하고, 절마다 번역본을 위아래로 한 줄씩 보여 줘요.</li>
       <li>스트롱 번호가 붙은 한국어 성경(베들레헴 개역개정S 등)은 일반 개역개정을 함께 넣어 두면 띄어쓰기를 개역개정에 맞춰 보여 줘요.</li>
@@ -1002,9 +1080,10 @@
     <dl class="guide-dl">
         <div class="gv-row"><dt>개역개정<span class="gv-tag">한국어</span></dt><dd>개역개정판 4판.</dd></div>
         <div class="gv-row"><dt>개역개정S<span class="gv-tag">한국어 · 원어 번호</span></dt><dd>개역개정에 원어 번호(스트롱 코드)를 넣은 것. 단어를 누르면 원어 사전 풀이가 떠요.</dd></div>
-        <div class="gv-row"><dt>바른성경<span class="gv-tag">한국어</span></dt><dd>한국성경공회가 보수주의 교단들의 요청으로 바른 신학의 기초 위에 번역해 펴낸 성경.</dd></div>
+        <div class="gv-row"><dt>바른성경<span class="gv-tag">한국어</span></dt><dd>한국성경공회가 보수주의 교단들의 요청으로 바른 신학의 기초 위에 번역해 2009년에 펴낸 성경.</dd></div>
         <div class="gv-row"><dt>새번역<span class="gv-tag">한국어</span></dt><dd>표준새번역의 개정판. 2004년에 이름을 새번역으로 바꿨어요.</dd></div>
         <div class="gv-row"><dt>새한글<span class="gv-tag">한국어</span></dt><dd>대한성서공회가 디지털 세대와 젊은이들이 더 쉽게 이해하고 삶에 적용하도록 준비한 새 번역. 2024년 출간.</dd></div>
+        <div class="gv-row"><dt>쉬운말<span class="gv-tag">한국어</span></dt><dd>성서교재간행사가 성서원으로 바뀌면서, 성서교재간행사가 펴낸 현대어 성경의 후속으로 나온 역본.</dd></div>
         <div class="gv-row"><dt>쉬운성경<span class="gv-tag">한국어</span></dt><dd>아가페출판사의 한글 성경. 하십시오체(하십시오, 합니다)를 처음 쓴 번역.</dd></div>
         <div class="gv-row"><dt>킹제임스흠정역<span class="gv-tag">한국어</span></dt><dd>킹제임스 성경(흠정역)을 우리말로 옮긴 것.</dd></div>
         <div class="gv-row"><dt>표준새번역개정<span class="gv-tag">한국어</span></dt><dd>표준새번역의 개정판.</dd></div>
@@ -1058,7 +1137,7 @@
       <li>BHS 형식 성경은 <b>발음·뜻 보기</b>로 원어 아래 발음과 기본형 뜻을 켜고 끌 수 있어요.</li>
     </ul></section>
 <section id="g-search"><h3>검색</h3>
-    <figure><img src="img/guide/search.jpg" alt="원어 번호(G25) 검색 결과" loading="lazy"><figcaption>원어 번호(G25) 검색 결과</figcaption></figure>
+    <figure><img src="img/guide/search.jpg" alt="원어 번호(G25) 검색 결과: 번호 · 나오는 절 · 단어 수, 절 이름 옆 원전분해 버튼" loading="lazy"><figcaption>원어 번호(G25) 검색 결과: 번호 · 나오는 절 · 단어 수, 절 이름 옆 원전분해 버튼</figcaption></figure><figure><img src="img/guide/search-ana.jpg" alt="원전분해 버튼: 그 절의 원전분해 풀이(찾는 단어는 칠해서)" loading="lazy"><figcaption>원전분해 버튼: 그 절의 원전분해 풀이(찾는 단어는 칠해서)</figcaption></figure>
     <ul>
       <li><b>성경·주석 검색</b> 칸(키보드 <kbd>/</kbd> 키로 바로)에 적고 <kbd>Enter</kbd>.</li>
       <li>여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로 찾아요.</li>
@@ -1067,7 +1146,7 @@
       <li>결과에서 번역본과 범위(전체·구약·신약·현재 책)를 바꿀 수 있고, 주석에서도 찾아요(여러 주석을 한꺼번에).</li>
     </ul></section>
 <section id="g-view"><h3>보기 · 내 세팅</h3>
-    <figure><img src="img/guide/view.jpg" alt="내 세팅 1 · 2" loading="lazy"><figcaption>내 세팅 1 · 2</figcaption></figure><figure class="phone"><img src="img/guide/mobile-settings.jpg" alt="모바일 설정: 맨 위 보기 묶음" loading="lazy"><figcaption>모바일 설정: 맨 위 보기 묶음</figcaption></figure>
+    <figure><img src="img/guide/viewbox.jpg" alt="보기: 글자 · 화면(자동·라이트·다크) · 디자인 · 색 · 배경 화면" loading="lazy"><figcaption>보기: 글자 · 화면(자동·라이트·다크) · 디자인 · 색 · 배경 화면</figcaption></figure><figure><img src="img/guide/view.jpg" alt="내 세팅 1 · 2" loading="lazy"><figcaption>내 세팅 1 · 2</figcaption></figure><figure class="phone"><img src="img/guide/mobile-settings.jpg" alt="모바일 설정: 맨 위 보기 · 내 세팅" loading="lazy"><figcaption>모바일 설정: 맨 위 보기 · 내 세팅</figcaption></figure>
     <ul>
       <li><b>돋보기</b>(모바일): 본문 글자를 한 번에 크게. 다시 누르면 원래대로.</li>
       <li><b>내 세팅</b>: 지금 보는 구성(번역본·주석·두 개 나란히·사전·글꼴·칸 너비)을 1·2에 저장하고 한 번에 바꿔요(<kbd>Alt</kbd>+<kbd>1</kbd>, <kbd>Alt</kbd>+<kbd>2</kbd>). 구글 드라이브를 연결하면 다른 기기와도 맞춰져요.</li>
@@ -1113,7 +1192,7 @@
 <div class="pop" id="presetBox" role="dialog" aria-label="내 세팅"></div>
 <div class="pop" id="fmtBox" role="dialog" aria-label="지원하는 파일 형식"></div>
 <div class="pop" id="bgBox" role="dialog" aria-label="배경 화면">
-  <b>성경 배경 화면</b>
+  <div class="pop-back-head"><button class="pop-back" data-bg-back title="보기로 돌아가기" aria-label="보기로 돌아가기">‹ 보기</button><b>성경 배경 화면</b></div>
   <p class="help">성경 본문 뒤에 사진을 깔 수 있습니다. 사진은 이 브라우저에만 저장됩니다.</p>
   <div class="bg-acts"><button class="btn sm" data-bg="default">커피 사진</button><button class="btn sm" data-bg="none">배경 없음</button><button class="btn sm" id="bgPick" data-bg="custom">내 사진 고르기</button></div>
   <label class="bg-row">진하기 <input type="range" id="bgOp" min="5" max="100" step="1"><output id="bgOpV"></output></label>
@@ -1885,9 +1964,9 @@ function renderDrive() {
   const when = t => new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   document.body.classList.toggle('drive', !!GOOGLE_CLIENT_ID);
   $('driveBtn').hidden = !GOOGLE_CLIENT_ID; $('driveOff').hidden = !d;
-  $('driveBtn').innerHTML = !d ? `구글 드라이브 연결<small>로그인하면 드라이브 '커피성경' 폴더의 파일과 메모를 어느 기기에서나</small>`
-    : `구글 드라이브와 맞추기<small>드라이브 '커피성경' 폴더와 똑같이 (없는 파일은 이 기기에서 지움)${d.at ? ` · 마지막 ${when(d.at)}` : ''}</small>` +
-      (err ? `<small class="warn">불러오지 못했어요: ${esc(err)}</small>` : '');
+  $('driveBtn').innerHTML = icon('cloud') + '<span>' + (!d ? `구글 드라이브 연결<small>어느 기기에서나 같은 파일·메모</small>`
+    : `구글 드라이브와 맞추기<small>${d.at ? `마지막 ${when(d.at)}` : `'커피성경' 폴더와 똑같이`}</small>` +
+      (err ? `<small class="warn">불러오지 못했어요: ${esc(err)}</small>` : '')) + '</span>';
 }
 
 /* ---------- 주석 ---------- */
@@ -1949,9 +2028,9 @@ const linkRefs = (html, b) => html.split(/(<a\b[\s\S]*?<\/a>|<[^>]+>)/).map((par
 })).join('');
 
 let tabHide = prefs.get('tabHide', []); // 탭 줄에서 뺀 주석·사전 ["comm:이름", "dict:이름"]
-const renderTabBox = () => $('tabBox').innerHTML = '<b>탭 줄에 보일 자료</b><p class="help">체크한 것만 위 탭 줄에 보여요.</p>' +
-  [['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length).map(([k, t, ns]) => `<h4>${t}</h4>` +
-    ns.map(n => `<label><input type="checkbox" value="${k}:${esc(n)}" ${tabHide.includes(`${k}:${n}`) ? '' : 'checked'}>${esc(nm(n))}</label>`).join('')).join('');
+const renderTabBox = () => $('tabBox').innerHTML = '<b class="pk-title">자료</b><p class="help">체크한 것만 위 탭 줄에 보여요.</p>' +
+  [['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length).map(([k, t, ns]) => `<h6>${t}</h6><div class="pk-group">` +
+    ns.map(n => `<label><input type="checkbox" value="${k}:${esc(n)}" ${tabHide.includes(`${k}:${n}`) ? '' : 'checked'}>${esc(nm(n))}</label>`).join('') + '</div>').join('');
 const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
 function renderComm() {
   closeUnusedComms(); // 두 개 나란히를 끄거나 주석을 바꾸면 안 보는 주석은 닫음
@@ -2738,6 +2817,7 @@ $('guideBox').onclick = e => {
   const g = e.target.closest('[data-goto]'); if (!g) return;
   e.preventDefault(); $('g-' + g.dataset.goto).scrollIntoView({ block: 'start' });
 };
+$('buildAt2').textContent = $('buildAt').textContent; // 설정 맨 아래 판 정보
 $('viewMenu').onclick = e => { e.stopPropagation(); openPop($('viewBox'), $('menuBtn')); };
 $('presetMenu').onclick = e => { e.stopPropagation(); renderPresets(); openPop($('presetBox'), $('menuBtn')); }; // 모바일은 내 세팅 버튼이 숨겨져 있어 설정 버튼 기준으로
 $('aboutBtn').onclick = e => togglePop(e, $('aboutBox'), $('aboutBtn'));
@@ -3019,10 +3099,11 @@ const KO = new Intl.Collator('ko', { numeric: true });
 const renderVerBox = () => {
   const keep = $('verBox').querySelector('.vb-list')?.scrollTop || 0;
   $('verBox').innerHTML = '<div class="vb-top">' +
-  (S.versions.length > 1 ? '<b>대조 순서</b><ol class="vorder">' + S.versions.map((n, i) => `<li data-vdrag="${esc(n)}"><i class="grip" aria-hidden="true" title="끌어서 순서 바꾸기">⠿</i><span>${esc(nm(n))}</span>` +
-    `<button data-vmove="${esc(n)}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="${esc(nm(n))} 앞으로">▲</button>` +
-    `<button data-vmove="${esc(n)}" data-dir="1" ${i < S.versions.length - 1 ? '' : 'disabled'} aria-label="${esc(nm(n))} 뒤로">▼</button></li>`).join('') + '</ol>' : '') +
-  '<b>번역본 고르기</b><p class="help">체크한 번역본을 나란히 대조해서 봐요.</p></div><div class="vb-list">' +
+  '<b class="pk-title">번역본</b>' +
+  (S.versions.length > 1 ? '<h6>대조 순서<small>끌거나 화살표로 옮겨요</small></h6><ol class="vorder pk-group">' + S.versions.map((n, i) => `<li data-vdrag="${esc(n)}"><span class="vno">${i + 1}</span><span>${esc(nm(n))}</span>` +
+    `<button data-vmove="${esc(n)}" data-dir="-1" ${i ? '' : 'disabled'} aria-label="${esc(nm(n))} 앞으로">${icon('chevron-up')}</button>` +
+    `<button data-vmove="${esc(n)}" data-dir="1" ${i < S.versions.length - 1 ? '' : 'disabled'} aria-label="${esc(nm(n))} 뒤로">${icon('chevron-down')}</button><i class="grip" title="끌어서 순서 바꾸기">${icon('grip-vertical')}</i></li>`).join('') + '</ol>' : '') +
+  `<h6>번역본 고르기<small>${S.versions.length}개 선택 · 나란히 대조</small></h6></div><div class="vb-list pk-group">` +
   allVersions().sort((a, b) => KO.compare(nm(a), nm(b))).map(n => `<label><input type="checkbox" value="${esc(n)}" ${S.versions.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('') + '</div>';
   $('verBox').querySelector('.vb-list').scrollTop = keep;
 };
@@ -3238,7 +3319,7 @@ const applyFont = () => {
   document.documentElement.style.setProperty('--fs', (magnify && phone() ? Math.round(fs * 1.4) : fs) + 'px'); // 돋보기(모바일만)면 1.4배
   document.querySelectorAll('.mag-toggle').forEach(b => b.setAttribute('aria-pressed', magnify));
   document.documentElement.style.setProperty('--read', web ? `"${family}", var(--${base})` : font === 'gothic' ? 'var(--sans)' : 'var(--serif)');
-  $('fontSel').value = font;
+  $('fontSel').value = font; $('fsVal').textContent = fs;
   prefs.set('fs', fs); prefs.set('font', font);
 };
 const fontName = p => FONTS[p.font ?? (p.serif ? 'myeongjo' : 'gothic')]?.[0] || '';
@@ -3376,6 +3457,7 @@ $('bgFile').onchange = async e => {
 };
 // 앱에 든 사진 / 배경 없음 (내 사진은 지움)
 $('bgBox').addEventListener('click', e => {
+  if (e.target.closest('[data-bg-back]')) { e.stopPropagation(); return openPop($('viewBox'), $('viewBtn').offsetParent ? $('viewBtn') : $('menuBtn')); } // 보기로 돌아가기
   const fit = e.target.closest('[data-fit]')?.dataset.fit;
   if (fit) { bg.fit = fit; prefs.set('bg', bg); return applyBg(); }
   const m = e.target.closest('[data-bg]')?.dataset.bg; if (!m || m === 'custom') return;
@@ -3418,10 +3500,10 @@ function applyPreset(i) {
   flash(`세팅 ${i + 1}로 바꿨습니다`);
 }
 function renderPresets() {
-  $('presetBox').innerHTML = '<b>내 세팅</b><p class="help">지금 보는 구성(번역본, 주석, 두 개 나란히, 사전, 글꼴·크기, 칸 너비)을 저장해 두고 한 번에 바꿉니다. 단축키 Alt+1, Alt+2</p>' +
-    [0, 1].map(i => `<div class="slot"><div><b>세팅 ${i + 1}</b><small>${presets[i] ? esc(presetSummary(presets[i])) : '비어 있음'}</small></div>
-      <button class="btn sm" data-psave="${i}">지금 상태 저장</button>
-      <button class="btn sm primary" data-papply="${i}" ${presets[i] ? '' : 'disabled'}>불러오기</button></div>`).join('');
+  $('presetBox').innerHTML = '<b>내 세팅</b><p class="help">지금 보는 구성(번역본, 주석, 두 개 나란히, 사전, 글꼴·크기, 칸 너비)을 저장해 두고 한 번에 바꿔요.</p>' +
+    [0, 1].map(i => `<div class="slot${presets[i] ? '' : ' empty'}"><div class="slot-top"><span class="slot-no">${i + 1}</span><b>세팅 ${i + 1}</b><kbd>Alt+${i + 1}</kbd></div>
+      <small>${presets[i] ? esc(presetSummary(presets[i])) : '아직 저장하지 않았어요. 지금 보는 구성을 저장해 보세요.'}</small>
+      <div class="slot-acts"><button class="btn sm primary" data-papply="${i}" ${presets[i] ? '' : 'disabled'}>불러오기</button><button class="btn sm" data-psave="${i}">지금 상태 저장</button></div></div>`).join('');
 }
 $('presetBtn').onclick = e => togglePop(e, $('presetBox'), $('presetBtn'), renderPresets);
 $('presetBox').onclick = e => {
@@ -3456,7 +3538,7 @@ const TOUR = [
   { sel: ['.welcome .btn.primary', '.welcome .btn.primary + .btn'], title: '여기서 시작하세요', text: '성경·주석·사전 파일을 모아 둔 폴더를 <b>폴더 열기</b>로 고르면 한 번에 불러와요. 한 번 넣으면 다음부터 자동으로 열려요.' },
   { sel: ['.nav'], title: '성경 이동', text: '큰 제목의 <b>책 이름</b>을 누르면 성경을, <b>장</b>을 누르면 장을 골라요. ‹ › 또는 키보드 <b>← →</b>로 앞뒤 장, <b>↑ ↓</b>로 앞뒤 절로 움직여요.' },
   { sel: ['#back', '#fwd'], title: '뒤로 · 앞으로', text: '링크나 검색으로 건너뛴 뒤 원래 자리로 돌아가요. 단축키 <b>Alt+← / Alt+→</b>' },
-  { sel: ['#verPick', '#verTabs'], title: '번역본', text: '<b>번역본 ▾</b>에서 체크하면 <b>여러 개를 나란히 대조</b>해서 봐요. 고른 번역본만 옆에 보이고, 끌어서 순서를 바꿀 수 있어요.' },
+  { sel: ['#verPick', '#verTabs'], title: '번역본', text: '<b>번역본 ▾</b>에서 체크하면 <b>여러 개를 나란히 대조</b>해서 봐요. 고른 번역본만 옆에 보이고, 끌어서 순서를 바꿀 수 있어요. 번역본 <b>이름을 한 번 더 누르면</b> 그 칸이 숨었다 나타나요(숨긴 것은 점선).' },
   { sel: ['#bible'], title: '본문', text: '절을 누르면 선택돼요. 아래에 뜨는 막대에서 <b>복사·하이라이트·메모·책갈피</b>를 할 수 있어요. 원어 성경에서는 <b>단어를 누르면 사전 뜻</b>이 떠요.' },
   { sel: ['[data-rail="dict"]', '[data-rail="xref"]', '[data-rail="saved"]'], title: '바로가기', text: '<b>원어 사전 · 관련 구절 · 보관함</b>을 오른쪽 칸에 바로 열어요. 한 번 더 누르면 주석으로 돌아가요.' },
   { sel: ['#comTabs'], title: '자료 칸', text: '<b>주석·원전분해·원어 사전·관련 구절·보관함</b>을 탭으로 바꿔 봐요. 맨 앞 <b>자료 ▾</b>에서 탭 줄에 보일 것을 골라요. 고른 절을 따라가고, 보관함에는 책갈피·메모·하이라이트가 모여요.' },
