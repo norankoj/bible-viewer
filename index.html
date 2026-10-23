@@ -14,7 +14,7 @@
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
 <!-- 색 설정을 화면 그리기 전에 (깜빡임 없게) -->
-<script>try { const d = document.documentElement; d.dataset.theme = JSON.parse(localStorage.getItem('theme')) || 'auto'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; d.dataset.accent = JSON.parse(localStorage.getItem('accent')) || (d.dataset.design === 'classic' ? 'ash' : 'green'); } catch {}
+<script>try { const d = document.documentElement; d.dataset.theme = JSON.parse(localStorage.getItem('theme')) || 'auto'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; d.dataset.accent = JSON.parse(localStorage.getItem(d.dataset.design === 'classic' ? 'accentC' : 'accent')) || (d.dataset.design === 'classic' ? 'ash' : 'green'); } catch {}
   if (location.hash.startsWith('#guide')) document.documentElement.classList.add('guide-page'); // 사용설명서 링크로 오면 설명서만 한 페이지로</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#035b36">
@@ -270,6 +270,8 @@
   :is(.verse, .par .row)[class*="hl-"] .t { background: color-mix(in srgb, var(--hl) var(--hl-a, 100%), transparent); -webkit-box-decoration-break: clone; box-decoration-break: clone; border-radius: 3px; padding: 2px 1px; }
   /* 히브리어 원문(BHS 등): 오른쪽→왼쪽, 음역·기본형 뜻은 작게 */
   .heb { font-family: "SBL Hebrew", "Ezra SIL", "Times New Roman", "Arial Hebrew", serif; }
+  .dct-head { color: var(--muted); } /* 원어사전 첫머리 "עָזַב(5800, 아자브)" */
+  .dct-head :is(.heb, .grk) { margin-right: 2px; color: var(--accent); font-size: 1.3em; }
   .verse.heb, .par .row > .heb { font-size: calc(var(--fs) * 1.25); line-height: 2.1; }
   .tr, .gl { font: .58em var(--sans); unicode-bidi: isolate; direction: ltr; margin: 0 3px; }
   .tr { color: var(--accent); font-style: italic; }
@@ -866,7 +868,7 @@
   [data-design="classic"] .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px; padding: 12px 20px; background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); overflow: visible; }
   [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
   /* 기존 디자인 헤더: 커피(라테) 띠 사진 배경, 버튼·검색은 불투명 바탕 + 옅은 그림자로 글자가 묻히지 않게 */
-  [data-design="classic"] .rail { --gb: rgb(255 255 255 / .62); --gb-on: rgb(255 255 255 / .92); --gb-line: rgb(255 255 255 / .7); --gb-fg: #3a2416; --veil: rgb(255 252 248 / .45);
+  [data-design="classic"] .rail { --gb: rgb(255 255 255 / .62); --gb-on: rgb(255 255 255 / .92); --gb-line: rgb(255 255 255 / .7); --gb-fg: #3a2416; --veil: rgb(255 255 255 / .8);
     background: linear-gradient(var(--veil), var(--veil)), var(--surface) url(img/coffee-band.jpg) center / cover no-repeat; } /* 사진 위에 옅은 막을 덮어 은은하게 */
   [data-design="classic"] .rail :is(.rb, .nav, .search) { background: var(--gb); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); border: 1px solid var(--gb-line); box-shadow: 0 2px 8px rgb(60 30 10 / .18); color: var(--gb-fg); }
   [data-design="classic"] .rail .rb { font-weight: 600; }
@@ -874,8 +876,8 @@
   [data-design="classic"] .rail .search::placeholder { color: color-mix(in srgb, var(--gb-fg) 60%, transparent); }
   [data-design="classic"] .rail :is(.rb:hover:not(:disabled), .rb.on, .rb[aria-pressed="true"], .search:focus) { background: var(--gb-on); color: var(--gb-fg); border-color: var(--gb-line); }
   [data-design="classic"] .rail .rb:disabled { opacity: 1; color: color-mix(in srgb, var(--gb-fg) 45%, transparent); }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-design="classic"] .rail { --gb: rgb(28 18 12 / .58); --gb-on: rgb(28 18 12 / .86); --gb-line: rgb(255 240 220 / .2); --gb-fg: #f3e6d6; --veil: rgb(18 12 8 / .45); } }
-  :root[data-theme="dark"][data-design="classic"] .rail { --gb: rgb(28 18 12 / .58); --gb-on: rgb(28 18 12 / .86); --gb-line: rgb(255 240 220 / .2); --gb-fg: #f3e6d6; --veil: rgb(18 12 8 / .45); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-design="classic"] .rail { --gb: rgb(28 18 12 / .58); --gb-on: rgb(28 18 12 / .86); --gb-line: rgb(255 240 220 / .2); --gb-fg: #f3e6d6; --veil: rgb(18 18 18 / .8); } }
+  :root[data-theme="dark"][data-design="classic"] .rail { --gb: rgb(28 18 12 / .58); --gb-on: rgb(28 18 12 / .86); --gb-line: rgb(255 240 220 / .2); --gb-fg: #f3e6d6; --veil: rgb(18 18 18 / .8); }
   /* 기존 디자인: 위 버튼 줄 맨 왼쪽에 작은 로고 (누르면 커피성경 소개). 모바일은 설정 › 커피성경 소개 */
   [data-design="classic"] .rail-logo-btn { margin: 0 4px 0 0; align-self: center; }
   [data-design="classic"] .rail-logo { width: 32px; height: 32px; box-shadow: none; }
@@ -1043,7 +1045,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 15:09</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 15:33</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -2175,7 +2177,7 @@ const fillVref = html => html.replace(/(<a href="#" data-ref="([^"]*)">(?:<[^>]*
       .replace(/<\/span><\/a><span style="">[;\s]*\((\d+)\)[;\s]*<\/span>/g, ' <small>×$1</small></span></a>') // "(2)" = 그 절에 두 번
       .replace(/<span style="">[;\s]*<\/span>/g, '')}</span></span>`)
   .replace(/(<span style="font-weight:bold;">)\?(<\/span>)/g, '$1•$2'); // 그 밖의 깨진 글머리표
-const entryHtml = (name, s, data) => isDct(name) ? linkRefs(dctHtml(data), 0) : linkStrong(fillVref(toHtml(data)), s[0]);
+const entryHtml = (name, s, data) => isDct(name) ? linkRefs(dctHtml(data, s), 0) : linkStrong(fillVref(toHtml(data)), s[0]);
 // 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
 // (본문은 "אָב(1, 아브)  아버지 father  아브(명남)는…" 처럼 큰 공백으로 나뉨 → 제목은 앞의 두 덩어리, 나머지는 풀이)
 function dictParts(text) {
@@ -2897,7 +2899,7 @@ $('clearAll').onclick = async () => {
   // (켜자마자 저절로 받지는 않게, 버튼을 누를 때까지 멈춰 둠)
   driveSkip = {}; prefs.set('driveSkip', driveSkip); prefs.set('driveHold', true);
   // 사전·주석 색인은 지우고 배경 사진은 남김
-  await idb('cache', 'readwrite', s => { const r = s.getAllKeys(); r.onsuccess = () => r.result.filter(k => k !== 'bg').forEach(k => s.delete(k)); return r; }).catch(() => {});
+  await idb('cache', 'readwrite', s => { const r = s.getAllKeys(); r.onsuccess = () => r.result.filter(k => k !== 'bg' && k !== 'bgC').forEach(k => s.delete(k)); return r; }).catch(() => {});
   location.reload();
 };
 $('files').onchange = e => { load([...e.target.files], true, true); e.target.value = ''; };
@@ -3412,14 +3414,16 @@ applyCols();
 /* ---------- 색 설정: 초록(기본, 앱 아이콘 색) / 파랑 / 검정. 창 제목 막대 색도 함께 ---------- */
 const ACCENT_BAR = { green: '#035b36', blue: '#16213f', black: '#1d2027', ash: '#3d3631' };
 // 색을 고른 적 없으면: 기존 디자인(성진 목사님 에디션)은 애쉬브라운, 새 디자인은 초록 (디자인을 바꾸면 따라 바뀜)
-const accentDefault = () => document.documentElement.dataset.design === 'classic' ? 'ash' : 'green';
+const isClassic = () => document.documentElement.dataset.design === 'classic';
+const accentDefault = () => isClassic() ? 'ash' : 'green';
+const accKey = () => isClassic() ? 'accentC' : 'accent'; // 색도 디자인마다 따로 기억 (성진 목사님 에디션은 처음엔 애쉬브라운)
 function applyAccent(a) {
   if (!ACCENT_BAR[a]) a = accentDefault();
   document.documentElement.dataset.accent = a;
   document.querySelector('meta[name="theme-color"]').content = ACCENT_BAR[a];
   document.querySelectorAll('[data-accent]').forEach(b => b.tagName === 'BUTTON' && b.classList.toggle('on', b.dataset.accent === a));
 }
-applyAccent(prefs.get('accent', ''));
+applyAccent(prefs.get(accKey(), ''));
 // 디자인: 새 디자인(기본) / 기존 디자인. 화면 모양만 바뀌고 기능은 같음
 function applyDesign(d) {
   if (d !== 'classic') d = 'new';
@@ -3446,13 +3450,13 @@ $('themeSw').onclick = e => {
 $('designSw').onclick = e => {
   e.stopPropagation();
   const d = e.target.closest('[data-design]')?.dataset.design; if (!d) return;
-  prefs.set('design', d); applyDesign(d); bgAuto(); applyAccent(prefs.get('accent', '')); closePops(); renderComm(); // 디자인마다 '자료' 버튼 이름이 다름
+  prefs.set('design', d); applyDesign(d); loadBg(); applyAccent(prefs.get(accKey(), '')); closePops(); renderComm(); // 디자인마다 '자료' 버튼 이름이 다름
   if (S.v) select(S.v); // 칸 모양이 바뀌었으니 고른 절이 보이게
 };
 $('accentSw').onclick = e => {
   e.stopPropagation(); // 보기 창은 열어 둔 채 바로 바뀌는 걸 보게
   const a = e.target.closest('[data-accent]')?.dataset.accent; if (!a) return;
-  prefs.set('accent', a); applyAccent(a);
+  prefs.set(accKey(), a); applyAccent(a);
 };
 
 /* ---------- 성경 배경 화면: 앱에 든 커피 사진 / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
@@ -3460,15 +3464,20 @@ const BG_PRESETS = {
   default: { src: 'img/bg-coffee.jpg', pos: 'center 70%', size: 'cover' }, // Mike Kenneally, Unsplash
   latte: { src: 'img/bg-latte.webp', pos: 'center', size: 'auto 70%' }, // 기존 디자인의 기본 배경: 잔 하나가 칸 가운데에 통째로
 };
-// 배경을 한 번도 고르지 않았으면: 기존 디자인은 라테 사진, 새 디자인은 배경 없음 (디자인을 바꾸면 따라 바뀜)
-const bgAuto = () => {
-  if (prefs.get('bg', null)) return false;
-  const m = document.documentElement.dataset.design === 'classic' ? 'latte' : 'none';
-  setBg(m, BG_PRESETS[m]?.src || '', true); return true;
-};
 const BG_FIT = { pos: 'center 70%', size: 'cover' }; // 내 사진
+// 배경은 디자인마다 따로 기억: 새 디자인 = 'bg'(처음엔 배경 없음), 성진 목사님 에디션 = 'bgC'(처음엔 라테 잔). 내 사진도 디자인마다
+const bgKey = () => isClassic() ? 'bgC' : 'bg';
 // fit: cover = 칸을 꽉 채움(사진 일부가 잘림) / contain = 사진 전체가 보이게. size: 전체 보이기일 때 크기(%)
-let bg = { op: 15, blur: 0, mode: 'none', fit: 'cover', size: 100, ...prefs.get('bg', {}) }, bgUrl = ''; // 처음엔 배경 없음
+let bg, bgUrl = '';
+async function loadBg() {
+  bg = { op: 15, blur: 0, mode: isClassic() ? 'latte' : 'none', fit: 'cover', size: 100, ...prefs.get(bgKey(), {}) };
+  if (bg.mode === 'custom') {
+    const b = await idb('cache', 'readonly', s => s.get(bgKey())).catch(() => null);
+    if (b instanceof Blob) return setBg('custom', URL.createObjectURL(b), true);
+  }
+  const p = BG_PRESETS[bg.mode]; // 내 사진이 사라졌으면 배경 없음
+  setBg(p ? bg.mode : 'none', p ? p.src : '', true);
+}
 function applyBg() {
   const L = $('bgLayer'), p = BG_PRESETS[bg.mode] || BG_FIT, whole = bg.fit === 'contain';
   L.hidden = !bgUrl;
@@ -3489,42 +3498,34 @@ function applyBg() {
 function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장 안 함)
   if (bgUrl.startsWith('blob:')) URL.revokeObjectURL(bgUrl);
   bg.mode = mode; bgUrl = src;
-  if (!keep) prefs.set('bg', bg);
+  if (!keep) prefs.set(bgKey(), bg);
   $('bgLayer').style.backgroundImage = src ? `url("${src}")` : '';
   applyBg();
 }
-(async () => {
-  if (bg.mode === 'custom') {
-    const b = await idb('cache', 'readonly', s => s.get('bg')).catch(() => null);
-    if (b instanceof Blob) return setBg('custom', URL.createObjectURL(b), true);
-  }
-  if (bgAuto()) return;
-  const p = BG_PRESETS[bg.mode]; // 내 사진이 사라졌으면 배경 없음
-  setBg(p ? bg.mode : 'none', p ? p.src : '', true);
-})();
+loadBg();
 $('bgBtn').onclick = e => { e.stopPropagation(); openPop($('bgBox'), $('viewBtn').offsetParent ? $('viewBtn') : $('menuBtn')); }; // 모바일은 보기 버튼이 설정 안에 있어 설정 버튼 기준
 $('bgPick').onclick = () => $('bgFile').click();
 $('bgFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = '';
   if (!f) return;
   if (!f.type.startsWith('image/')) return alert('사진 파일을 골라 주세요');
-  await idb('cache', 'readwrite', s => s.put(f, 'bg')).catch(() => flash('사진을 저장하지 못했습니다. 이번에만 보입니다'));
+  await idb('cache', 'readwrite', s => s.put(f, bgKey())).catch(() => flash('사진을 저장하지 못했습니다. 이번에만 보입니다'));
   setBg('custom', URL.createObjectURL(f));
 };
 // 앱에 든 사진 / 배경 없음 (내 사진은 지움)
 $('bgBox').addEventListener('click', e => {
   if (e.target.closest('[data-bg-back]')) { e.stopPropagation(); return openPop($('viewBox'), $('viewBtn').offsetParent ? $('viewBtn') : $('menuBtn')); } // 보기로 돌아가기
   const fit = e.target.closest('[data-fit]')?.dataset.fit;
-  if (fit) { bg.fit = fit; prefs.set('bg', bg); return applyBg(); }
+  if (fit) { bg.fit = fit; prefs.set(bgKey(), bg); return applyBg(); }
   const m = e.target.closest('[data-bg]')?.dataset.bg; if (!m || m === 'custom') return;
-  idb('cache', 'readwrite', s => s.delete('bg')).catch(() => {});
+  idb('cache', 'readwrite', s => s.delete(bgKey())).catch(() => {});
   setBg(m, BG_PRESETS[m]?.src || '');
 });
 // 끌면서 바로 보이고, 놓으면 저장
 $('bgOp').oninput = e => { bg.op = +e.target.value; applyBg(); };
 $('bgBlur').oninput = e => { bg.blur = +e.target.value; applyBg(); };
 $('bgSize').oninput = e => { bg.size = +e.target.value; applyBg(); };
-$('bgOp').onchange = $('bgBlur').onchange = $('bgSize').onchange = () => prefs.set('bg', bg);
+$('bgOp').onchange = $('bgBlur').onchange = $('bgSize').onchange = () => prefs.set(bgKey(), bg);
 
 /* ---------- 내 세팅 1·2: 보는 구성(번역본·주석·2단·사전·글꼴·칸 너비 등)을 저장해 두고 바꾸기 ---------- */
 let presets = prefs.get('presets', [null, null]);

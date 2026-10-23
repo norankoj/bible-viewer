@@ -423,7 +423,8 @@ function bdbText(t) {
 }
 
 // Bible Analyzer 사전(.dct): Lexicon(scode, dtext), dtext = "원어^HTML 풀이". 허용한 서식만 남기고 <num>G25</num>은 번호 링크로
-function dctHtml(dtext) {
+// s(번호)를 주면 첫머리를 예전 Strong(한글)처럼: "עָזַב(5800, 아자브)" 한 줄 + 뜻 한 줄
+function dctHtml(dtext, s) {
   const [head, ...rest] = (dtext || '').split('^');
   const body = rest.join('^');
   const lang = /[֐-׿]/.test(head) ? 'heb' : 'grk';
@@ -443,7 +444,10 @@ function dctHtml(dtext) {
     else if (tag[2] === 'num') { inNum = !tag[1]; out += inNum ? '<a href="#" class="num">' : '</a>'; } // 아래에서 data-strong 채움
   }
   out = out.replace(/<a href="#" class="num">([HG]\d+)<\/a>/g, '<a href="#" data-strong="$1">$1</a>');
-  return `<span class="${lang}"${lang === 'heb' ? ' dir="rtl"' : ''}>${esc(head.trim())}</span> ${out}`;
+  const word = `<span class="${lang}"${lang === 'heb' ? ' dir="rtl"' : ''}>${esc(head.trim())}</span>`;
+  const m = s && out.match(/^\s*([^<]*?)\s*<br>/); // 첫 줄 "아자브 azab" → 한글 발음만
+  if (m) return `<span class="dct-head">${word}(${+s.slice(1)}, ${m[1].match(/^[가-힣\s-]+/)?.[0].trim() || m[1]})</span><br>` + out.slice(m[0].length);
+  return `${word} ${out}`;
 }
 
 /* ---------- 원어 단어 → 스트롱 번호 (STEPBible TAHOT/TAGNT, CC BY 4.0) ----------
