@@ -1029,7 +1029,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 10:23</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 13:57</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1282,7 +1282,7 @@ const MODULE = /\.(ont|ot|nt|twm|bdb|mybible|dct|sdb)$/i;
 const fileInfo = {};
 // 화면에 보이는 이름: 파일 관리에서 바꾼 이름 → 잘 알려진 모듈의 기본 이름 → 파일 이름.
 // (안쪽 구분은 늘 파일 이름이라, 이름을 바꿔도 순서·설정은 그대로)
-const DEFAULT_NAMES = { 메튜: '매튜헨리', 호크마주석: '호크마', Hokma2: '호크마' };
+const DEFAULT_NAMES = { 메튜: '매튜헨리', 호크마주석: '호크마', Hokma2: '호크마', HebGrkKo: '원어사전(한글)' };
 let displayNames = prefs.get('names', {});
 const nm = n => displayNames[n] || DEFAULT_NAMES[n] || n;
 const baseName = f => f.name.replace(/(\.(cmt|gbk|dct|bbl))?\.(twm|ont|ot|nt|bdb|mybible|dct|sdb)$/i, '');
@@ -1420,7 +1420,7 @@ async function load(files, persist, picked, quiet) {
   if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
   sortVersions();
   if (!commFiles[S.comm]) S.comm = cn[0] || '';
-  if (!dictFiles[S.dict]) S.dict = dictNames().find(isKorDict) || dictNames()[0] || '';
+  if (!dictFiles[S.dict]) S.dict = korDict() || dictNames()[0] || '';
   if (S.tab === 'dict' && !S.dict) S.tab = 'comm';
   // 오프라인 대비: 원어 성경이 있으면 구약·신약 단어 번호 자료를 앱 보관함에 미리 받아 둠 (없을 때 한 번만)
   if (window.caches && Object.keys(bibles).some(needsTag))
@@ -1517,8 +1517,10 @@ const commNames = () => ordered('comm', Object.keys(commFiles));
 const rightKeys = () => ordered('right', [...commNames().map(n => 'comm:' + n), ...dictNames().map(n => 'dict:' + n)]);
 const dictNames = () => ordered('dict', Object.keys(dictFiles));
 // 한글 원어 사전(StrongBniel, 이름에 '한글' 등)을 먼저: 단어를 누르면 뜨는 창은 사전 탭에서 무엇을 봤든 늘 이것, 처음 여는 사전 탭도 이것
-const isKorDict = n => /한글|한국|bniel|kor/i.test(n + ' ' + nm(n));
-const wordDict = () => dictNames().find(isKorDict) || S.dict;
+const isKorDict = n => /한글|한국|bniel|kor|grkko/i.test(n + ' ' + nm(n));
+// 한글 사전이 둘이면 Bible Analyzer 원어사전(HebGrkKo.dct)을 먼저: 풀이가 더 길고 번호가 어긋난 칸이 없음
+const korDict = () => dictNames().filter(isKorDict).sort((a, b) => isDct(b) - isDct(a))[0];
+const wordDict = () => korDict() || S.dict;
 // Strong(한글)은 240여 번호(H5800 등)에 바로 앞 번호 풀이가 그대로 복사돼 있음: 제목 "(5799, 아자젤)"의 번호가 다름
 // → 그 번호는 영어 사전으로 (두 사전의 요약을 다 불러 둔 뒤에만 판단)
 const engDict = () => dictNames().find(n => !isKorDict(n));
@@ -1911,6 +1913,17 @@ async function syncFiles(folder, mirror) {
   prefs.set('driveGot', driveGot);
   const got = await getDriveFiles(want);
   let removed = 0;
+  // 한글 원어 사전 갈아끼우기: 드라이브에 새 한글 사전(.dct)이 있고 예전에 드라이브에서 받은 한글 사전(.twm)이 드라이브에서 빠졌으면
+  // 앱을 켤 때 자동 맞춤에서도 묻지 않고 이 기기에서 지움 (직접 추가한 파일은 driveGot 에 없어서 그대로)
+  if (main.length && dictNames().some(n => isDct(n) && isKorDict(n))) {
+    const names = new Set(list.map(f => f.name));
+    const old = Object.entries(fileInfo).filter(([n, i]) => dictFiles[n] && !isDct(n) && isKorDict(n) && i.key in driveGot && !names.has(i.key));
+    if (old.length) {
+      await removeModules(old.map(([n]) => `dict:${n}`));
+      for (const [, i] of old) delete driveGot[i.key];
+      prefs.set('driveGot', driveGot); removed += old.length;
+    }
+  }
   if (mirror && main.length) { // 드라이브 목록을 못 읽어 0개면 지우지 않음
     const names = new Set(list.map(f => f.name)); // '참고' 폴더에 있는 것도 드라이브에 있는 것 (참고에서 받은 파일은 지우지 않음)
     const gone = Object.entries(fileInfo).filter(([, i]) => !names.has(i.key)).map(([n]) => n); // 드라이브에 없는 파일 (직접 추가한 것 포함)
@@ -2148,7 +2161,7 @@ const fillVref = html => html.replace(/(<a href="#" data-ref="([^"]*)">(?:<[^>]*
       .replace(/<\/span><\/a><span style="">[;\s]*\((\d+)\)[;\s]*<\/span>/g, ' <small>×$1</small></span></a>') // "(2)" = 그 절에 두 번
       .replace(/<span style="">[;\s]*<\/span>/g, '')}</span></span>`)
   .replace(/(<span style="font-weight:bold;">)\?(<\/span>)/g, '$1•$2'); // 그 밖의 깨진 글머리표
-const entryHtml = (name, s, data) => isDct(name) ? dctHtml(data) : linkStrong(fillVref(toHtml(data)), s[0]);
+const entryHtml = (name, s, data) => isDct(name) ? linkRefs(dctHtml(data), 0) : linkStrong(fillVref(toHtml(data)), s[0]);
 // 항목 첫머리 "(430, 엘로힘) 하나님, 신들" 을 목록 제목으로
 // (본문은 "אָב(1, 아브)  아버지 father  아브(명남)는…" 처럼 큰 공백으로 나뉨 → 제목은 앞의 두 덩어리, 나머지는 풀이)
 function dictParts(text) {
@@ -2845,7 +2858,7 @@ document.querySelectorAll('[data-rail]').forEach(b => b.onclick = e => {
   e.stopPropagation(); closePops();
   const t = b.dataset.rail;
   if (t === 'dict' && !dictNames().length) return flash('원어 사전 파일(.gbk.twm, .dct)을 넣으면 쓸 수 있어요');
-  if (t === 'dict') S.dict ||= dictNames().find(isKorDict) || dictNames()[0];
+  if (t === 'dict') S.dict ||= korDict() || dictNames()[0];
   S.tab = S.tab === t && !S.hideComm ? 'comm' : t;
   S.hideComm = false; save(); renderComm(); renderBible(); if (S.v) syncComm(S.v);
 });

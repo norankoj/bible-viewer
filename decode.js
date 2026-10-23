@@ -432,7 +432,8 @@ function dctHtml(dtext) {
     if (!part.startsWith('<')) {
       const t = esc(part.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
       // <num>G25</num> 이든 글자로 적힌 "(H433, …)" 이든 번호는 누르면 그 항목으로
-      out += inNum ? t : t.replace(/\b([HG])(\d{1,5})(?!\d)/g, '<a href="#" data-strong="$1$2">$1$2</a>');
+      // 단, "시 38:10, H11"·"시 78:30-37, H31-38" 의 H11은 히브리어 성경 절 번호라 링크하지 않음
+      out += inNum ? t : t.replace(/(?<!\d:\d{1,3}(?:[-~]\d{1,3})?,\s?)\b([HG])(\d{1,5})(?!\d)/g, '<a href="#" data-strong="$1$2">$1$2</a>');
       continue;
     }
     const tag = part.toLowerCase().match(/^<(\/?)(\w+)/);

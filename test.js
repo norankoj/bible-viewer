@@ -38,6 +38,7 @@ assert.strictEqual(plainVerse('In the beginning<RF>Or, at first<Rf> God'), 'In t
   const h = dctHtml("ἀγάπη^<font color='#328AE1'>아가페</font><br><b>1.</b> 아가파오(<num>G25</num>)에서 <script>x</script>");
   assert.match(h, /^<span class="grk">ἀγάπη<\/span> 아가페<br><b>1\.<\/b> 아가파오\(<a href="#" data-strong="G25">G25<\/a>\)에서 x$/);
   assert.match(dctHtml('אֱלֹהִים^엘로아흐(H433, 하나님)'), /엘로아흐\(<a href="#" data-strong="H433">H433<\/a>, 하나님\)/); // 글자로 적힌 번호도 링크
+  assert.doesNotMatch(dctHtml('עָזַב^힘(시 38:10, H11), (시 78:30-37, H31-38)'), /data-strong/); // 히브리어 성경 절 번호는 링크 아님
 }
 
 // 번호 없는 원어 성경에 STEPBible 번호 붙이기 (악센트·대소문자·끝글자 무시, 본문 순서대로)
