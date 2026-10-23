@@ -14,7 +14,7 @@
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
 <!-- 색 설정을 화면 그리기 전에 (깜빡임 없게) -->
-<script>try { const d = document.documentElement; d.dataset.accent = JSON.parse(localStorage.getItem('accent')) || 'green'; d.dataset.theme = JSON.parse(localStorage.getItem('theme')) || 'auto'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; } catch {}
+<script>try { const d = document.documentElement; d.dataset.theme = JSON.parse(localStorage.getItem('theme')) || 'auto'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; d.dataset.accent = JSON.parse(localStorage.getItem('accent')) || (d.dataset.design === 'classic' ? 'ash' : 'green'); } catch {}
   if (location.hash.startsWith('#guide')) document.documentElement.classList.add('guide-page'); // 사용설명서 링크로 오면 설명서만 한 페이지로</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#035b36">
@@ -38,6 +38,7 @@
   }
   :root[data-accent="blue"] { --accent: #2c4aa8; --accent-soft: #e8edfa; --rail: #16213f; --rail-fg: #cdd6ef; } /* 예전 성경 뷰어 색 (창 제목 막대는 남색 #16213f) */
   :root[data-accent="black"] { --accent: #1d2027; --accent-soft: #eceef1; --rail: #1d2027; --rail-fg: #d6d9de; }
+  :root[data-accent="ash"] { --accent: #6e625a; --accent-soft: #eeeae6; --rail: #3d3631; --rail-fg: #ddd5ce; } /* 애쉬브라운: 성진 목사님 에디션 기본 (커피 헤더와 어울리게) */
   /* 다크: 기기 설정을 따르거나(자동) 보기 › 화면에서 직접 고름 */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -49,6 +50,7 @@
     }
     :root:not([data-theme="light"])[data-accent="blue"] { --accent: #8fa7ee; --accent-soft: #232a40; --rail: #0b1022; --rail-fg: #b4c0e4; }
     :root:not([data-theme="light"])[data-accent="black"] { --accent: #e4e6eb; --accent-soft: #2a2d35; --rail: #0c0d0f; --rail-fg: #c4c8ce; }
+    :root:not([data-theme="light"])[data-accent="ash"] { --accent: #c2b4a8; --accent-soft: #2f2a26; --rail: #141110; --rail-fg: #cfc5bc; }
   }
   :root[data-theme="dark"] {
     --bg: #0d100e; --page: #121613; --surface: #171b18; --line: #262c28; --fg: #e6e9e7; --muted: #98a19c;
@@ -59,6 +61,7 @@
   }
   :root[data-theme="dark"][data-accent="blue"] { --accent: #8fa7ee; --accent-soft: #232a40; --rail: #0b1022; --rail-fg: #b4c0e4; }
   :root[data-theme="dark"][data-accent="black"] { --accent: #e4e6eb; --accent-soft: #2a2d35; --rail: #0c0d0f; --rail-fg: #c4c8ce; }
+  :root[data-theme="dark"][data-accent="ash"] { --accent: #c2b4a8; --accent-soft: #2f2a26; --rail: #141110; --rail-fg: #cfc5bc; }
   :root[data-theme="dark"] { color-scheme: dark; } :root[data-theme="light"] { color-scheme: light; }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -862,6 +865,17 @@
   [data-design="classic"] .app { position: static; height: auto; min-height: 0; }
   [data-design="classic"] .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 8px; padding: 12px 20px; background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); overflow: visible; }
   [data-design="classic"] .rail-sep, [data-design="classic"] .rb .ico { display: none; }
+  /* 기존 디자인 헤더: 커피(라테) 띠 사진 배경, 버튼·검색은 불투명 바탕 + 옅은 그림자로 글자가 묻히지 않게 */
+  [data-design="classic"] .rail { --gb: rgb(255 255 255 / .62); --gb-on: rgb(255 255 255 / .92); --gb-line: rgb(255 255 255 / .7); --gb-fg: #3a2416; --veil: rgb(255 252 248 / .45);
+    background: linear-gradient(var(--veil), var(--veil)), var(--surface) url(img/coffee-band.jpg) center / cover no-repeat; } /* 사진 위에 옅은 막을 덮어 은은하게 */
+  [data-design="classic"] .rail :is(.rb, .nav, .search) { background: var(--gb); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); border: 1px solid var(--gb-line); box-shadow: 0 2px 8px rgb(60 30 10 / .18); color: var(--gb-fg); }
+  [data-design="classic"] .rail .rb { font-weight: 600; }
+  [data-design="classic"] .rail .ref-btn { color: var(--gb-fg); }
+  [data-design="classic"] .rail .search::placeholder { color: color-mix(in srgb, var(--gb-fg) 60%, transparent); }
+  [data-design="classic"] .rail :is(.rb:hover:not(:disabled), .rb.on, .rb[aria-pressed="true"], .search:focus) { background: var(--gb-on); color: var(--gb-fg); border-color: var(--gb-line); }
+  [data-design="classic"] .rail .rb:disabled { opacity: 1; color: color-mix(in srgb, var(--gb-fg) 45%, transparent); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-design="classic"] .rail { --gb: rgb(28 18 12 / .58); --gb-on: rgb(28 18 12 / .86); --gb-line: rgb(255 240 220 / .2); --gb-fg: #f3e6d6; --veil: rgb(18 12 8 / .45); } }
+  :root[data-theme="dark"][data-design="classic"] .rail { --gb: rgb(28 18 12 / .58); --gb-on: rgb(28 18 12 / .86); --gb-line: rgb(255 240 220 / .2); --gb-fg: #f3e6d6; --veil: rgb(18 12 8 / .45); }
   /* 기존 디자인: 위 버튼 줄 맨 왼쪽에 작은 로고 (누르면 커피성경 소개). 모바일은 설정 › 커피성경 소개 */
   [data-design="classic"] .rail-logo-btn { margin: 0 4px 0 0; align-self: center; }
   [data-design="classic"] .rail-logo { width: 32px; height: 32px; box-shadow: none; }
@@ -929,9 +943,9 @@
   <div class="vb-group"><span class="vb-label">디자인</span>
     <span class="tile-sw thumbs" id="designSw" role="group" aria-label="디자인">
       <button data-design="new"><i class="thumb new" aria-hidden="true"><b></b><s></s><s></s></i><span>새 디자인</span></button>
-      <button data-design="classic"><i class="thumb classic" aria-hidden="true"><b></b><s></s><s></s></i><span>기존 디자인<small>성진 목사님 버전</small></span></button></span></div>
+      <button data-design="classic"><i class="thumb classic" aria-hidden="true"><b></b><s></s><s></s></i><span>성진 목사님 에디션</span></button></span></div>
   <div class="vb-group"><span class="vb-label">색</span>
-    <span class="swatch-sw" id="accentSw" role="group" aria-label="강조 색"><button data-accent="green" title="초록" aria-label="초록"><i style="background:#035b36"></i></button><button data-accent="blue" title="파랑" aria-label="파랑"><i style="background:#2c4aa8"></i></button><button data-accent="black" title="검정" aria-label="검정"><i style="background:#1d2027"></i></button></span></div>
+    <span class="swatch-sw" id="accentSw" role="group" aria-label="강조 색"><button data-accent="green" title="초록" aria-label="초록"><i style="background:#035b36"></i></button><button data-accent="blue" title="파랑" aria-label="파랑"><i style="background:#2c4aa8"></i></button><button data-accent="black" title="검정" aria-label="검정"><i style="background:#1d2027"></i></button><button data-accent="ash" title="애쉬브라운" aria-label="애쉬브라운"><i style="background:#6e625a"></i></button></span></div>
   <button class="vb-link" id="bgBtn" title="성경 뒤에 사진 깔기, 진하기·흐림 조절"><span>배경 화면<small>성경 뒤에 사진 깔기</small></span><b aria-hidden="true">›</b></button>
 </div>
 <span class="status" id="status" role="status"></span>
@@ -1029,7 +1043,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 13:57</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 15:09</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1139,7 +1153,7 @@
     <ul>
       <li>원어 성경(BHS, 원어 신약 등)이나 스트롱 번호가 붙은 성경(개역개정S 등)의 <b>단어를 누르면</b> 단어 노트가 열려요. 사전 탭에서 무엇을 봤든 <b>Strong(한글)</b>이 먼저 나와요.</li>
       <li>단어 노트 맨 위: <b>번호</b>(마우스를 올리면 설명) · <b>나오는 절 모두 찾기</b> · <b>사전에서 보기</b>. 아래에 사전 풀이와 <b>이 단어가 나오는 곳</b>이 있어요.</li>
-      <li>번역본 줄의 <b>단어 뜻</b> 목록에서 보는 곳을 골라요 — <b>오른쪽 창</b>(모바일은 아래에서 올라옴) · <b>단어 바로 아래</b>(작은 창) · <b>자료 칸 사전</b>. 기존 디자인은 단어 옆 창 · 자료 칸 사전.</li>
+      <li>번역본 줄의 <b>단어 뜻</b> 목록에서 보는 곳을 골라요 — <b>오른쪽 창</b>(모바일은 아래에서 올라옴) · <b>단어 바로 아래</b>(작은 창) · <b>자료 칸 사전</b>. 성진 목사님 에디션은 단어 옆 창 · 자료 칸 사전.</li>
       <li>BHS 형식 성경은 <b>발음·뜻 보기</b>로 원어 아래 발음과 기본형 뜻을 켜고 끌 수 있어요.</li>
     </ul></section>
 <section id="g-search"><h3>검색</h3>
@@ -1156,7 +1170,7 @@
     <ul>
       <li><b>돋보기</b>(모바일): 본문 글자를 한 번에 크게. 다시 누르면 원래대로.</li>
       <li><b>내 세팅</b>: 지금 보는 구성(번역본·주석·두 개 나란히·사전·글꼴·칸 너비)을 1·2에 저장하고 한 번에 바꿔요(<kbd>Alt</kbd>+<kbd>1</kbd>, <kbd>Alt</kbd>+<kbd>2</kbd>). 구글 드라이브를 연결하면 다른 기기와도 맞춰져요.</li>
-      <li><b>보기</b>: 글자 크기·글꼴, 화면 밝기(자동 = 기기 설정을 따름 / 라이트 / 다크), 디자인(새 디자인 / 기존 디자인 · 성진 목사님 버전), 색(초록·파랑·검정), 배경 화면(커피 사진·내 사진, 진하기·흐림·맞춤).</li>
+      <li><b>보기</b>: 글자 크기·글꼴, 화면 밝기(자동 = 기기 설정을 따름 / 라이트 / 다크), 디자인(새 디자인 / 성진 목사님 에디션), 색(초록·파랑·검정·애쉬브라운, 성진 목사님 에디션은 애쉬브라운이 기본), 배경 화면(커피 사진·내 사진, 진하기·흐림·맞춤).</li>
       <li>PC에서 칸 사이 경계를 끌면 너비를 조절해요(두 번 누르면 원래대로).</li>
     </ul></section>
 <section id="g-drive"><h3>구글 드라이브로 여러 기기에서</h3>
@@ -1200,7 +1214,7 @@
 <div class="pop" id="bgBox" role="dialog" aria-label="배경 화면">
   <div class="pop-back-head"><button class="pop-back" data-bg-back title="보기로 돌아가기" aria-label="보기로 돌아가기">‹ 보기</button><b>성경 배경 화면</b></div>
   <p class="help">성경 본문 뒤에 사진을 깔 수 있습니다. 사진은 이 브라우저에만 저장됩니다.</p>
-  <div class="bg-acts"><button class="btn sm" data-bg="default">커피 사진</button><button class="btn sm" data-bg="none">배경 없음</button><button class="btn sm" id="bgPick" data-bg="custom">내 사진 고르기</button></div>
+  <div class="bg-acts"><button class="btn sm" data-bg="default">커피 사진</button><button class="btn sm" data-bg="latte">라테 사진</button><button class="btn sm" data-bg="none">배경 없음</button><button class="btn sm" id="bgPick" data-bg="custom">내 사진 고르기</button></div>
   <label class="bg-row">진하기 <input type="range" id="bgOp" min="5" max="100" step="1"><output id="bgOpV"></output></label>
   <label class="bg-row">흐림 <input type="range" id="bgBlur" min="0" max="20" step="1"><output id="bgBlurV"></output></label>
   <div class="bg-row">맞춤 <button class="btn sm" data-fit="cover" title="칸을 꽉 채움 (사진 일부가 잘릴 수 있음)">꽉 채우기</button><button class="btn sm" data-fit="contain" title="사진 전체가 보이게">전체 보이기</button></div>
@@ -3396,14 +3410,16 @@ document.querySelectorAll('.resizer').forEach(r => {
 applyCols();
 
 /* ---------- 색 설정: 초록(기본, 앱 아이콘 색) / 파랑 / 검정. 창 제목 막대 색도 함께 ---------- */
-const ACCENT_BAR = { green: '#035b36', blue: '#16213f', black: '#1d2027' };
+const ACCENT_BAR = { green: '#035b36', blue: '#16213f', black: '#1d2027', ash: '#3d3631' };
+// 색을 고른 적 없으면: 기존 디자인(성진 목사님 에디션)은 애쉬브라운, 새 디자인은 초록 (디자인을 바꾸면 따라 바뀜)
+const accentDefault = () => document.documentElement.dataset.design === 'classic' ? 'ash' : 'green';
 function applyAccent(a) {
-  if (!ACCENT_BAR[a]) a = 'green';
+  if (!ACCENT_BAR[a]) a = accentDefault();
   document.documentElement.dataset.accent = a;
   document.querySelector('meta[name="theme-color"]').content = ACCENT_BAR[a];
   document.querySelectorAll('[data-accent]').forEach(b => b.tagName === 'BUTTON' && b.classList.toggle('on', b.dataset.accent === a));
 }
-applyAccent(prefs.get('accent', 'green'));
+applyAccent(prefs.get('accent', ''));
 // 디자인: 새 디자인(기본) / 기존 디자인. 화면 모양만 바뀌고 기능은 같음
 function applyDesign(d) {
   if (d !== 'classic') d = 'new';
@@ -3430,7 +3446,7 @@ $('themeSw').onclick = e => {
 $('designSw').onclick = e => {
   e.stopPropagation();
   const d = e.target.closest('[data-design]')?.dataset.design; if (!d) return;
-  prefs.set('design', d); applyDesign(d); closePops(); renderComm(); // 디자인마다 '자료' 버튼 이름이 다름
+  prefs.set('design', d); applyDesign(d); bgAuto(); applyAccent(prefs.get('accent', '')); closePops(); renderComm(); // 디자인마다 '자료' 버튼 이름이 다름
   if (S.v) select(S.v); // 칸 모양이 바뀌었으니 고른 절이 보이게
 };
 $('accentSw').onclick = e => {
@@ -3442,6 +3458,13 @@ $('accentSw').onclick = e => {
 /* ---------- 성경 배경 화면: 앱에 든 커피 사진 / 내 사진(브라우저 저장소 cache 'bg') / 없음. 진하기·흐림은 설정에 ---------- */
 const BG_PRESETS = {
   default: { src: 'img/bg-coffee.jpg', pos: 'center 70%', size: 'cover' }, // Mike Kenneally, Unsplash
+  latte: { src: 'img/bg-latte.webp', pos: 'center', size: 'auto 70%' }, // 기존 디자인의 기본 배경: 잔 하나가 칸 가운데에 통째로
+};
+// 배경을 한 번도 고르지 않았으면: 기존 디자인은 라테 사진, 새 디자인은 배경 없음 (디자인을 바꾸면 따라 바뀜)
+const bgAuto = () => {
+  if (prefs.get('bg', null)) return false;
+  const m = document.documentElement.dataset.design === 'classic' ? 'latte' : 'none';
+  setBg(m, BG_PRESETS[m]?.src || '', true); return true;
 };
 const BG_FIT = { pos: 'center 70%', size: 'cover' }; // 내 사진
 // fit: cover = 칸을 꽉 채움(사진 일부가 잘림) / contain = 사진 전체가 보이게. size: 전체 보이기일 때 크기(%)
@@ -3475,6 +3498,7 @@ function setBg(mode, src, keep) { // keep: 시작할 때 보여주기만 (저장
     const b = await idb('cache', 'readonly', s => s.get('bg')).catch(() => null);
     if (b instanceof Blob) return setBg('custom', URL.createObjectURL(b), true);
   }
+  if (bgAuto()) return;
   const p = BG_PRESETS[bg.mode]; // 내 사진이 사라졌으면 배경 없음
   setBg(p ? bg.mode : 'none', p ? p.src : '', true);
 })();
@@ -3577,7 +3601,7 @@ const TOUR = [
   { sel: ['#q'], title: '검색', text: '여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로, <b>H430·G26</b>은 원어 번호로 찾아요. 키보드 <b>/</b> 로 바로 검색창으로.' },
   { sel: ['#commToggle'], title: '자료 칸 열기·닫기', text: '주석·원어 사전·관련 구절·보관함이 있는 자료 칸을 닫으면 성경을 넓게 봐요. 한 번 더 누르면 다시 열려요.' },
   { sel: ['#magHead'], title: '돋보기', text: '본문 글자를 한 번에 크게 보여 줘요. 다시 누르면 원래 크기로.' },
-  { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기·글꼴</b>, 화면 밝기(<b>자동·라이트·다크</b>), <b>디자인</b>(새 디자인 / 기존 디자인), <b>색</b>, <b>배경 화면</b>을 골라요.' },
+  { sel: ['#viewBtn'], title: '보기', text: '<b>글자 크기·글꼴</b>, 화면 밝기(<b>자동·라이트·다크</b>), <b>디자인</b>(새 디자인 / 성진 목사님 에디션), <b>색</b>, <b>배경 화면</b>을 골라요.' },
   { sel: ['#presetBtn'], title: '내 세팅', text: '지금 보는 구성(번역본·주석·글꼴·칸 너비)을 두 가지로 저장해 두고 한 번에 바꿔요. 단축키 <b>Alt+1, Alt+2</b>' },
   { sel: ['#menuBtn'], title: '설정', text: '<b>사용설명서</b>, 성경·주석 파일 추가와 관리, <b>구글 드라이브</b>, 메모 백업, 사용법 다시 보기와 <b>앱으로 설치</b>가 여기 있어요.' },
   { title: '준비 끝', text: '커피 한 잔과 함께 말씀을 천천히 읽어 보세요. 이 안내는 <b>설정 › 사용법 둘러보기</b>에서 언제든 다시 볼 수 있어요.' },
