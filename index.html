@@ -301,6 +301,7 @@
   .ws-word.grk { font-family: "Times New Roman", var(--serif); }
   .ws-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 14px; }
   .ws-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .ws-note { margin: 0 0 12px; padding: 8px 10px; border-radius: 6px; background: color-mix(in srgb, var(--fg) 5%, transparent); color: var(--muted); font-size: 12.5px; line-height: 1.5; }
   .ws-h { font: 700 12px var(--sans); color: var(--muted); margin: 22px 0 8px; }
   .ws-occ { display: flex; gap: 10px; width: 100%; text-align: left; align-items: baseline; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--page); transition: border-color .15s; }
   .ws-occ:hover { border-color: var(--accent); }
@@ -1028,7 +1029,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-22 17:36</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 10:23</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1518,6 +1519,16 @@ const dictNames = () => ordered('dict', Object.keys(dictFiles));
 // 한글 원어 사전(StrongBniel, 이름에 '한글' 등)을 먼저: 단어를 누르면 뜨는 창은 사전 탭에서 무엇을 봤든 늘 이것, 처음 여는 사전 탭도 이것
 const isKorDict = n => /한글|한국|bniel|kor/i.test(n + ' ' + nm(n));
 const wordDict = () => dictNames().find(isKorDict) || S.dict;
+// Strong(한글)은 240여 번호(H5800 등)에 바로 앞 번호 풀이가 그대로 복사돼 있음: 제목 "(5799, 아자젤)"의 번호가 다름
+// → 그 번호는 영어 사전으로 (두 사전의 요약을 다 불러 둔 뒤에만 판단)
+const engDict = () => dictNames().find(n => !isKorDict(n));
+const korBroken = (name, s) => { const m = dictLite[name] && byIdOf(name).get(s)?.title.match(/^\((\d+),/); return !!m && +m[1] !== +s.slice(1); };
+async function dictFor(s) {
+  const k = wordDict(), alt = engDict();
+  if (!alt || !isKorDict(k) || !korBroken(k, s)) return k;
+  await liteOf(alt).catch(() => null);
+  return dictLite[alt] && byIdOf(alt).get(s) ? alt : k;
+}
 // 대조 보기 칸·복사 순서도 탭 순서를 따름
 const sortVersions = () => { S.versions = allVersions().filter(n => S.versions.includes(n)); };
 
@@ -2169,7 +2180,7 @@ function renderDict(scrollTo) {
   if (D.entry) {
     const row = dictRow(D.entry), same = D.shown === D.entry;
     box.innerHTML = form + '<button class="linkish" data-dict-back>‹ 목록</button>' + (row
-      ? `<article class="entry"><h3 class="act">${esc(row[0])}<button class="btn sm find" data-search-strong="${esc(row[0])}" title="이 번호가 나오는 성경 구절 찾기">나오는 절 모두 찾기</button></h3><div>${entryHtml(name, row[0], row[1])}</div></article>`
+      ? `<article class="entry"><h3 class="act">${esc(row[0])}<button class="btn sm find" data-search-strong="${esc(row[0])}" title="이 번호가 나오는 성경 구절 찾기">나오는 절 모두 찾기</button></h3>${korBroken(name, row[0]) ? `<p class="ws-note">이 사전의 ${esc(row[0])} 풀이는 앞 번호 풀이가 잘못 복사된 것이에요.${engDict() ? ` <a href="#" data-dict-eng="${esc(row[0])}">${esc(nm(engDict()))}에서 보기</a>` : ''}</p>` : ''}<div>${entryHtml(name, row[0], row[1])}</div></article>`
       : `<p class="empty small">${esc(D.entry)} 항목이 없습니다.</p>`);
     box.scrollTop = same ? keep : 0; // 같은 항목을 다시 그릴 때(장 이동 등)는 읽던 위치 유지
     D.shown = D.entry;
@@ -2302,15 +2313,17 @@ async function showWord(w, popOnly) {
   if (wordSide && !popOnly && !S.hideComm && ids.length) { // 주석 칸을 숨겼으면 팝업으로
     closePops();
     const info = byIdOf(name);
-    S.dict = name; D.q = lemma; D.entry = ids[0]; D.scroll = 0;
+    S.dict = await dictFor(ids[0]); D.q = lemma; D.entry = ids[0]; D.scroll = 0;
     D.list = ids.length > 1 ? ids.map(s => info.get(s)).filter(Boolean).map(e => ({ s: e.s, h: e.h, text: e.title })) : null;
     S.tab = 'dict'; return renderComm();
   }
   wordPopAt(0, lemma);
 }
 
-function wordPopAt(i, lemma = '') {
-  const pop = $('wordPop'), ids = pop.dataset.ids ? pop.dataset.ids.split(',') : [], info = byIdOf(wordDict()), e = info.get(ids[i]);
+async function wordPopAt(i, lemma = '') {
+  const pop = $('wordPop'), ids = pop.dataset.ids ? pop.dataset.ids.split(',') : [];
+  const name = ids[i] ? await dictFor(ids[i]) : wordDict(), info = byIdOf(name), e = info.get(ids[i]);
+  const note = name !== wordDict() ? `<p class="ws-note">Strong(한글)에는 이 번호 풀이가 잘못 들어 있어서(앞 번호 풀이가 복사됨) ${esc(nm(name))} 사전으로 보여 드려요.</p>` : '';
   if (!e) {
     // 한 글자짜리 접두어(וְ 그리고, הַ 정관사 등)는 스트롱 사전에 번호가 없음
     const prefix = /^[א-ת][֑-ׇ]*$/.test(lemma);
@@ -2326,10 +2339,9 @@ function wordPopAt(i, lemma = '') {
     <div class="ws-title">${esc(title)}</div>
     ${ids.length > 1 ? `<details class="alts"><summary>같은 철자 다른 후보 ${ids.length - 1}개</summary>${ids.map((s, k) => k === i ? '' :
       `<button data-alt="${k}"><span class="ref">${s}</span> ${lexHtml(s, info.get(s)?.h)}${esc(info.get(s)?.title || '')}</button>`).join('')}</details>` : ''}
-    <div class="body" id="wordBody">${esc(body)}…</div>
+    ${note}<div class="body" id="wordBody">${esc(body)}…</div>
     <h5 class="ws-h">이 단어가 나오는 곳</h5><div id="wordOcc"><p class="muted">찾는 중…</p></div>`;
   pop.scrollTop = 0; placePop(pop);
-  const name = wordDict();
   openDict(name).then(() => {
     const row = dictRow(e.s, name), box = $('wordBody');
     if (row && box && pop.classList.contains('open') && pop.dataset.ids.split(',')[i] === e.s) { box.innerHTML = entryHtml(name, e.s, row[1]); pop.querySelector('.ws-title')?.remove(); placePop(pop); }
@@ -2374,7 +2386,7 @@ $('wordPop').onclick = e => {
   const ss = e.target.closest('[data-search-strong]');
   if (ss) { closePops(); return searchStrong(ss.dataset.searchStrong); }
   const open = e.target.closest('[data-open]');
-  if (open) { closePops(); S.dict = wordDict(); S.tab = 'dict'; S.hideComm = false; save(); D.entry = open.dataset.open; D.list = null; renderComm(); renderBible(); return; }
+  if (open) { closePops(); return dictFor(open.dataset.open).then(n => { S.dict = n; S.tab = 'dict'; S.hideComm = false; save(); D.entry = open.dataset.open; D.list = null; renderComm(); renderBible(); }); }
   // 풀이 속 링크: 번호 참조는 팝업 안에서 그 항목으로, 성경 구절은 그 구절로
   const st = e.target.closest('[data-strong]');
   if (st) { e.preventDefault(); $('wordPop').dataset.ids = st.dataset.strong; return wordPopAt(0); }
@@ -3226,6 +3238,8 @@ $('comm').onclick = e => {
     return renderDict(0);
   }
   if (e.target.closest('[data-dict-back]')) { D.entry = ''; return renderDict(D.scroll); }
+  const de = e.target.closest('[data-dict-eng]');
+  if (de) { e.preventDefault(); S.dict = engDict(); D.entry = de.dataset.dictEng; D.list = null; save(); return renderComm(); }
   const dl = e.target.closest('[data-dict-lang]');
   if (dl) { D.lang = dl.dataset.dictLang; return renderDict(0); }
   if (e.target.closest('[data-dict-clear]')) { D.q = ''; D.list = null; return renderDict(0); }
