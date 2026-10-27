@@ -14,7 +14,7 @@
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
 <!-- 색 설정을 화면 그리기 전에 (깜빡임 없게) -->
-<script>try { const d = document.documentElement; d.dataset.theme = JSON.parse(localStorage.getItem('theme')) || 'auto'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; d.dataset.accent = JSON.parse(localStorage.getItem(d.dataset.design === 'classic' ? 'accentC' : 'accent')) || (d.dataset.design === 'classic' ? 'ash' : 'green'); } catch {}
+<script>try { const d = document.documentElement; d.dataset.theme = JSON.parse(localStorage.getItem('theme')) || 'auto'; d.dataset.design = JSON.parse(localStorage.getItem('design')) || 'new'; d.dataset.accent = JSON.parse(localStorage.getItem('accent' + ({ classic: 'C', app: 'A' }[d.dataset.design] || ''))) || (d.dataset.design === 'classic' ? 'ash' : 'green'); d.classList.toggle('rail-mini', JSON.parse(localStorage.getItem('railMini')) === true); } catch {}
   if (location.hash.startsWith('#guide')) document.documentElement.classList.add('guide-page'); // 사용설명서 링크로 오면 설명서만 한 페이지로</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#035b36">
@@ -88,6 +88,16 @@
   .rb:focus-visible { outline: 2px solid var(--rail-fg); outline-offset: -2px; }
   .rail-sep { width: 28px; height: 1px; background: rgb(255 255 255 / .12); margin: 8px 0; }
   .rail-gap { flex: 1; min-height: 12px; }
+  .rail > * { flex-shrink: 0; } /* 키가 낮은 화면(가로로 둔 태블릿)에서 버튼이 눌려 찌그러지지 않고 레일이 스크롤되게 */
+  /* 키가 낮은 화면: 레일 버튼을 촘촘하게 해서 맨 아래 '설정'까지 한 화면에 */
+  @media (min-width: 761px) and (max-height: 680px) {
+    .rail { padding: 8px 0; gap: 0; }
+    .rail-logo { width: 30px; height: 30px; margin-bottom: 6px; }
+    .rb { padding: 5px 0 4px; gap: 2px; }
+    .rb .ico { width: 19px; height: 19px; }
+    .rail-sep { margin: 4px 0; }
+    .rail-gap { min-height: 4px; }
+  }
   /* 보기(글자 크기·글꼴) 창 */
   /* 보기 창: 묶음 제목 + 분할 버튼 (회색 바탕 안에서 고른 것만 떠오름) */
   #viewBox { width: 320px; padding: 16px 16px 12px; }
@@ -231,6 +241,8 @@
   .chapter-title { font: 700 26px/1.25 var(--sans); letter-spacing: -.02em; margin: 2px 0 22px; }
   .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
   #bible { position: relative; padding-left: 88px; --stick: -28px; } /* 번역본 이름 줄이 칸 맨 위에 딱 붙게 (= 위쪽 여백만큼 위로) */
+  /* 주석·사전 칸도 성경 칸처럼 따로 쌓이는 층으로: 안드로이드 태블릿에 마우스를 연결했을 때 휠로 스크롤이 안 되던 것 (성경 칸은 됨) */
+  :is(#comm, #comm2) { position: relative; z-index: 1; }
   .chapter-num { position: absolute; left: 4px; top: 0; z-index: 0; pointer-events: none; font: 800 132px/1 var(--sans); letter-spacing: -.07em; color: var(--accent); opacity: .08; user-select: none; }
   #bible > :not(.chapter-num) { position: relative; z-index: 1; }
   /* 나란히 볼 때는 칸마다 폭이 귀하므로 왼쪽 여백을 줄이고, 큰 장 번호는 작게 해서 절 번호 칸 뒤에 흐리게 */
@@ -733,7 +745,7 @@
   #ddPop button.on { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
   #ddPop button.on::after { content: '✓'; margin-left: auto; }
   /* 설정 메뉴: 묶음마다 둥근 카드, 줄 = 아이콘 칸 · 제목/설명 · › */
-  #menu { width: 320px; padding: 10px 10px 12px; max-height: calc(100vh - 90px); overflow-y: auto; }
+  #menu { width: 320px; padding: 10px 10px 12px; max-height: calc(100vh - 90px); max-height: calc(100dvh - 90px); overflow-y: auto; overscroll-behavior: contain; } /* dvh: 태블릿 브라우저 주소창·아래 막대에 가려지지 않게 */
   #menu .mgroup { border-radius: 10px; background: color-mix(in srgb, var(--fg) 3.5%, transparent); overflow: hidden; }
   #menu .mgroup > button { display: grid; grid-template-columns: 20px 1fr 10px; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; border: 0; border-radius: 0; background: none; color: var(--fg); font: 600 13.5px/1.35 var(--sans); text-align: left; cursor: pointer; transition: background .15s; }
   #menu .mgroup > button[hidden] { display: none; }
@@ -911,12 +923,98 @@
     [data-design="classic"] .status { bottom: 22px; }
     [data-design="classic"] #biblePane > .selbar { border: 0; border-top: 1px solid var(--line); box-shadow: none; }
   }
+
+  /* ---------- 성경 앱 (보기 › 디자인 › 성경 앱): 갓피플 같은 성경 앱처럼 흰 바탕 · 고딕 · 강조색 하나 ----------
+     PC: 글자 붙은 왼쪽 메뉴(접으면 아이콘만) + 위쪽 알약 버튼(책·장 / 고른 번역본 / 나란히·절마다)
+     모바일: 아래 탭 막대, 고른 번역본은 본문 위 칩 + "+ 번역본" */
+  :root[data-design="app"] { --bg: #f3f4f2; --page: #ffffff; --surface: #ffffff; --line: #e8eae6; --dock: #ffffff; --dock-fg: #17201b; }
+  :root[data-theme="dark"][data-design="app"] { --bg: #0d100e; --page: #121613; --surface: #171b18; --line: #262c28; --dock: #1d221e; --dock-fg: #e6e9e7; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"])[data-design="app"] { --bg: #0d100e; --page: #121613; --surface: #171b18; --line: #262c28; --dock: #1d221e; --dock-fg: #e6e9e7; }
+  }
+  #railFold { display: none; }
+  .thumb.app b { left: 0; top: 0; bottom: 0; width: 22%; border-radius: 0; background: color-mix(in srgb, var(--muted) 16%, transparent); }
+  .thumb.app s:nth-of-type(1) { left: 34%; top: 12%; width: 28%; height: 14%; border-radius: 99px; background: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .thumb.app s:nth-of-type(2) { left: 34%; top: 36%; right: 10%; bottom: 12%; }
+  /* 왼쪽 메뉴: 흰 바탕, 고른 것은 옅은 강조색 */
+  :root[data-design="app"] .rail { background: var(--surface); color: var(--muted); border-right: 1px solid var(--line); }
+  :root[data-design="app"] .rail-sep { background: var(--line); }
+  :root[data-design="app"] .rail-logo { box-shadow: none; }
+  :root[data-design="app"] .rb:hover:not(:disabled) { background: color-mix(in srgb, var(--fg) 5%, transparent); color: var(--fg); }
+  :root[data-design="app"] :is(.rb.on, .rb[aria-pressed="true"]) { background: var(--accent-soft); color: var(--accent); }
+  :root[data-design="app"] .rb:focus-visible { outline-color: var(--accent); }
+  /* 머리: 알약 버튼들 */
+  :root[data-design="app"] .nav { height: 40px; padding: 0 4px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 5%, transparent); }
+  :root[data-design="app"] .ref-btn { font: 700 16px/1.2 var(--sans); letter-spacing: -.01em; padding: 6px 3px; }
+  :root[data-design="app"] #chapBtn { color: var(--fg); }
+  :root[data-design="app"] .ver-pick { height: 40px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+  :root[data-design="app"] .search { height: 40px; border-radius: 99px; border-color: transparent; background: color-mix(in srgb, var(--fg) 5%, transparent); }
+  :root[data-design="app"] .hb { border-radius: 99px; }
+  /* 본문: 위에 책 이름 작게 + 장 번호 크게, 절 번호는 강조색 */
+  :root[data-design="app"] #bible .chapter-num { position: static; margin: 0 0 22px; font: 700 60px/1 var(--sans); letter-spacing: -.04em; color: var(--fg); opacity: 1; }
+  :root[data-design="app"] #bible .chapter-num::before { content: attr(data-book); display: block; margin-bottom: 6px; font: 500 15px var(--sans); letter-spacing: 0; color: var(--muted); }
+  :root[data-design="app"] .vn { font-size: 12px; opacity: 1; }
+  :root[data-design="app"] #biblePane > .selbar { border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 20px 50px -16px rgb(10 30 20 / .28); }
+  /* 자료 칸: 회색 바탕 위에 흰 카드, 탭은 알약 */
+  :root[data-design="app"] .pane + .pane { background: var(--bg); }
+  :root[data-design="app"] :is(#comTabs, #comTabs2) { gap: 6px; background: var(--surface); }
+  :root[data-design="app"] :is(#comTabs, #comTabs2) > .tab { height: 34px; padding: 0 14px; border-radius: 99px; }
+  :root[data-design="app"] :is(#comTabs, #comTabs2) > .tab.on:not(.spacer):not([data-split]) { background: var(--accent-soft); color: var(--accent); }
+  :root[data-design="app"] :is(#comTabs, #comTabs2) > .tab.on::after { display: none; }
+  :root[data-design="app"] .tab-pick { border-radius: 99px; }
+  :root[data-design="app"] .entry, :root[data-design="app"] .entry:last-child { padding: 18px 22px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+  :root[data-design="app"] .entry.on { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  :root[data-design="app"] .entry h3, :root[data-design="app"] .entry.on h3 { margin: 0 0 8px; padding: 0; background: none; font-size: 12.5px; }
+  @media (min-width: 761px) {
+    :root[data-design="app"] body { grid-template-columns: 208px minmax(0, 1fr); }
+    :root[data-design="app"].rail-mini body { grid-template-columns: 68px minmax(0, 1fr); }
+    :root[data-design="app"] #railFold { display: flex; }
+    :root[data-design="app"].rail-mini #railFold .ico { transform: scaleX(-1); }
+    :root[data-design="app"]:not(.rail-mini) .rail { align-items: stretch; padding: 14px 12px 12px; }
+    :root[data-design="app"]:not(.rail-mini) .rail-logo-btn { align-self: flex-start; margin-left: 8px; }
+    :root[data-design="app"]:not(.rail-mini) .rb { width: 100%; flex-direction: row; justify-content: flex-start; gap: 12px; padding: 10px 12px; border-radius: 10px; font: 500 14px/1.2 var(--sans); }
+    :root[data-design="app"]:not(.rail-mini) .rail-sep { width: auto; margin: 8px 12px; }
+    /* PC: 고른 번역본은 위 버튼에 이름으로 보이니 칩은 숨김 (잠깐 끈 번역본만 다시 켤 수 있게 남김) */
+    :root[data-design="app"] #verTabs .tab[data-ver]:not(.off) { display: none; }
+    /* 책 한 쪽처럼 가운데 한 줄기 (대조는 넓게) */
+    :root[data-design="app"] #bible { padding-left: max(36px, calc((100% - 46em) / 2)); }
+    :root[data-design="app"] #bible:has(> .par) { padding-left: 36px; }
+    /* 절을 고르면: 흰 카드 (위: 절 이름 · ×, 가운데: 큰 색 동그라미, 아래: 버튼 칸), 늘 또렷하게 */
+    :root[data-design="app"] #biblePane > .selbar { flex-wrap: wrap; gap: 12px 8px; width: min(460px, calc(100% - 24px)); padding: 14px 16px 16px; opacity: 1; }
+    :root[data-design="app"] .selbar .sel-ref { flex: 1; font-size: 15px; }
+    :root[data-design="app"] .selbar [data-act="clear"] { order: 1; border-radius: 50%; }
+    :root[data-design="app"] .selbar .swatches { order: 2; flex-basis: 100%; gap: 10px; margin: 0; }
+    :root[data-design="app"] .selbar .sw { width: 32px; height: 32px; }
+    :root[data-design="app"] .selbar .swatches .btn { margin-left: auto; }
+    :root[data-design="app"] .selbar > .btn:not([data-act="clear"]) { order: 3; flex: 1; height: 42px; border-radius: 10px; }
+  }
+  @media (max-width: 760px) {
+    :root[data-design="app"] .rail { border-right: 0; border-top: 1px solid var(--line); }
+    :root[data-design="app"] :is(.nav, .search, .ver-pick) { height: 36px; }
+    :root[data-design="app"] .page-head .tabs { flex: 0 1 auto; } /* 둘째 줄: 칩 다음에 "+ 번역본" */
+    :root[data-design="app"] #bible .chapter-num { margin-bottom: 14px; font-size: 42px; }
+    /* 고른 번역본: 본문 위 초록 칩(× 로 빼기) + 끝에 "+ 번역본" */
+    :root[data-design="app"] #verTabs .tab[data-ver] { height: 32px; border: 0; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+    :root[data-design="app"] #verTabs .tab[data-ver].off { border: 1px dashed color-mix(in srgb, var(--muted) 55%, var(--line)); background: none; color: var(--muted); }
+    :root[data-design="app"] .ver-pick { order: 3; height: 32px; padding: 0 12px; border: 1px dashed color-mix(in srgb, var(--muted) 55%, var(--line)); background: none; color: var(--muted); font-weight: 500; }
+    :root[data-design="app"] #biblePane > .selbar { border-width: 1px 0 0; box-shadow: none; }
+    /* 성경 찾기: 책은 줄임말 칸으로 한눈에, 아래에 장 | 절 칸 */
+    :root[data-design="app"] .pk-cols { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr); }
+    :root[data-design="app"] .pk-cols > div { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); align-content: start; gap: 6px; padding: 12px; }
+    :root[data-design="app"] .pk-books { grid-column: 1 / -1; padding-top: 0 !important; border-right: 0 !important; border-bottom: 1px solid var(--line); }
+    :root[data-design="app"] .pk-cols h5 { grid-column: 1 / -1; margin: 0 -12px; padding: 10px 12px 4px; background: var(--surface); }
+    :root[data-design="app"] .pk-cols button { height: 42px; padding: 0; border: 0; border-radius: 10px; background: color-mix(in srgb, var(--fg) 5%, transparent); text-align: center; font-size: 14px; }
+    :root[data-design="app"] .pk-books button { font-size: 0; }
+    :root[data-design="app"] .pk-books button em { min-width: 0; color: inherit; font-size: 14px; }
+    :root[data-design="app"] .pk-cols button.on { background: var(--accent); color: var(--on-accent); }
+  }
 </style>
 </head>
 <body>
 <!-- 왼쪽 레일(모바일은 아래 막대): 이동 기록 · 오른쪽 칸 바로가기 · 보기/세팅/파일 -->
 <nav class="rail" aria-label="주 메뉴">
   <button class="rail-logo-btn" id="aboutBtn" aria-haspopup="dialog" title="커피성경 소개"><img class="rail-logo" src="icons/icon-192.png" alt="커피성경 소개"></button>
+  <button class="rb" id="railFold" data-icon="chevrons-left" title="메뉴 접기·펴기"><span>메뉴 접기</span></button>
   <button class="rb" id="back" data-icon="arrow-left" title="이전 위치로 (Alt+←)" disabled><span>뒤로</span></button>
   <button class="rb" id="fwd" data-icon="arrow-right" title="다시 앞으로 (Alt+→)" disabled><span>앞으로</span></button>
   <i class="rail-sep" aria-hidden="true"></i>
@@ -945,7 +1043,8 @@
   <div class="vb-group"><span class="vb-label">디자인</span>
     <span class="tile-sw thumbs" id="designSw" role="group" aria-label="디자인">
       <button data-design="new"><i class="thumb new" aria-hidden="true"><b></b><s></s><s></s></i><span>새 디자인</span></button>
-      <button data-design="classic"><i class="thumb classic" aria-hidden="true"><b></b><s></s><s></s></i><span>성진 목사님 에디션</span></button></span></div>
+      <button data-design="classic"><i class="thumb classic" aria-hidden="true"><b></b><s></s><s></s></i><span>성진 목사님 에디션</span></button>
+      <button data-design="app"><i class="thumb app" aria-hidden="true"><b></b><s></s><s></s></i><span>성경 앱</span></button></span></div>
   <div class="vb-group"><span class="vb-label">색</span>
     <span class="swatch-sw" id="accentSw" role="group" aria-label="강조 색"><button data-accent="green" title="초록" aria-label="초록"><i style="background:#035b36"></i></button><button data-accent="blue" title="파랑" aria-label="파랑"><i style="background:#2c4aa8"></i></button><button data-accent="black" title="검정" aria-label="검정"><i style="background:#1d2027"></i></button><button data-accent="ash" title="애쉬브라운" aria-label="애쉬브라운"><i style="background:#6e625a"></i></button></span></div>
   <button class="vb-link" id="bgBtn" title="성경 뒤에 사진 깔기, 진하기·흐림 조절"><span>배경 화면<small>성경 뒤에 사진 깔기</small></span><b aria-hidden="true">›</b></button>
@@ -969,8 +1068,7 @@
         <button class="nb" id="next" data-icon="chevron-right" title="다음 장 (→)" aria-label="다음 장"></button>
       </span>
       <button class="ver-pick" id="verPick" aria-haspopup="dialog" title="번역본 골라 보기 (체크한 것을 나란히 대조)"></button>
-      <div class="tabs" id="verTabs"></div>
-      <label class="search-wrap" data-icon="search"><input class="search" id="q" type="search" placeholder="성경·주석 검색" aria-label="성경·주석 검색" title="키보드 / 키로 바로 · 여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호"></label>
+      <div class="tabs" id="verTabs"></div>      <label class="search-wrap" data-icon="search"><input class="search" id="q" type="search" placeholder="성경·주석 검색" aria-label="성경·주석 검색" title="키보드 / 키로 바로 · 여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호"></label>
       <button class="hb mag-toggle" id="magHead" data-icon="zoom-in" aria-pressed="false" title="돋보기: 본문 글자를 크게" aria-label="돋보기"></button>
     </header>
     <div class="scroll" id="bible"></div>
@@ -1045,7 +1143,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-23 15:33</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-27 14:05</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1606,17 +1704,18 @@ function renderBible() {
     (S.versions.length === 1 || phone() ? glossSwitch(n, 'in-tabs') : '')).join('') +
     (words ? `<span class="word-mode spacer"><select class="btn" data-word-mode aria-label="단어 뜻 보기">${wordModes().map(([v, t]) => `<option value="${v}" ${v === wordMode() ? 'selected' : ''}>단어 뜻: ${t}</option>`).join('')}</select><button class="help-q" data-word-help aria-label="단어 뜻 설명" aria-haspopup="dialog">?</button></span>` : '') +
     '';
-  $('verPick').innerHTML = `번역본 <b>${S.versions.length}</b>개 ▾`;
+  // 성경 앱 디자인: PC는 이 버튼에 고른 번역본 이름("개역한글 · KJV ▾"), 모바일은 본문 위 칩 끝의 "+ 번역본"
+  $('verPick').innerHTML = document.documentElement.dataset.design !== 'app' ? `번역본 <b>${S.versions.length}</b>개 ▾`
+    : phone() ? '+ 번역본' : `${S.versions.map(n => esc(nm(n))).join(' · ') || '번역본'} ▾`;
   $('verPick').hidden = names.length < 2;
   if ($('verBox').classList.contains('open')) renderVerBox();
   if (words && !prefs.get('wordHint', false)) { prefs.set('wordHint', true); setTimeout(() => flash('원어 번호가 있는 성경은 단어를 누르면 뜻이 나와요'), 800); }
-  const vs = phone() ? shownVers().slice(0, 3) : shownVers(); // 모바일은 3개까지, 끈 번역본은 빼고
-  // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
+  const vs = phone() ? shownVers().slice(0, 3) : shownVers(); // 모바일은 3개까지, 끈 번역본은 빼고  // 성경 파일이 하나도 없으면 책·장 이동과 검색창은 숨김 (첫 화면 안내만)
   document.body.classList.toggle('no-bibles', !names.length);
   if (!vs.length) { $('bible').innerHTML = names.length ? '<p class="empty small">위에서 성경 번역본을 고르세요.</p>' : welcome; return; }
   const { b, c } = S, n = VERSES[b - 1][c - 1];
   // 제목은 위 머리에 크게 있으니 본문에는 읽어 주기용으로만, 왼쪽 여백에 큰 장 번호를 흐리게 (지금 몇 장인지 한눈에)
-  const title = `<h1 class="chapter-title sr-only">${BOOKS[b - 1]} ${c}장</h1><div class="chapter-num" aria-hidden="true">${c}</div>`;
+  const title = `<h1 class="chapter-title sr-only">${BOOKS[b - 1]} ${c}장</h1><div class="chapter-num" aria-hidden="true" data-book="${BOOKS[b - 1]}">${c}</div>`;
   const ids = Array.from({ length: n }, (_, i) => i + 1);
   const notice = (vs.some(needsTag) ? '<p class="notice">원어 단어 번호: STEPBible TAHOT·TAGNT (Tyndale House, CC BY 4.0)</p>' : '');
   if (vs.length === 1) {
@@ -3416,7 +3515,9 @@ const ACCENT_BAR = { green: '#035b36', blue: '#16213f', black: '#1d2027', ash: '
 // 색을 고른 적 없으면: 기존 디자인(성진 목사님 에디션)은 애쉬브라운, 새 디자인은 초록 (디자인을 바꾸면 따라 바뀜)
 const isClassic = () => document.documentElement.dataset.design === 'classic';
 const accentDefault = () => isClassic() ? 'ash' : 'green';
-const accKey = () => isClassic() ? 'accentC' : 'accent'; // 색도 디자인마다 따로 기억 (성진 목사님 에디션은 처음엔 애쉬브라운)
+const DKEY = { classic: 'C', app: 'A' }; // 색·배경은 디자인마다 따로 기억하는 이름 꼬리 (새 디자인은 없음)
+const dkey = () => DKEY[document.documentElement.dataset.design] || '';
+const accKey = () => 'accent' + dkey(); // 색도 디자인마다 따로 기억 (성진 목사님 에디션은 처음엔 애쉬브라운)
 function applyAccent(a) {
   if (!ACCENT_BAR[a]) a = accentDefault();
   document.documentElement.dataset.accent = a;
@@ -3424,9 +3525,9 @@ function applyAccent(a) {
   document.querySelectorAll('[data-accent]').forEach(b => b.tagName === 'BUTTON' && b.classList.toggle('on', b.dataset.accent === a));
 }
 applyAccent(prefs.get(accKey(), ''));
-// 디자인: 새 디자인(기본) / 기존 디자인. 화면 모양만 바뀌고 기능은 같음
+// 디자인: 새 디자인(기본) / 기존 디자인 / 성경 앱. 화면 모양만 바뀌고 기능은 같음
 function applyDesign(d) {
-  if (d !== 'classic') d = 'new';
+  if (!DKEY[d]) d = 'new';
   document.documentElement.dataset.design = d;
   document.querySelectorAll('#designSw [data-design]').forEach(b => b.classList.toggle('on', b.dataset.design === d));
   // 기존 디자인은 예전처럼 책·장 이동과 검색창이 맨 위 버튼 줄에 (새 디자인은 성경 칸 머리에)
@@ -3450,9 +3551,16 @@ $('themeSw').onclick = e => {
 $('designSw').onclick = e => {
   e.stopPropagation();
   const d = e.target.closest('[data-design]')?.dataset.design; if (!d) return;
-  prefs.set('design', d); applyDesign(d); loadBg(); applyAccent(prefs.get(accKey(), '')); closePops(); renderComm(); // 디자인마다 '자료' 버튼 이름이 다름
+  prefs.set('design', d); applyDesign(d); loadBg(); applyAccent(prefs.get(accKey(), '')); closePops(); renderComm(); refreshBible(); // 디자인마다 '자료'·'번역본' 버튼 글이 다름
   if (S.v) select(S.v); // 칸 모양이 바뀌었으니 고른 절이 보이게
 };
+// 성경 앱 디자인(PC): 왼쪽 메뉴를 글자 붙은 넓은 줄 ↔ 아이콘만 좁은 줄로 (기기에 기억)
+function applyRailMini(m) {
+  document.documentElement.classList.toggle('rail-mini', m);
+  $('railFold').querySelector('span').textContent = m ? '펴기' : '메뉴 접기';
+}
+applyRailMini(prefs.get('railMini', false));
+$('railFold').onclick = () => { const m = !document.documentElement.classList.contains('rail-mini'); prefs.set('railMini', m); applyRailMini(m); };
 $('accentSw').onclick = e => {
   e.stopPropagation(); // 보기 창은 열어 둔 채 바로 바뀌는 걸 보게
   const a = e.target.closest('[data-accent]')?.dataset.accent; if (!a) return;
@@ -3466,7 +3574,7 @@ const BG_PRESETS = {
 };
 const BG_FIT = { pos: 'center 70%', size: 'cover' }; // 내 사진
 // 배경은 디자인마다 따로 기억: 새 디자인 = 'bg'(처음엔 배경 없음), 성진 목사님 에디션 = 'bgC'(처음엔 라테 잔). 내 사진도 디자인마다
-const bgKey = () => isClassic() ? 'bgC' : 'bg';
+const bgKey = () => 'bg' + dkey();
 // fit: cover = 칸을 꽉 채움(사진 일부가 잘림) / contain = 사진 전체가 보이게. size: 전체 보이기일 때 크기(%)
 let bg, bgUrl = '';
 async function loadBg() {
