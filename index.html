@@ -1143,7 +1143,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-27 14:05</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-27 14:12</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -3301,6 +3301,16 @@ document.querySelectorAll('.tabs').forEach(el => {
   new ResizeObserver(edge).observe(el);
   new MutationObserver(edge).observe(el, { childList: true });
 });
+// 안드로이드 태블릿 + 터치패드·마우스 휠: 크롬이 처음 스크롤한 칸(성경 또는 주석)에 붙어 다른 칸이 안 밀림
+// → 화살표 아래에서 위아래로 스크롤할 수 있는 칸을 찾아 직접 밀어 줌 (손가락 터치는 wheel 이 아니라 그대로)
+if (/Android/i.test(navigator.userAgent)) addEventListener('wheel', e => {
+  if (e.defaultPrevented || e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+  let el = document.elementFromPoint(e.clientX, e.clientY);
+  while (el && !(el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY))) el = el.parentElement;
+  if (!el || el === document.documentElement || el === document.body) return;
+  e.preventDefault();
+  el.scrollTop += e.deltaY * (e.deltaMode === 1 ? 18 : e.deltaMode === 2 ? el.clientHeight : 1);
+}, { passive: false });
 $('bible').onclick = e => {
   if (e.target.closest('.gl-switch')) { toggleGloss(e.target.closest('.gl-switch')); return renderBible(); } // 칸 머리의 영어 뜻·발음 뜻 켜고 끄기
   const nb = e.target.closest('[data-note]');
