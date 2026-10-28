@@ -1143,7 +1143,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-27 14:12</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-28 10:58</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -2143,14 +2143,15 @@ function commHtml(name) {
 const commFmt = (html, b) => linkRefs(html, b)
   .replace(/`([^`'<\n]{1,120})'/g, '‘$1’')
   .replace(/\(\*\)/g, '<span class="lost" title="원본 파일에서 원어 글자가 빠진 자리">(*)</span>')
-  .replace(/(<span style="font-weight:bold;">☞[^<]*<\/span>)<span style="">\s*-\s*/g, '$1<br><span style="">') // "☞본문 구절- 풀이" → 구절을 제목 줄로
+  .replace(/(<span style="(?:font-weight:bold;)?">☞[^<]*<\/span>)<span style="">\s*-\s*/g, '$1<br><span style="">') // "☞본문 구절- 풀이" → 구절을 제목 줄로 (요엘처럼 구절이 굵지 않은 것도)
   .split(/(?:<br>\s*)+/)
   .filter(p => p.replace(/<[^>]*>/g, '').trim())
   .map(p => {
     const s = p.replace(/<[^>]*>/g, '').trim();
     if (/^☞/.test(s)) {
       // 창~신(다른 형식)은 "☞ 천지 - 풀이…" 가 한 문단: 첫 " - " 앞을 제목 줄로 떼어 냄 (제목이 너무 길면 그대로)
-      const m = p.match(/^([^<>]*(?:<[^>]*>[^<>]*)*?)\s+-\s+([\s\S]*)$/);
+      // 요엘은 "…기울일지어다- '귀를…" 처럼 붙임표가 앞 낱말에 붙어 있음 → 뒤에 빈칸만 있으면 나눔
+      const m = p.match(/^([^<>]*(?:<[^>]*>[^<>]*)*?)\s*-\s+([\s\S]*)$/);
       return m && m[1].replace(/<[^>]*>/g, '').length < 160 ? `<p class="pt">${m[1]}</p><p>${m[2]}</p>` : `<p class="pt">${p}</p>`;
     }
     return `<p${/^주제\s*\d*\s*:/.test(s) ? ' class="topic"' : ''}>${p}</p>`;
@@ -3301,6 +3302,21 @@ document.querySelectorAll('.tabs').forEach(el => {
   new ResizeObserver(edge).observe(el);
   new MutationObserver(edge).observe(el, { childList: true });
 });
+// 스크롤 확인 모드 (주소 끝에 ?scrolltest): 기기가 보내는 신호(wheel·touch·pointer)와 칸 위치를 화면 아래에 띄움. 태블릿 터치패드 문제 찾기용
+if (/[?&]scrolltest\b/.test(location.search)) {
+  const box = Object.assign(document.createElement('pre'), { style: 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99;margin:0;padding:8px;max-height:40vh;overflow:auto;background:#000c;color:#0f0;font:11px/1.4 monospace;pointer-events:none;white-space:pre-wrap' });
+  document.body.append(box);
+  const pane = el => el?.closest?.('#bible') ? '성경' : el?.closest?.('#comm, #comm2') ? '주석' : el?.closest?.('.rail') ? '레일' : (el?.id || el?.tagName || '-');
+  const lines = [];
+  const log = (e, extra = '') => {
+    const at = document.elementFromPoint(e.clientX ?? e.touches?.[0]?.clientX ?? 0, e.clientY ?? e.touches?.[0]?.clientY ?? 0);
+    lines.unshift(`${e.type}${e.pointerType ? '(' + e.pointerType + ')' : ''} 대상:${pane(e.target)} 아래:${pane(at)} ${extra} 성경${$('bible').scrollTop | 0} 주석${$('comm').scrollTop | 0}`);
+    lines.length = Math.min(lines.length, 14); box.textContent = lines.join('\n');
+  };
+  let last = 0;
+  for (const t of ['wheel', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'scroll', 'pointermove'])
+    addEventListener(t, e => { if ((t === 'pointermove' || t === 'scroll') && Date.now() - last < 300) return; last = Date.now(); log(e, t === 'wheel' ? `dY${Math.round(e.deltaY)} mode${e.deltaMode}` : t === 'scroll' ? 'scroll' : ''); }, { capture: true, passive: true });
+}
 // 안드로이드 태블릿 + 터치패드·마우스 휠: 크롬이 처음 스크롤한 칸(성경 또는 주석)에 붙어 다른 칸이 안 밀림
 // → 화살표 아래에서 위아래로 스크롤할 수 있는 칸을 찾아 직접 밀어 줌 (손가락 터치는 wheel 이 아니라 그대로)
 if (/Android/i.test(navigator.userAgent)) addEventListener('wheel', e => {
