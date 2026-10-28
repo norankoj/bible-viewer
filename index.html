@@ -707,6 +707,14 @@
   /* 책 고르기: 줄임말(굵게) + 이름 */
   /* PC 성경 찾기: 구약 | 신약 두 칸, 묶음별(율법서·역사서…) 목록. 줄임말(강조색) + 이름 */
   #picker:not(.full) { width: min(780px, calc(100vw - 32px)); max-height: 85vh; padding: 18px 20px; }
+  /* 성경 찾기 검색칸 */
+  .pk-find { display: flex; align-items: center; gap: 8px; height: 42px; margin: 0 0 14px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--muted); cursor: text; transition: border-color .15s; }
+  .pk-find:focus-within { border-color: var(--accent); }
+  .pk-find .ico { width: 18px; height: 18px; }
+  .pk-find input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--fg); font-size: 15px; }
+  .pk-find input::placeholder { color: var(--muted); }
+  #picker.full .pk-find { flex: none; margin: 10px 12px; }
+  #picker [hidden] { display: none !important; } /* 검색으로 걸러진 책·묶음 */
   .bk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
   .bk-cols section + section { border-left: 1px solid var(--line); padding-left: 24px; }
   .bk-list { columns: 2 130px; column-gap: 12px; }
@@ -1053,6 +1061,7 @@
 <div class="app">
 <div class="nudge" id="nudge" role="status" hidden>
   <span id="nudgeText"></span>
+  <button class="btn sm primary drive-only" id="nudgeDrive">구글 드라이브에 저장</button>
   <button class="btn sm primary" id="nudgeBackup">지금 백업</button>
   <button class="btn sm" id="nudgeLater">나중에</button>
 </div>
@@ -1143,7 +1152,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-28 10:58</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-28 16:52</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1846,7 +1855,11 @@ function checkNudge() {
   const s = backupState(), now = Date.now();
   const show = s.dirty > 0 && now >= s.snoozeUntil && (s.dirty >= s.nudgeAt || now - s.since > 7 * DAY);
   $('nudge').hidden = !show;
-  if (show) $('nudgeText').textContent = `백업하지 않은 메모·하이라이트·책갈피 변경이 ${s.dirty}개 있습니다. 브라우저 데이터가 지워지면 함께 사라지니 백업해 두세요.`;
+  if (show) $('nudgeText').textContent = GOOGLE_CLIENT_ID
+    ? `저장하지 않은 메모·하이라이트·책갈피 변경이 ${s.dirty}개 있어요. 구글 드라이브에 저장하면 다른 기기에서도 보이고, 이 기기 데이터가 지워져도 남아요.`
+    : `백업하지 않은 메모·하이라이트·책갈피 변경이 ${s.dirty}개 있습니다. 브라우저 데이터가 지워지면 함께 사라지니 백업해 두세요.`;
+  $('nudgeBackup').textContent = GOOGLE_CLIENT_ID ? '파일로 백업' : '지금 백업';
+  $('nudgeBackup').classList.toggle('primary', !GOOGLE_CLIENT_ID);
 }
 // 나중에: 하루 동안 숨기고, 이후 10개가 더 쌓이거나 7일이 지나면 다시 알림
 function snoozeNudge() {
@@ -2874,11 +2887,35 @@ const closePops = () => {
   if ($('chapBtn').classList.contains('pending')) { $('chapBtn').classList.remove('pending'); $('bookBtn').textContent = BOOKS[S.b - 1]; $('chapBtn').textContent = `${S.c}장`; }
 };
 
+// 성경 찾기 창 맨 위 검색칸: 책 이름·줄임말·초성(ㅅㅍ)으로 거르고, "시 23:1"·"요 3" 처럼 장·절까지 치고 Enter 면 바로 이동
+const pkFind = () => `<label class="pk-find">${icon('search')}<input id="pkFind" type="search" autocomplete="off" enterkeyhint="go" placeholder="책 이름 · 줄임말 · 초성 (예: 시편, 시, ㅅㅍ, 요 3:16)" aria-label="성경 책 찾기"></label>`;
+const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+const cho = s => [...s].map(ch => { const k = ch.charCodeAt(0) - 0xac00; return k >= 0 && k < 11172 ? CHO[Math.floor(k / 588)] : ch; }).join('');
+const bookHit = (b, q) => { const n = BOOKS[b - 1], s = SHORT[b - 1]; return n.includes(q) || s.startsWith(q) || cho(n).startsWith(q); };
+function pkFilter(q) {
+  const p = $('picker'); q = q.replace(/\s+/g, '');
+  const name = q.match(/^(.*?[^\d:.\s])?(\d.*)?$/)?.[1] || ''; // "요3:16" → 책 부분 "요"
+  const hits = [];
+  p.querySelectorAll('[data-book], [data-pb]').forEach(x => { const b = +(x.dataset.book || x.dataset.pb), ok = !name || bookHit(b, name); x.hidden = !ok; if (ok && name) hits.push(b); });
+  p.querySelectorAll('.bk-grp').forEach(g => g.hidden = !g.querySelector('button:not([hidden])'));
+  p.querySelectorAll('.pk-books h5').forEach(h => { let n = h.nextElementSibling, any = false; while (n && n.tagName !== 'H5') { any ||= !n.hidden; n = n.nextElementSibling; } h.hidden = !any; });
+  p.querySelector('.bk-cols')?.querySelectorAll('section').forEach(s => s.hidden = !s.querySelector('.bk-grp:not([hidden])'));
+  return hits;
+}
+function pkEnter(q) {
+  const m = q.replace(/\s+/g, '').match(/^(.*?[^\d:.\s])(\d+)?(?:[:.장](\d+))?절?$/);
+  if (!m) return;
+  const hits = pkFilter(q), b = BOOK_NO[m[1]] || (hits.length === 1 || hits.length && BOOKS[hits[0] - 1] === m[1] ? hits[0] : 0);
+  if (!b) return;
+  const c = Math.min(+m[2] || 0, VERSES[b - 1].length), v = c ? Math.min(+m[3] || 0, VERSES[b - 1][c - 1]) : 0;
+  if (c) { closePops(); return go(b, c, v, true); }
+  if (phone()) { pk.b = b; pk.c = 0; pickerCols(); } else pickerChapters(b); // 책만 쳤으면 그 책의 장 고르기로
+}
 function pickerBooks() {
   const group = k => { const [g, from] = GROUPS[k], to = GROUPS[k + 1]?.[1] || 67;
     return `<div class="bk-grp"><h5>${g}</h5>${Array.from({ length: to - from }, (_, i) => from + i)
       .map(b => `<button data-book="${b}" class="${S.b === b ? 'on' : ''}"><b>${SHORT[b - 1]}</b>${BOOKS[b - 1]}</button>`).join('')}</div>`; };
-  $('picker').innerHTML = `<div class="bk-cols"><section><h4>구약</h4><div class="bk-list">${[0, 1, 2, 3, 4].map(group).join('')}</div></section>` +
+  $('picker').innerHTML = pkFind() + `<div class="bk-cols"><section><h4>구약</h4><div class="bk-list">${[0, 1, 2, 3, 4].map(group).join('')}</div></section>` +
     `<section><h4>신약</h4><div class="bk-list">${[5, 6, 7, 8, 9].map(group).join('')}</div></section></div>`;
 }
 // 모바일: 화면 전체에 책(묶음별) | 장 | 절. 장을 고르면 아래 '이동', 절을 누르면 그 절로
@@ -2887,7 +2924,7 @@ const pk = { b: 0, c: 0 };
 function pickerFull() {
   const books = GROUPS.map(([g, from], k) => `<h5>${g}</h5>` + Array.from({ length: (GROUPS[k + 1]?.[1] || 67) - from }, (_, i) => from + i)
     .map(b => `<button data-pb="${b}"><em>${SHORT[b - 1]}</em>${BOOKS[b - 1]}</button>`).join('')).join('');
-  $('picker').innerHTML = `<div class="pk-head"><b>성경 찾기</b><button class="ws-close" data-close aria-label="닫기">${icon('x')}</button></div>
+  $('picker').innerHTML = `<div class="pk-head"><b>성경 찾기</b><button class="ws-close" data-close aria-label="닫기">${icon('x')}</button></div>${pkFind()}
     <div class="pk-cols"><div class="pk-books">${books}</div><div class="pk-chaps"></div><div class="pk-verses"></div></div><div class="pk-foot"></div>`;
   pickerCols();
 }
@@ -2907,7 +2944,10 @@ const openPicker = (btn, chapters) => {
   }
   $('picker').classList.remove('full');
   togglePop({ stopPropagation() {} }, $('picker'), btn, chapters ? () => pickerChapters(S.b) : pickerBooks);
+  if (!chapters && matchMedia('(pointer: fine)').matches) $('pkFind')?.focus(); // 마우스·키보드면 바로 칠 수 있게 (터치는 자판이 갑자기 뜨지 않게)
 };
+$('picker').addEventListener('input', e => { if (e.target.id === 'pkFind') pkFilter(e.target.value.trim()); });
+$('picker').addEventListener('keydown', e => { if (e.target.id === 'pkFind' && e.key === 'Enter') { e.preventDefault(); pkEnter(e.target.value.trim()); } });
 function pickerChapters(b) {
   // 다른 책을 골랐으면 머리 제목을 그 책으로, 장은 고를 때까지 비워 둠 (닫으면 원래대로)
   if (b !== S.b) { $('bookBtn').textContent = BOOKS[b - 1]; $('chapBtn').textContent = '장 선택'; $('chapBtn').classList.add('pending'); }
@@ -3162,6 +3202,15 @@ $('installBtn').onclick = async () => {
 };
 
 $('nudgeBackup').onclick = exportMarks;
+// 백업 알림의 '구글 드라이브에 저장': 연결해 둔 사람은 로그인만 다시 하고 메모만 맞춤, 처음이면 드라이브 연결부터
+$('nudgeDrive').onclick = async () => {
+  if (!driveOn()) return driveSync(true);
+  if (driveBusy) return;
+  driveBusy = true;
+  try { await getToken(); await syncMarks(); renderDrive(); flash('메모·하이라이트·책갈피를 구글 드라이브에 저장했어요'); }
+  catch (err) { driveErr(err.message); alert(`구글 드라이브: ${err.message}`); }
+  finally { driveBusy = false; }
+};
 $('nudgeLater').onclick = snoozeNudge;
 $('noteSave').onclick = saveNote;
 $('noteCancel').onclick = closePops;
