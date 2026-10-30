@@ -243,6 +243,7 @@
   #bible { position: relative; padding-left: 88px; --stick: -28px; } /* 번역본 이름 줄이 칸 맨 위에 딱 붙게 (= 위쪽 여백만큼 위로) */
   /* 주석·사전 칸도 성경 칸처럼 따로 쌓이는 층으로: 안드로이드 태블릿에 마우스를 연결했을 때 휠로 스크롤이 안 되던 것 (성경 칸은 됨) */
   :is(#comm, #comm2) { position: relative; z-index: 1; }
+  body.v-drag #bible { user-select: none; cursor: row-resize; } /* 끌어서 여러 절 고르는 중: 글자 선택 대신 절 선택 */
   .chapter-num { position: absolute; left: 4px; top: 0; z-index: 0; pointer-events: none; font: 800 132px/1 var(--sans); letter-spacing: -.07em; color: var(--accent); opacity: .08; user-select: none; }
   #bible > :not(.chapter-num) { position: relative; z-index: 1; }
   /* 나란히 볼 때는 칸마다 폭이 귀하므로 왼쪽 여백을 줄이고, 큰 장 번호는 작게 해서 절 번호 칸 뒤에 흐리게 */
@@ -503,6 +504,7 @@
   .dict-form input { flex: 1; min-width: 0; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
   .dict-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .linkish { border: 0; background: none; color: var(--accent); padding: 0; margin: 0 0 12px; font-weight: 600; }
+  #mSearchX { display: none; margin: 0; } /* 모바일 검색 화면에서만 */
   .note-badge { font: 600 11px var(--sans); color: var(--accent); background: var(--accent-soft); border: 0; border-radius: var(--r); padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
 
   /* 선택 작업 막대 */
@@ -597,6 +599,36 @@
   .chip { height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); font-size: 12px; font-weight: 500; }
   .chip:hover { background: var(--bg); }
   .chip.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
+  /* 구절 카드 (검색창에 "요 3:16-18") */
+  .ref-opts { margin: 0 0 14px; }
+  .ref-dd { position: relative; margin-bottom: 10px; }
+  .ref-dd summary { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-weight: 600; cursor: pointer; list-style: none; }
+  .ref-dd summary::-webkit-details-marker { display: none; }
+  .ref-dd summary::after { content: '▾'; margin-left: auto; color: var(--muted); font-size: 11px; }
+  .ref-dd summary b { color: var(--accent); }
+  .ref-dd summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-weight: 400; font-size: 13px; }
+  .ref-dd-list { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px); max-height: 50vh; overflow-y: auto; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow); }
+  .ref-dd-list label { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+  .ref-dd-list label:hover { background: var(--bg); }
+  .ref-dd-list label:has(input:checked) { font-weight: 600; }
+  .ref-dd-list input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .ref-opts .chk { display: inline-flex; align-items: center; gap: 5px; margin-right: 14px; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .ref-opts .chk input { accent-color: var(--accent); }
+  .ref-card { padding: 16px 0 18px; border-top: 1px solid var(--line); }
+  .ref-card h3 { margin: 0; font-size: 17px; }
+  .ref-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .ref-top h3 { flex: 1; min-width: 0; }
+  .ref-top .btn { flex: none; height: 32px; padding: 0 12px; }
+  .ref-note { display: flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 8px 10px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 13px; }
+  .ref-note .ico { width: 16px; height: 16px; flex: none; stroke-width: 2.5; }
+  .ref-err { margin: 8px 0 0; color: var(--red); font-size: 14px; }
+  .ref-ver + .ref-ver { margin-top: 12px; }
+  .ref-vn { display: block; margin-bottom: 3px; color: var(--accent); font: 600 12px var(--sans); }
+  .ref-ver p { margin: 0 0 4px; font: var(--fs)/1.75 var(--read); }
+  .ref-ver sup { margin-right: 4px; color: var(--muted); font: 600 11px var(--sans); }
+  .ref-acts { display: flex; gap: 8px; margin-top: 12px; }
+  .ref-acts .btn { height: 36px; padding: 0 16px; }
+  .ref-all { width: 100%; height: 40px; margin-top: 4px; }
   .credit a { color: inherit; }
 
   /* 빈 화면 */
@@ -846,6 +878,14 @@
     /* 첫 화면(성경을 아직 안 넣음): 빈 자료 칸이 아래 절반을 가리지 않게 인사말을 화면 가득 */
     body.no-bibles main { grid-template-rows: minmax(0, 1fr); }
     body.no-bibles main > .pane:not(#biblePane) { display: none; }
+    /* 검색 화면: 위는 검색창 + 닫기만, 아래 결과 칸이 화면 전체 */
+    body.m-search main { grid-template-rows: auto minmax(0, 1fr); }
+    body.m-search #biblePane > :not(.page-head) { display: none !important; }
+    body.m-search .page-head > :not(.search-wrap):not(#mSearchX) { display: none !important; }
+    body.m-search .page-head { flex-wrap: nowrap; }
+    body.m-search .search-wrap { flex: 1 1 auto; }
+    body.m-search .search { height: 40px; font-size: 16px; } /* 16px: 아이폰이 글자 칠 때 화면을 확대하지 않게 */
+    body.m-search #mSearchX { display: inline-flex; order: 2; flex: none; align-items: center; height: 40px; padding: 0 4px 0 6px; font-weight: 600; }
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
     .scroll { padding: 18px 16px 88px; }
     .chapter-title { font-size: 22px; margin-bottom: 16px; }
@@ -1078,6 +1118,7 @@
       </span>
       <button class="ver-pick" id="verPick" aria-haspopup="dialog" title="번역본 골라 보기 (체크한 것을 나란히 대조)"></button>
       <div class="tabs" id="verTabs"></div>      <label class="search-wrap" data-icon="search"><input class="search" id="q" type="search" placeholder="성경·주석 검색" aria-label="성경·주석 검색" title="키보드 / 키로 바로 · 여러 단어: 모두 들어 있는 절 · &quot;따옴표&quot;: 붙은 그대로 · H430, G26: 원어 번호"></label>
+      <button class="linkish" id="mSearchX" type="button">닫기</button>
       <button class="hb mag-toggle" id="magHead" data-icon="zoom-in" aria-pressed="false" title="돋보기: 본문 글자를 크게" aria-label="돋보기"></button>
     </header>
     <div class="scroll" id="bible"></div>
@@ -1153,7 +1194,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-28 16:57</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-30 11:54</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -2541,11 +2582,35 @@ $('wordPop').onclick = e => {
 const reEsc = q => new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
 
 // 검색: 여러 단어(모두 포함), "따옴표"(붙은 그대로), H430·G26(원어 번호). 번역본·범위·책으로 좁히기
+// 검색창에 구절 주소("요 3:16", "요한3:16-18", "시편 23")를 치면 검색 대신 그 구절로 가서 골라 두고 클립보드에 복사
+// 책 이름은 줄임말·온이름, 또는 앞부분만("요한" → 요한복음: 성경 순서로 처음 맞는 책)
+// "요 3:16"처럼 장:절까지 쓴 것은 늘 구절로 봄 → 없는 책·장·절이면 { err } (검색 결과에 "없는 구절"로 알림)
+// "시편 23"처럼 장만 쓴 것은 맞는 책·장일 때만 구절 (아니면 보통 검색: "사랑 3")
+function refQuery(q) {
+  const m = q.match(/^([가-힣]+)\s*(\d{1,3})(?:\s*(?:[:.]|장\s*)\s*(\d{1,3})(?:\s*[-~]\s*(\d{1,3}))?)?\s*절?$/);
+  if (!m) return null;
+  const strict = m[3] != null, b = BOOK_NO[m[1]] || BOOKS.findIndex(n => n.startsWith(m[1])) + 1, c = +m[2], v = +m[3] || 0;
+  if (!b) return strict ? { q, err: `'${m[1]}'(이)라는 성경 책을 찾지 못했어요.` } : null;
+  const chs = VERSES[b - 1].length;
+  if (c < 1 || c > chs) return strict ? { q, err: `${BOOKS[b - 1]}에는 ${c}장이 없어요. (1~${chs}장)` } : null;
+  const n = VERSES[b - 1][c - 1];
+  if (strict && (v < 1 || v > n)) return { q, err: `${BOOKS[b - 1]} ${c}장에는 ${v}절이 없어요. (1~${n}절)` };
+  return { b, c, v, to: m[4] ? Math.min(Math.max(+m[4], v), n) : v };
+}
 function search(q) {
   q = q.trim();
   if (!q) { hits = null; S.tab = 'comm'; return renderComm(); }
+  const refs = q.split(/\s*;\s*/).filter(Boolean).map(refQuery);
+  if (refs.length && refs.every(Boolean)) { // 구절 주소면 카드로 (PC는 본문도 그 구절로)
+    if (S.hideComm) { S.hideComm = false; save(); renderBible(); }
+    hits = { q, refs }; S.tab = 'search'; mSearch(true);
+    const ok = refs.filter(r => !r.err && r.v), r = refs.find(r => !r.err);
+    if (r && !phone()) { go(r.b, r.c, r.v, true); if (r.to > r.v) { select(r.to, 'range', true); syncComm(r.v); } }
+    if (ok.length) { hits.copied = true; copyText(ok.map(refCopyText).join('\n\n'), ok.length > 1 ? `구절 ${ok.length}개` : refLabel(ok[0])); } // 치자마자 클립보드에
+    return renderComm();
+  }
   if (S.hideComm) { S.hideComm = false; save(); renderBible(); } // 결과가 나오는 칸을 숨겨 뒀으면 다시 열기
-  const Q = parseQuery(q), prev = hits;
+  const Q = parseQuery(q), prev = hits?.Q ? hits : null; // 구절 카드(hits.refs)는 이어받을 설정 없음
   hits = {
     q, Q, bible: null, comm: null, book: 0,
     // 고른 번역본은 다음 검색에도 유지 (원어 번호 검색 때 자동으로 고른 원어 성경은 제외)
@@ -2554,7 +2619,7 @@ function search(q) {
   };
   // 히브리어 번호를 '신약'에서, 헬라어 번호를 '구약'에서 찾으면 늘 0개 → 범위를 전체로
   if (Q.strong && hits.range === (Q.strong[0] === 'H' ? 'nt' : 'ot')) hits.range = 'all';
-  S.tab = 'search'; renderComm();
+  S.tab = 'search'; mSearch(true); renderComm(); // 모바일은 검색 화면으로
   runBibleSearch();
 }
 
@@ -2723,7 +2788,37 @@ async function showAnaPop(btn) {
   if (num) pop.querySelectorAll(`.aw [data-strong="${num}"]`).forEach(a => a.closest('.aw').classList.add('hit-word'));
   placePop(pop);
 }
+// 구절 주소 검색("요 3:16-18; 롬 8:28"): 검색 결과 자리에 구절 카드. 번역본을 눌러 켜고 끄고(기억함), 절 번호·번역본 이름 넣기를 골라 복사
+let refOpt = { vers: prefs.get('refVers', null), num: prefs.get('refNum', true), name: prefs.get('refName', true) };
+const refVers = () => { const all = allVersions().filter(n => bibles[n]), v = (refOpt.vers || S.versions).filter(n => all.includes(n)); return v.length ? v : all.slice(0, 1); };
+function refCopyText(r) {
+  const vs = Array.from({ length: (r.to || r.v) - r.v + 1 }, (_, i) => r.v + i), label = `${BOOKS[r.b - 1]} ${r.c}:${rangeLabel(vs)}`;
+  return refVers().map(n => `${label}${refOpt.name ? ` (${nm(n)})` : ''}\n` + vs.map(v => (refOpt.num && vs.length > 1 ? v + ' ' : '') + plainVerse(verseText(n, r.b, r.c, v))).join(refOpt.num ? '\n' : ' ')).join('\n\n');
+}
+function renderRefCards() {
+  const all = allVersions().filter(n => bibles[n]), on = refVers();
+  const open = $('comm').querySelector('.ref-dd')?.open; // 번역본을 고르는 동안은 펼친 채로
+  $('comm').innerHTML = `<div class="ref-opts"><details class="ref-dd" ${open ? 'open' : ''}><summary>번역본 <b>${on.length}개</b><span>${esc(on.map(nm).join(' · '))}</span></summary>
+    <div class="ref-dd-list">${all.map(n => `<label><input type="checkbox" data-refver="${esc(n)}" ${on.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('')}</div></details>
+    <label class="chk"><input type="checkbox" data-refopt="num" ${refOpt.num ? 'checked' : ''}>절 번호</label><label class="chk"><input type="checkbox" data-refopt="name" ${refOpt.name ? 'checked' : ''}>번역본 이름</label></div>` +
+    (hits.copied ? `<p class="ref-note">${icon('check')}클립보드에 자동으로 복사했어요. 번역본이나 모양을 바꿨으면 <b>복사</b>를 다시 눌러 주세요.</p>` : '') +
+    hits.refs.map((r, k) => {
+      if (r.err) return `<article class="ref-card"><h3>${esc(r.q)}</h3><p class="ref-err">없는 구절이에요. ${esc(r.err)}</p></article>`;
+      const vs = Array.from({ length: (r.to || r.v || 1) - (r.v || 1) + 1 }, (_, i) => (r.v || 1) + i);
+      return `<article class="ref-card"><div class="ref-top"><h3>${refLabel(r)}</h3>` +
+        `<button class="btn sm" data-refgo="${k}">본문으로 가기</button>${r.v ? `<button class="btn sm primary" data-refcopy="${k}">복사</button>` : ''}</div>` +
+        (r.v ? on.map(n => `<div class="ref-ver"><span class="ref-vn">${esc(nm(n))}</span>${vs.map(v => `<p><sup>${v}</sup>${verseHtml(verseText(n, r.b, r.c, v) || '')}</p>`).join('')}</div>`).join('') : '<p class="muted">장 전체는 본문에서 보세요.</p>') +
+        `</article>`;
+    }).join('') + (hits.refs.filter(r => !r.err && r.v).length > 1 ? `<button class="btn primary ref-all" data-refcopy="all">모두 복사</button>` : '');
+}
+const refLabel = r => `${BOOKS[r.b - 1]} ${r.c}${r.v ? ':' + (r.to > r.v ? `${r.v}-${r.to}` : r.v) : '장'}`;
+async function copyText(text, label) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const t = Object.assign(document.createElement('textarea'), { value: text }); document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
+  flash(`${label} 복사했습니다`);
+}
 function renderHits() {
+  if (hits.refs) return renderRefCards();
   const h = hits, mk = s => h.Q.re && !h.Q.strong ? esc(s).replace(h.Q.re, m => `<mark>${m}</mark>`) : esc(s);
   const inR = b => inRange(b, h.range);
   const bibleList = (h.bible || []).filter(i => inR(REF[i][0]));
@@ -3386,9 +3481,45 @@ $('bible').onclick = e => {
   if (fn) { e.stopPropagation(); return showNote(fn); }
   const w = e.target.closest('.w');
   if (w) { e.stopPropagation(); select(+w.closest('[data-v]').dataset.v, undefined, true); return showWord(w); }
+  if (vDragEnd > Date.now() - 300) return; // 끌어서 여러 절을 고른 직후의 클릭은 무시 (한 절로 바뀌지 않게)
   const p = e.target.closest('[data-v]');
   if (p) select(+p.dataset.v, e.shiftKey ? 'range' : (e.metaKey || e.ctrlKey) ? 'toggle' : undefined, true);
 };
+// 마우스로 절을 누른 채 다른 절까지 끌면 그 사이 절을 모두 고름 (Shift+클릭과 같음). 끄는 동안 휠로 스크롤하거나
+// 칸 위·아래 끝에 대면 저절로 스크롤되며 이어서 골라짐. 한 절 안에서만 끌면 지금처럼 글자 선택
+let vDrag = null, vDragEnd = 0;
+$('bible').addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' || e.button || e.shiftKey || e.metaKey || e.ctrlKey || e.target.closest('.w, .fn, [data-note], .gl-switch, button, a')) return;
+  const p = e.target.closest('[data-v]');
+  if (p) vDrag = { from: +p.dataset.v, x: e.clientX, y: e.clientY, on: false, speed: 0 };
+});
+function vDragAt() {
+  const v = +document.elementFromPoint(vDrag.x, vDrag.y)?.closest('#bible [data-v]')?.dataset.v;
+  if (!v || (!vDrag.on && v === vDrag.from)) return;
+  if (!vDrag.on) { vDrag.on = true; document.body.classList.add('v-drag'); }
+  getSelection().removeAllRanges();
+  const a = Math.min(vDrag.from, v), b = Math.max(vDrag.from, v);
+  S.v = vDrag.from; sel = new Set(Array.from({ length: b - a + 1 }, (_, i) => a + i));
+  $('bible').querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', sel.has(+x.dataset.v)));
+  renderSelbar();
+}
+function vDragScroll() { // 칸 끝에 댄 동안 계속 스크롤
+  if (!vDrag?.on || !vDrag.speed) return;
+  $('bible').scrollTop += vDrag.speed; vDragAt(); requestAnimationFrame(vDragScroll);
+}
+addEventListener('pointermove', e => {
+  if (!vDrag) return;
+  vDrag.x = e.clientX; vDrag.y = e.clientY; vDragAt();
+  if (!vDrag.on) return;
+  const r = $('bible').getBoundingClientRect(), edge = 48, was = vDrag.speed;
+  vDrag.speed = e.clientY < r.top + edge ? -Math.ceil((r.top + edge - e.clientY) / 4) : e.clientY > r.bottom - edge ? Math.ceil((e.clientY - r.bottom + edge) / 4) : 0;
+  if (vDrag.speed && !was) requestAnimationFrame(vDragScroll);
+});
+$('bible').addEventListener('scroll', () => vDrag?.on && vDragAt(), { passive: true });
+addEventListener('pointerup', () => {
+  if (vDrag?.on) { vDragEnd = Date.now(); document.body.classList.remove('v-drag'); syncComm(S.v); if (S.tab === 'xref') renderXref(); }
+  vDrag = null;
+});
 $('selbar').onclick = e => {
   const t = e.target.closest('button'); if (!t) return;
   e.stopPropagation();
@@ -3417,11 +3548,31 @@ $('comTabs2').onclick = e => {
 };
 // 검색 결과: 번역본·범위 바꾸기
 $('comm').onchange = e => {
+  const ro = e.target.dataset.refopt;
+  if (ro) { refOpt[ro] = e.target.checked; prefs.set(ro === 'num' ? 'refNum' : 'refName', e.target.checked); return; }
+  const rv = e.target.dataset.refver;
+  if (rv !== undefined && hits?.refs) { // 구절 카드 번역본 켜고 끄기 (하나는 남김, 탭 순서대로)
+    const cur = refVers(), next = e.target.checked ? allVersions().filter(x => cur.includes(x) || x === rv) : cur.filter(x => x !== rv);
+    if (next.length) { refOpt.vers = next; prefs.set('refVers', next); }
+    return renderRefCards();
+  }
   const o = e.target.dataset.sopt; if (!o || !hits) return;
   hits.book = 0;
   if (o === 'ver') { hits.ver = e.target.value; hits.bible = null; renderHits(); runBibleSearch(); }
   else { hits.range = e.target.value; renderHits(); }
 };
+// 구절 카드: 번역본 켜고 끄기 · 복사 · 본문으로 가기
+$('comm').addEventListener('click', e => {
+  const rc = e.target.closest('[data-refcopy]'), rg = e.target.closest('[data-refgo]');
+  if (!(rc || rg) || !hits?.refs) return;
+  e.stopPropagation();
+  if (rc) {
+    const list = rc.dataset.refcopy === 'all' ? hits.refs.filter(r => !r.err && r.v) : [hits.refs[+rc.dataset.refcopy]];
+    return copyText(list.map(refCopyText).join('\n\n'), list.length > 1 ? `구절 ${list.length}개` : rc.closest('.ref-card').querySelector('h3').textContent);
+  }
+  const r = hits.refs[+rg.dataset.refgo];
+  mSearch(false); go(r.b, r.c, r.v, true); if (r.to > r.v) { select(r.to, 'range', true); syncComm(r.v); }
+}, true);
 $('comm').onsubmit = e => { if (e.target.id === 'dictForm') { e.preventDefault(); dictSearch($('dq').value); } };
 $('comm').onclick = e => {
   const ap = e.target.closest('[data-ana-pop]');
@@ -3449,6 +3600,7 @@ $('comm').onclick = e => {
   if (dl) { D.lang = dl.dataset.dictLang; return renderDict(0); }
   if (e.target.closest('[data-dict-clear]')) { D.q = ''; D.list = null; return renderDict(0); }
   const h = e.target.closest('.hit');
+  if (h) mSearch(false); // 모바일 검색 화면에서 결과를 누르면 성경으로 돌아가 그 절을 보여 줌
   if (h?.dataset.i) { const [b, c, v] = REF[+h.dataset.i]; return go(b, c, v, true); }
   if (h?.dataset.go) {
     const [b, c, v] = h.dataset.go.split('.').map(Number);
@@ -3498,7 +3650,16 @@ for (const id of ['comm', 'comm2', 'wordPop']) {
   $(id).onmouseleave = () => $('tip').classList.remove('open');
 }
 
-$('q').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) search(e.target.value); if (e.key === 'Escape') { e.target.value = ''; search(''); e.target.blur(); } };
+// 모바일: 검색창을 누르면 검색 화면(검색창 + 결과가 화면 전체)으로. 닫기·결과 누르기·Esc 로 성경 화면으로
+function mSearch(on) {
+  document.body.classList.toggle('m-search', !!on && phone());
+  if (on && phone() && hits) { S.tab = 'search'; renderComm(); } // 지난 검색 결과가 있으면 바로 보이게
+}
+$('q').addEventListener('focus', () => mSearch(true));
+document.querySelector('.rail').addEventListener('click', () => mSearch(false), true); // 아래 탭 막대(사전·끼니 등)를 누르면 검색 화면에서 나옴
+$('q').addEventListener('click', () => mSearch(true));
+$('mSearchX').onclick = () => { $('q').blur(); mSearch(false); };
+$('q').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { search(e.target.value); if (phone()) e.target.blur(); } /* 모바일: 자판을 내려 결과가 다 보이게 */ if (e.key === 'Escape') { e.target.value = ''; search(''); e.target.blur(); mSearch(false); } };
 document.onkeydown = e => {
   if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (sel.size) { sel.clear(); refreshBible(); } }
   if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
