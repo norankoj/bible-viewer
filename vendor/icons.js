@@ -25,7 +25,6 @@ window.ICONS = {
  "grip-vertical": "<path d=\"M9 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\"/><path d=\"M9 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\"/><path d=\"M9 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\"/><path d=\"M15 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\"/><path d=\"M15 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\"/><path d=\"M15 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\"/>",
  "check": "<path d=\"M5 12l5 5l10 -10\"/>",
  "bookmarks": "<path d=\"M15 10v11l-5 -3l-5 3v-11a3 3 0 0 1 3 -3h4a3 3 0 0 1 3 3z\"/><path d=\"M11 3h5a3 3 0 0 1 3 3v11\"/>",
- "chevrons-left": "<path d=\"M11 7l-5 5l5 5\"/><path d=\"M17 7l-5 5l5 5\"/>",
  "chevron-left": "<path d=\"M15 6l-6 6l6 6\"/>",
  "chevron-right": "<path d=\"M9 6l6 6l-6 6\"/>",
  "layout-sidebar-right": "<path d=\"M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z\"/><path d=\"M15 4l0 16\"/>",
