@@ -625,7 +625,7 @@
   .ref-ver + .ref-ver { margin-top: 12px; }
   .ref-vn { display: block; margin-bottom: 3px; color: var(--accent); font: 600 12px var(--sans); }
   .ref-ver p { margin: 0 0 4px; font: var(--fs)/1.75 var(--read); }
-  .ref-ver sup { margin-right: 4px; color: var(--muted); font: 600 11px var(--sans); }
+  .ref-at { color: var(--accent); font-weight: 700; }
   .ref-acts { display: flex; gap: 8px; margin-top: 12px; }
   .ref-acts .btn { height: 36px; padding: 0 16px; }
   .ref-all { width: 100%; height: 40px; margin-top: 4px; }
@@ -1194,7 +1194,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-30 14:19</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-30 18:06</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1401,6 +1401,7 @@ const prefs = {
 try { localStorage.removeItem('esvKey'); } catch {} // 예전 ESV 연결 기능에서 넣은 키 지움
 const markDel = prefs.get('markDel', {}); // 지운 메모·책갈피 {id: 지운 때}: 드라이브로 맞출 때 다른 기기에서도 지우도록
 const S = { b: 43, c: 3, v: 0, versions: [], off: [], comm: '', comm2: '', dict2: '', dict: '', split: false, tab: 'comm', ...prefs.get('state', {}) };
+if (matchMedia('(max-width: 760px)').matches) S.hideComm = true; // 모바일은 작아서 자료 칸을 닫은 채 시작 (자료 버튼을 누르면 열림)
 // 고른 번역본 중 켜 둔 것 (버튼을 눌러 잠깐 끈 것은 빼고, 모두 끄면 전부)
 const shownVers = () => { const v = S.versions.filter(n => !S.off.includes(n)); return v.length ? v : S.versions; };
 const save = () => prefs.set('state', { b: S.b, c: S.c, versions: S.versions, off: S.off, comm: S.comm, comm2: S.comm2, dict2: S.dict2, dict: S.dict, split: S.split, hideComm: S.hideComm });
@@ -2789,25 +2790,25 @@ async function showAnaPop(btn) {
   placePop(pop);
 }
 // 구절 주소 검색("요 3:16-18; 롬 8:28"): 검색 결과 자리에 구절 카드. 번역본을 눌러 켜고 끄고(기억함), 절 번호·번역본 이름 넣기를 골라 복사
-let refOpt = { vers: prefs.get('refVers', null), num: prefs.get('refNum', true), name: prefs.get('refName', true) };
+let refOpt = { vers: prefs.get('refVers', null), num: prefs.get('refNum', true), name: prefs.get('refVerName', false) };
 const refVers = () => { const all = allVersions().filter(n => bibles[n]), v = (refOpt.vers || S.versions).filter(n => all.includes(n)); return v.length ? v : all.slice(0, 1); };
 function refCopyText(r) {
-  const vs = Array.from({ length: (r.to || r.v) - r.v + 1 }, (_, i) => r.v + i), label = `${BOOKS[r.b - 1]} ${r.c}:${rangeLabel(vs)}`;
-  return refVers().map(n => `${label}${refOpt.name ? ` (${nm(n)})` : ''}\n` + vs.map(v => (refOpt.num && vs.length > 1 ? v + ' ' : '') + plainVerse(verseText(n, r.b, r.c, v))).join(refOpt.num ? '\n' : ' ')).join('\n\n');
+  const vs = Array.from({ length: (r.to || r.v) - r.v + 1 }, (_, i) => r.v + i);
+  return refVers().map(n => (refOpt.name ? nm(n) + '\n' : '') + vs.map(v => (refOpt.num ? refName(r.b, r.c, v) + ' ' : '') + plainVerse(verseText(n, r.b, r.c, v))).join(refOpt.num ? '\n' : ' ')).join('\n\n'); // 절마다 "요 3:16 말씀"
 }
 function renderRefCards() {
   const all = allVersions().filter(n => bibles[n]), on = refVers();
   const open = $('comm').querySelector('.ref-dd')?.open; // 번역본을 고르는 동안은 펼친 채로
   $('comm').innerHTML = `<div class="ref-opts"><details class="ref-dd" ${open ? 'open' : ''}><summary>번역본 <b>${on.length}개</b><span>${esc(on.map(nm).join(' · '))}</span></summary>
     <div class="ref-dd-list">${all.map(n => `<label><input type="checkbox" data-refver="${esc(n)}" ${on.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('')}</div></details>
-    <label class="chk"><input type="checkbox" data-refopt="num" ${refOpt.num ? 'checked' : ''}>절 번호</label><label class="chk"><input type="checkbox" data-refopt="name" ${refOpt.name ? 'checked' : ''}>번역본 이름</label></div>` +
+    <label class="chk"><input type="checkbox" data-refopt="num" ${refOpt.num ? 'checked' : ''}>구절 주소</label><label class="chk"><input type="checkbox" data-refopt="name" ${refOpt.name ? 'checked' : ''}>번역본 이름</label></div>` +
     (hits.copied ? `<p class="ref-note">${icon('check')}클립보드에 자동으로 복사했어요. 번역본이나 모양을 바꿨으면 <b>복사</b>를 다시 눌러 주세요.</p>` : '') +
     hits.refs.map((r, k) => {
       if (r.err) return `<article class="ref-card"><h3>${esc(r.q)}</h3><p class="ref-err">없는 구절이에요. ${esc(r.err)}</p></article>`;
       const vs = Array.from({ length: (r.to || r.v || 1) - (r.v || 1) + 1 }, (_, i) => (r.v || 1) + i);
       return `<article class="ref-card"><div class="ref-top"><h3>${refLabel(r)}</h3>` +
         `<button class="btn sm" data-refgo="${k}">본문으로 가기</button>${r.v ? `<button class="btn sm primary" data-refcopy="${k}">복사</button>` : ''}</div>` +
-        (r.v ? on.map(n => `<div class="ref-ver"><span class="ref-vn">${esc(nm(n))}</span>${vs.map(v => `<p><sup>${v}</sup>${verseHtml(verseText(n, r.b, r.c, v) || '')}</p>`).join('')}</div>`).join('') : '<p class="muted">장 전체는 본문에서 보세요.</p>') +
+        (r.v ? on.map(n => `<div class="ref-ver"><span class="ref-vn">${esc(nm(n))}</span>${vs.map(v => `<p>${refOpt.num ? `<b class="ref-at">${refName(r.b, r.c, v)}</b> ` : ''}${verseHtml(verseText(n, r.b, r.c, v) || '')}</p>`).join('')}</div>`).join('') : '<p class="muted">장 전체는 본문에서 보세요.</p>') +
         `</article>`;
     }).join('') + (hits.refs.filter(r => !r.err && r.v).length > 1 ? `<button class="btn primary ref-all" data-refcopy="all">모두 복사</button>` : '');
 }
@@ -3549,7 +3550,7 @@ $('comTabs2').onclick = e => {
 // 검색 결과: 번역본·범위 바꾸기
 $('comm').onchange = e => {
   const ro = e.target.dataset.refopt;
-  if (ro) { refOpt[ro] = e.target.checked; prefs.set(ro === 'num' ? 'refNum' : 'refName', e.target.checked); return; }
+  if (ro) { refOpt[ro] = e.target.checked; prefs.set(ro === 'num' ? 'refNum' : 'refVerName', e.target.checked); return renderRefCards(); }
   const rv = e.target.dataset.refver;
   if (rv !== undefined && hits?.refs) { // 구절 카드 번역본 켜고 끄기 (하나는 남김, 탭 순서대로)
     const cur = refVers(), next = e.target.checked ? allVersions().filter(x => cur.includes(x) || x === rv) : cur.filter(x => x !== rv);
@@ -3651,9 +3652,13 @@ for (const id of ['comm', 'comm2', 'wordPop']) {
 }
 
 // 모바일: 검색창을 누르면 검색 화면(검색창 + 결과가 화면 전체)으로. 닫기·결과 누르기·Esc 로 성경 화면으로
+let mHide = false; // 검색 화면에 들어올 때 자료 칸이 닫혀 있었으면, 나갈 때 다시 닫음
 function mSearch(on) {
-  document.body.classList.toggle('m-search', !!on && phone());
-  if (on && phone() && hits) { S.tab = 'search'; renderComm(); } // 지난 검색 결과가 있으면 바로 보이게
+  const was = document.body.classList.contains('m-search'), now = !!on && phone();
+  if (now && !was) mHide = !!S.hideComm;
+  document.body.classList.toggle('m-search', now);
+  if (was && !now && mHide) { S.hideComm = true; save(); renderComm(); renderBible(); }
+  if (now && hits) { S.hideComm = false; S.tab = 'search'; renderComm(); } // 지난 검색 결과가 있으면 바로 보이게
 }
 $('q').addEventListener('focus', () => mSearch(true));
 document.querySelector('.rail').addEventListener('click', () => mSearch(false), true); // 아래 탭 막대(사전·끼니 등)를 누르면 검색 화면에서 나옴
