@@ -1109,7 +1109,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-30 18:51</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-30 20:32</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1778,7 +1778,8 @@ async function copySel() {
   const vs = sorted(), { b, c } = S;
   const label = `${BOOKS[b - 1]} ${c}:${rangeLabel(vs)}`;
   const t = (name, v) => plainVerse(verseText(name, b, c, v));
-  const text = S.versions.map(name => `${label} (${nm(name)})\n` +
+  // 끈 번역본(점선)은 복사하지 않음: 화면에 보이는 칸만
+  const text = shownVers().map(name => `${label} (${nm(name)})\n` +
     (vs.length === 1 ? t(name, vs[0]) : vs.map(v => `${v} ${t(name, v)}`).join('\n'))).join('\n\n');
   try { await navigator.clipboard.writeText(text); }
   catch { // file:// 등 클립보드 API가 막힌 환경
@@ -2704,7 +2705,7 @@ async function showAnaPop(btn) {
 }
 // 구절 주소 검색("요 3:16-18; 롬 8:28"): 검색 결과 자리에 구절 카드. 번역본을 눌러 켜고 끄고(기억함), 절 번호·번역본 이름 넣기를 골라 복사
 let refOpt = { vers: prefs.get('refVers', null), num: prefs.get('refNum', true), name: prefs.get('refVerName', false) };
-const refVers = () => { const all = allVersions().filter(n => bibles[n]), v = (refOpt.vers || S.versions).filter(n => all.includes(n)); return v.length ? v : all.slice(0, 1); };
+const refVers = () => { const all = allVersions().filter(n => bibles[n]), v = (refOpt.vers || shownVers()).filter(n => all.includes(n)); return v.length ? v : all.slice(0, 1); };
 function refCopyText(r) {
   const vs = Array.from({ length: (r.to || r.v) - r.v + 1 }, (_, i) => r.v + i);
   return refVers().map(n => (refOpt.name ? nm(n) + '\n' : '') + vs.map(v => (refOpt.num ? refName(r.b, r.c, v) + ' ' : '') + plainVerse(verseText(n, r.b, r.c, v))).join(refOpt.num ? '\n' : ' ')).join('\n\n'); // 절마다 "요 3:16 말씀"
