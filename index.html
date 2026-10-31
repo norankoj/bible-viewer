@@ -245,6 +245,7 @@
   /* 주석·사전 칸도 성경 칸처럼 따로 쌓이는 층으로: 안드로이드 태블릿에 마우스를 연결했을 때 휠로 스크롤이 안 되던 것 (성경 칸은 됨) */
   :is(#comm, #comm2) { position: relative; z-index: 1; }
   body.v-drag #bible { user-select: none; cursor: row-resize; } /* 끌어서 여러 절 고르는 중: 글자 선택 대신 절 선택 */
+  #bible :is(.vn, .fn, .note-badge) { user-select: none; } /* 글자 일부를 복사할 때 절 번호·각주 표시는 빠지게 */
   .chapter-num { position: absolute; left: 4px; top: 0; z-index: 0; pointer-events: none; font: 800 132px/1 var(--sans); letter-spacing: -.07em; color: var(--accent); opacity: .08; user-select: none; }
   #bible > :not(.chapter-num) { position: relative; z-index: 1; }
   /* 나란히 볼 때는 칸마다 폭이 귀하므로 왼쪽 여백을 줄이고, 큰 장 번호는 작게 해서 절 번호 칸 뒤에 흐리게 */
@@ -252,7 +253,7 @@
     #bible:has(> .par) { padding-left: 52px; }
     #bible:has(> .par) .chapter-num { font-size: 112px; left: 4px; }
   }
-  .verse { font: var(--fs)/1.9 var(--read); padding: 4px 12px; margin: 0 -12px 2px; border-radius: 10px; cursor: pointer; max-width: 42em; user-select: none; transition: background .15s; }
+  .verse { font: var(--fs)/1.9 var(--read); padding: 4px 12px; margin: 0 -12px 2px; border-radius: 10px; cursor: pointer; max-width: 42em; transition: background .15s; }
   .verse:hover { background: var(--bg); }
   .vn { font: 700 11px var(--sans); color: var(--accent); margin-right: 7px; vertical-align: 2px; font-variant-numeric: tabular-nums; opacity: .85; }
   .red { color: var(--red); } .ot { color: var(--ot); }
@@ -274,7 +275,7 @@
   #biblePane.has-bg .verse.on, #biblePane.has-bg .par .row.on > * { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
   #biblePane.has-bg :is(.verse, .par .row)[class*="hl-"] { --hl-a: 65%; }
   .par .row { display: contents; }
-  .par .row > * { padding: 6px 10px; font: var(--fs)/1.75 var(--read); cursor: pointer; user-select: none; }
+  .par .row > * { padding: 6px 10px; font: var(--fs)/1.75 var(--read); cursor: pointer; }
   .par .row > .vn { font: 600 11px/2.6 var(--sans); margin-right: 0; padding: 6px 0 6px 6px; white-space: nowrap; } /* margin 없앰: 고른 절의 번호와 본문 사이가 끊겨 보이지 않게 */
   /* 선택: 왼쪽 막대 + (하이라이트가 없으면) 연한 배경 */
   .verse.on, .par .row.on > * { background: var(--accent-soft); }
@@ -1109,7 +1110,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-31 14:36</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-31 15:47</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -3390,6 +3391,9 @@ if (/Android/i.test(navigator.userAgent)) addEventListener('wheel', e => {
   el.scrollTop += e.deltaY * (e.deltaMode === 1 ? 18 : e.deltaMode === 2 ? el.clientHeight : 1);
 }, { passive: false });
 $('bible').onclick = e => {
+  if (vDragEnd > Date.now() - 300) return; // 끌어서 여러 절을 고른 직후의 클릭은 무시 (한 절로 바뀌지 않게)
+  const ts = getSelection();
+  if (!ts.isCollapsed && $('bible').contains(ts.anchorNode)) return; // 글자 일부를 끌어 고른 뒤: 절 선택·단어 창을 띄우지 않고 그 글자만 복사할 수 있게
   if (e.target.closest('.gl-switch')) { toggleGloss(e.target.closest('.gl-switch')); return renderBible(); } // 칸 머리의 영어 뜻·발음 뜻 켜고 끄기
   const nb = e.target.closest('[data-note]');
   if (nb) { e.stopPropagation(); select(+nb.dataset.note, undefined, true);return openNote(+nb.dataset.note, nb); }
@@ -3397,15 +3401,15 @@ $('bible').onclick = e => {
   if (fn) { e.stopPropagation(); return showNote(fn); }
   const w = e.target.closest('.w');
   if (w) { e.stopPropagation(); select(+w.closest('[data-v]').dataset.v, undefined, true); return showWord(w); }
-  if (vDragEnd > Date.now() - 300) return; // 끌어서 여러 절을 고른 직후의 클릭은 무시 (한 절로 바뀌지 않게)
   const p = e.target.closest('[data-v]');
   if (p) select(+p.dataset.v, e.shiftKey ? 'range' : (e.metaKey || e.ctrlKey) ? 'toggle' : undefined, true);
 };
 // 마우스로 절을 누른 채 다른 절까지 끌면 그 사이 절을 모두 고름 (Shift+클릭과 같음). 끄는 동안 휠로 스크롤하거나
-// 칸 위·아래 끝에 대면 저절로 스크롤되며 이어서 골라짐. 한 절 안에서만 끌면 지금처럼 글자 선택
+// 칸 위·아래 끝에 대면 저절로 스크롤되며 이어서 골라짐. 한 절 안에서만 끌면 글자 일부 선택
 let vDrag = null, vDragEnd = 0;
+$('bible').addEventListener('mousedown', e => { if (e.shiftKey || e.metaKey || e.ctrlKey) e.preventDefault(); }); // Shift·Ctrl+클릭은 절 고르기라 글자가 칠해지지 않게
 $('bible').addEventListener('pointerdown', e => {
-  if (e.pointerType !== 'mouse' || e.button || e.shiftKey || e.metaKey || e.ctrlKey || e.target.closest('.w, .fn, [data-note], .gl-switch, button, a')) return;
+  if (e.pointerType !== 'mouse' || e.button || e.shiftKey || e.metaKey || e.ctrlKey || e.target.closest('.fn, [data-note], .gl-switch, button, a')) return;
   const p = e.target.closest('[data-v]');
   if (p) vDrag = { from: +p.dataset.v, x: e.clientX, y: e.clientY, on: false, speed: 0 };
 });
