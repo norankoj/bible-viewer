@@ -588,9 +588,15 @@
   .hit .sh { color: var(--accent); background: var(--accent-soft); font-weight: 700; border-radius: 3px; padding: 0 2px; }
   .hit .sw { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 8px; }
   .note-text { white-space: pre-wrap; font-family: var(--sans); font-size: 14px; }
-  .saved h4 { font: 600 13px var(--sans); color: var(--muted); margin: 28px 0 6px; }
-  .saved h4:first-child { margin-top: 0; }
-  .saved .none { color: var(--muted); margin: 0; font-size: 13px; }
+  .saved { --stick: -28px; }
+  .fold { border-bottom: 1px solid var(--line); }
+  .fold > summary { position: sticky; top: var(--stick); z-index: 1; display: flex; align-items: center; gap: 8px; min-height: 46px; background: var(--surface); font: 600 14px var(--sans); cursor: pointer; list-style: none; }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold > summary b { color: var(--muted); font-weight: 500; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .fold > summary::after { content: '›'; margin-left: auto; color: var(--muted); font-size: 18px; line-height: 1; transition: transform .15s; }
+  .fold[open] > summary::after { transform: rotate(90deg); }
+  .fold[open] { padding-bottom: 12px; }
+  .saved .none { color: var(--muted); margin: 0 0 4px; font-size: 13px; }
   mark { background: var(--accent-soft); color: inherit; border-radius: 2px; }
   .progress { color: var(--muted); }
   .credit { color: var(--muted); font-size: 12px; margin: 20px 0 0; }
@@ -891,6 +897,7 @@
     body.m-search #mSearchX { display: inline-flex; order: 2; flex: none; align-items: center; height: 40px; padding: 0 4px 0 6px; font-weight: 600; }
     .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
     .scroll { padding: 18px 16px 88px; }
+    .saved { --stick: -18px; }
     .chapter-title { font-size: 22px; margin-bottom: 16px; }
     /* 모바일은 성경 칸이 낮아서 떠 있는 막대가 절을 가림 → 아래에 붙여 둠 */
     #biblePane > .selbar { position: relative; left: auto; bottom: auto; transform: none; width: auto; max-width: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; animation: none; padding: 8px 12px; }
@@ -1110,7 +1117,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-31 15:47</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-31 16:54</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1201,7 +1208,7 @@
       <li>절을 누르면 선택돼요. 하이라이트를 없애려면 <b>색 지우기</b>. <kbd>Shift</kbd>+누르기로 범위, <kbd>Ctrl</kbd>(맥은 <kbd>⌘</kbd>)+누르기로 여러 절을 고를 수 있어요.</li>
       <li>선택하면 나오는 막대에서 <b>복사</b>(<kbd>Ctrl</kbd>+<kbd>C</kbd>), <b>하이라이트</b>(노랑·초록·파랑·분홍, 지우기), <b>메모</b>, <b>책갈피</b>를 해요.</li>
       <li>하이라이트는 글자 줄마다 형광펜처럼 칠해지고, 메모가 있는 절에는 <b>메모</b> 표시가 붙어요.</li>
-      <li>모아 보기는 <b>보관함</b>에서 해요. 책갈피·메모·하이라이트를 누르면 그 절로 가요.</li>
+      <li>모아 보기는 <b>보관함</b>에서 해요. 책갈피·메모·하이라이트·최근 본 곳은 접혀 있고 이름 옆에 개수가 보여요. 누르면 펼쳐지고, 펼친 묶음은 다음에도 펼쳐져 있어요. 항목을 누르면 그 절로 가요.</li>
       <li>절이 아닌 곳(빈 곳, 자료 칸 등)을 누르면 고른 표시가 풀려요. PC에서는 아래 작업 막대가 평소 반투명이고, 마우스를 올리면 진해져요.</li>
     </ul></section>
 <section id="g-side"><h3>자료 칸 (주석 · 원전분해 · 사전 · 관련 구절 · 보관함)</h3>
@@ -2805,11 +2812,17 @@ function renderHits() {
 }
 
 /* ---------- 보관함 ---------- */
+$('comm').addEventListener('toggle', e => { // toggle 은 위로 전해지지 않아 capture 로 받음
+  const t = e.target.dataset?.fold; if (!t) return;
+  prefs.set('savedOpen', { ...prefs.get('savedOpen', {}), [t]: e.target.open });
+}, true);
 function renderSaved() {
   const all = [...marks.values()], L = bibles[firstLocal()];
   const verseOf = m => L ? esc(plainVerse(L[START[m.b][m.c - 1] + m.v - 1])) : '';
   const item = (m, label, body) => `<button class="hit" data-go="${m.b}.${m.c}.${m.v}"><span class="ref">${label}</span>${body}</button>`;
-  const section = (title, list, none) => `<h4>${title}</h4>` + (list.length ? list.join('') : `<p class="none">${none}</p>`);
+  // 묶음마다 접고 펴기 (처음엔 접힘, 펼친 묶음은 기기에 기억)
+  const opened = prefs.get('savedOpen', {});
+  const section = (title, list, none) => `<details class="fold" data-fold="${title}" ${opened[title] ? 'open' : ''}><summary>${title}<b>${list.length.toLocaleString()}</b></summary>` + (list.length ? list.join('') : `<p class="none">${none}</p>`) + '</details>';
   const bms = all.filter(m => m.bm).sort((a, b) => b.t - a.t)
     .map(m => item(m, `${SHORT[m.b - 1]} ${m.c}:${m.v === m.v2 ? m.v : m.v + '-' + m.v2}`, verseOf(m)));
   const notes = all.filter(m => m.note).sort((a, b) => order(a) - order(b))
@@ -2821,7 +2834,7 @@ function renderSaved() {
     section('책갈피', bms, '절을 고르고 아래 막대에서 "책갈피"를 누르세요.') +
     section('메모', notes, '절을 고르고 "메모"를 누르면 여기에 모입니다.') +
     section('하이라이트', hls, '절을 고르고 색을 누르면 여기에 모입니다.') +
-    section('최근 본 곳', recent, '') + '</div>';
+    section('최근 본 곳', recent, '아직 없어요.') + '</div>';
 }
 
 /* ---------- 끼니: 공동체가 날마다 함께 묵상하는 구절 (data/kkini.js, 해마다 새 표) ----------
