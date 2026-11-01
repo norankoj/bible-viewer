@@ -1117,7 +1117,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-10-31 16:54</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-11-01 14:21</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1235,6 +1235,7 @@
     <ul>
       <li><b>성경·주석 검색</b> 칸(키보드 <kbd>/</kbd> 키로 바로)에 적고 <kbd>Enter</kbd>.</li>
       <li>여러 단어는 모두 들어 있는 절, <b>"따옴표"</b>는 붙은 그대로 찾아요.</li>
+      <li><b>구절 주소</b>를 치면 그 구절이 카드로 나오고 바로 복사돼요. <b>요 3:16</b>, <b>요한3:16-18</b>처럼 쓰고, 쉼표로 여러 구절도 돼요(<b>요 1:3, 갈 3:4</b>). 같은 장은 <b>요 3:16, 18</b>처럼 줄여 써도 돼요.</li>
       <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 그 번호가 붙은 단어를 강조해요. 원어 번호가 파일에 들어 있는 <b>원전분해</b>, <b>개역개정S</b>, <b>TRa+I</b> 중에서 기준을 고르고(처음 한 번은 원전분해를 정리하느라 몇 초 걸려요), 결과의 <b>위 줄은 기준</b>, <b>아래 줄은 짝</b>(원전분해 ↔ 개역개정S)이에요. 두 파일은 번호를 붙인 곳이 조금씩 달라 같은 번호라도 찾아지는 절이 다를 수 있으니 참고용으로 보세요. 결과 위에는 그 번호가 <b>나오는 절 수</b>와 <b>나오는 단어 수</b>가 함께 나와요(한 절에 두 번 나오면 절은 1개, 단어는 2번).</li>
       <li>원어 번호 검색 결과의 절 이름 옆 <b>원전분해</b>를 누르면 그 절의 원전분해 풀이가 작은 창으로 떠요(찾는 단어는 칠해서). 풀이 속 번호를 누르면 단어 노트가 열리고, 검색 결과는 그대로예요.</li>
       <li>결과에서 번역본과 범위(전체·구약·신약·현재 책)를 바꿀 수 있고, 주석에서도 찾아요(여러 주석을 한꺼번에).</li>
@@ -2524,7 +2525,12 @@ function search(q) {
   q = q.trim();
   if (!q) { hits = null; S.tab = 'comm'; return renderComm(); }
   $('comm').scrollTop = 0; // 자료 칸은 탭·결과가 바뀌어도 같은 칸이라, 그냥 두면 이전 스크롤이 이어짐
-  const refs = q.split(/\s*;\s*/).filter(Boolean).map(refQuery);
+  // 쉼표·세미콜론으로 여러 구절. 숫자로 시작하면 앞 구절의 책·장을 이어받음: "요 3:16, 18" = 요 3:18, "요 3:16, 4:2" = 요 4:2
+  const refs = [];
+  for (const p of q.split(/\s*[;,]\s*/).filter(Boolean)) {
+    const prev = refs.at(-1), cont = /^\d/.test(p) && prev?.b;
+    refs.push(refQuery(cont ? `${BOOKS[prev.b - 1]} ${prev.v && !p.includes(':') ? prev.c + ':' : ''}${p}` : p));
+  }
   if (refs.length && refs.every(Boolean)) { // 구절 주소면 카드로 (PC는 본문도 그 구절로)
     if (S.hideComm) { S.hideComm = false; save(); renderBible(); }
     hits = { q, refs }; S.tab = 'search'; mSearch(true);
