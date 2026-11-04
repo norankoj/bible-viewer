@@ -1117,7 +1117,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-11-01 14:21</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-11-04 17:32</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -2119,7 +2119,19 @@ function commHtml(name) {
 // 주석 읽기 좋게: 줄바꿈(<br>)마다 문단으로 나눠 사이를 띄우고(빈 줄은 하나로), "☞" 로 시작하는 풀이 문단은 위를 더 띄움,
 // "주제1:" 같은 줄은 작은 머리글로. 옛 파일의 `낱말' 따옴표는 ‘낱말’로, 원어 글자가 빠진 자리 (*) 는 흐리게
 // b: 지금 보는 책 (책 이름 없이 "(2:1)" 처럼 적은 같은 책 구절을 링크로)
-const commFmt = (html, b) => linkRefs(html, b)
+// theWord 파일의 '장만 걸린 링크'(…id=19.110.0) 손보기: 미리보기가 0절(= 앞 장 끝 절)을 보여 틀렸음
+// "시편 110편 4절"·"창세기 14장 18절"처럼 뒤에 절이 이어지면 그 절로 고치고, "삼하 24장"처럼 책 이름 + 장이면 장으로 두고,
+// 그 밖("약 4km"를 야고보서 4장으로, "3인칭"을 에스더 3장으로 잘못 걸어 둔 것 등)은 링크를 풀어 글자만 남김
+const fixV0 = html => html.replace(/<a href="#" data-ref="tw:\/\/bible\.\*\?id=(\d+)\.(\d+)\.0\|[^"]*">((?:<span[^>]*>)?([^<]*)(?:<\/span>)?)<\/a>((?:<span[^>]*>)?)([^<]*)/g, (all, b, c, inner, text, open, after) => {
+  const n = VERSES[b - 1]?.[c - 1], m = after.match(/^\s*(?:장|편)\s*(\d+)\s*(?:[-~]\s*(\d+)|,\s*(\d+))?\s*절/);
+  if (n && m && +m[1] >= 1 && +m[1] <= n) {
+    const v = +m[1], to = Math.min(+m[2] || (+m[3] === v + 1 ? v + 1 : v), n);
+    return `<a href="#" data-ref="tw://bible.*?id=${b}.${c}.${v}${to > v ? `-${b}.${c}.${to}` : ''}|"><span style="">${text}${m[0]}</span></a>${open}${after.slice(m[0].length)}`;
+  }
+  if (n && /[가-힣]/.test(text) && /^\s*(?:장|편)/.test(after)) return all;
+  return inner + open + after;
+});
+const commFmt = (html, b) => linkRefs(fixV0(html), b)
   .replace(/`([^`'<\n]{1,120})'/g, '‘$1’')
   .replace(/\(\*\)/g, '<span class="lost" title="원본 파일에서 원어 글자가 빠진 자리">(*)</span>')
   .replace(/(<span style="(?:font-weight:bold;)?">☞[^<]*<\/span>)<span style="">\s*-\s*/g, '$1<br><span style="">') // "☞본문 구절- 풀이" → 구절을 제목 줄로 (요엘처럼 구절이 굵지 않은 것도)
@@ -2247,7 +2259,7 @@ const dictRow = (subject, name = S.dict) => rows(dicts[name], isDct(name)
   ? 'select scode, dtext from Lexicon where scode = ?'
   : 'select t.subject, cast(c.data as blob) from topics t join content c on c.topic_id = t.id where t.subject = ?', [subject])[0];
 // theWord 사전은 구절 링크 글자를 'vref' 로만 적어 둠 (theWord 프로그램이 구절 이름으로 바꿔 보여줌) → 창 1:1
-const fillVref = html => html.replace(/(<a href="#" data-ref="([^"]*)">(?:<[^>]*>)*)\s*\[?vref\]?\s*(?=<)/gi, (m, a, r) => { const [b, c, v] = parseRef(r); return b ? a + refName(b, c, v) : m; })
+const fillVref = html => fixV0(html).replace(/(<a href="#" data-ref="([^"]*)">(?:<[^>]*>)*)\s*\[?vref\]?\s*(?=<)/gi, (m, a, r) => { const [b, c, v] = parseRef(r); return b ? a + refName(b, c, v) : m; })
   // 같은 사전의 다른 번호로 가는 링크 (tw://[self]?H8130) → 누르면 그 번호 풀이로
   .replace(/<a href="#" data-ref="tw:\/\/\[self\]\?([HG]\d+)[^"]*">/g, '<a href="#" data-strong="$1">')
   // KJV 번역 목록 "?again, 2 ⏎ 링크; 링크 ⏎⏎" (글머리표가 '?' 로 깨져 있음) → 단어 · 횟수 · 구절 한 줄씩
@@ -3572,12 +3584,13 @@ function showTip(e) {
   const ver = shownVers().find(readable) || korVersion() || firstLocal();
   if (!a || !ver) return tip.classList.remove('open');
   const m = a.dataset.ref.match(/id=(\d+)\.(\d+)\.(\d+)(?:-(\d+)\.(\d+)\.(\d+))?/); if (!m) return;
-  const from = START[+m[1]]?.[m[2] - 1] + (+m[3]) - 1;
-  const to = m[4] ? START[+m[4]]?.[m[5] - 1] + (+m[6]) - 1 : from;
+  const chap = +m[3] === 0 && !m[4]; // 장만 가리키는 링크("삼하 24장"): 그 장 첫머리 몇 절 (0절 = 앞 장 끝 절이 나오지 않게)
+  const from = START[+m[1]]?.[m[2] - 1] + Math.max(+m[3], 1) - 1;
+  const to = m[4] ? START[+m[4]]?.[m[5] - 1] + (+m[6]) - 1 : chap ? from + Math.min(2, VERSES[m[1] - 1][m[2] - 1] - 1) : from;
   if (!(from >= 0)) return;
   const L = bibles[ver], ids = Array.from({ length: Math.min(to - from + 1, 6) }, (_, i) => from + i);
-  tip.innerHTML = `<b>${refName(...REF[from])}${to > from ? '-' + REF[to][2] : ''} · ${esc(nm(ver))}</b>` +
-    ids.map(i => (ids.length > 1 ? `<span class="vn">${REF[i][2]}</span>` : '') + verseHtml(L[i] || '')).join(' ') + (to - from >= 6 ? ' …' : '');
+  tip.innerHTML = `<b>${chap ? `${BOOKS[m[1] - 1]} ${m[2]}${+m[1] === 19 ? '편' : '장'}` : refName(...REF[from]) + (to > from ? '-' + REF[to][2] : '')} · ${esc(nm(ver))}</b>` +
+    ids.map(i => (ids.length > 1 ? `<span class="vn">${REF[i][2]}</span>` : '') + verseHtml(L[i] || '')).join(' ') + (to - from >= 6 || chap ? ' …' : '');
   tip.classList.add('open');
   const r = a.getBoundingClientRect();
   tip.style.left = Math.max(16, Math.min(r.left, innerWidth - tip.offsetWidth - 16)) + 'px';
