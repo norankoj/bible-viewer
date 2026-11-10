@@ -1117,7 +1117,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-11-04 17:32</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-11-10 16:30</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -2743,7 +2743,7 @@ function renderRefCards() {
   $('comm').innerHTML = `<div class="ref-opts"><details class="ref-dd" ${open ? 'open' : ''}><summary>번역본 <b>${on.length}개</b><span>${esc(on.map(nm).join(' · '))}</span></summary>
     <div class="ref-dd-list">${all.map(n => `<label><input type="checkbox" data-refver="${esc(n)}" ${on.includes(n) ? 'checked' : ''}>${esc(nm(n))}</label>`).join('')}</div></details>
     <label class="chk"><input type="checkbox" data-refopt="num" ${refOpt.num ? 'checked' : ''}>구절 주소</label><label class="chk"><input type="checkbox" data-refopt="name" ${refOpt.name ? 'checked' : ''}>번역본 이름</label></div>` +
-    (hits.copied ? `<p class="ref-note">${icon('check')}클립보드에 자동으로 복사했어요. 번역본이나 모양을 바꿨으면 <b>복사</b>를 다시 눌러 주세요.</p>` : '') +
+    (hits.copied ? `<p class="ref-note">${icon('check')}<span>클립보드에 자동으로 복사했어요. 번역본이나 모양을 바꿨으면 <b>복사</b>를 다시 눌러 주세요.</span></p>` : '') +
     hits.refs.map((r, k) => {
       if (r.err) return `<article class="ref-card"><h3>${esc(r.q)}</h3><p class="ref-err">없는 구절이에요. ${esc(r.err)}</p></article>`;
       const vs = Array.from({ length: (r.to || r.v || 1) - (r.v || 1) + 1 }, (_, i) => (r.v || 1) + i);
@@ -3615,9 +3615,9 @@ $('q').addEventListener('focus', () => mSearch(true));
 document.querySelector('.rail').addEventListener('click', () => mSearch(false), true); // 아래 탭 막대(사전·끼니 등)를 누르면 검색 화면에서 나옴
 $('q').addEventListener('click', () => mSearch(true));
 $('mSearchX').onclick = () => { $('q').blur(); mSearch(false); };
-$('q').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { search(e.target.value); if (phone()) e.target.blur(); } /* 모바일: 자판을 내려 결과가 다 보이게 */ if (e.key === 'Escape') { e.target.value = ''; search(''); e.target.blur(); mSearch(false); } };
+$('q').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { search(e.target.value); if (phone()) e.target.blur(); } /* 모바일: 자판을 내려 결과가 다 보이게 */ if (e.key === 'Escape') { e.stopPropagation(); if (document.body.classList.contains('m-search')) { e.target.blur(); return mSearch(false); } /* 좁은 창: 검색어는 두고 본문으로 */ e.target.value = ''; search(''); e.target.blur(); } };
 document.onkeydown = e => {
-  if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (sel.size) { sel.clear(); refreshBible(); } }
+  if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (document.body.classList.contains('m-search')) { $('q').blur(); return mSearch(false); } /* 좁은 창의 검색 화면: 본문으로 */ if (sel.size) { sel.clear(); refreshBible(); } }
   if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
   if (e.key === 'ArrowLeft' && e.altKey) return back();
   if (e.key === 'ArrowRight' && e.altKey) return forward();
