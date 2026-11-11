@@ -1,10 +1,11 @@
 // 설치형 웹앱: 인터넷이 없어도 뷰어 화면이 열리도록 화면 파일만 보관.
 // (성경·주석·사전 데이터는 브라우저 저장소(IndexedDB)에 따로 있음)
-const CACHE = 'viewer-v4';
-const SHELL = ['./', 'index.html', 'decode.js', 'manifest.webmanifest', 'vendor/sql-wasm.js', 'vendor/sql-wasm-bin.js', 'vendor/pretendard.css', 'vendor/icons.js', 'icons/icon-192.png', 'icons/badge-face.png', 'img/bg-coffee.jpg', 'img/coffee-band.jpg', 'img/bg-latte.webp'];
+const CACHE = 'viewer-v5';
+const SHELL = ['./', 'index.html', 'decode.js', 'manifest.webmanifest', 'vendor/sql-wasm.js', 'vendor/sql-wasm-bin.js', 'vendor/pretendard.css', 'vendor/icons.js', 'icons/icon-192.png', 'icons/icon-512.png', 'data/kkini.js', 'icons/badge-face.png', 'img/bg-coffee.jpg', 'img/coffee-band.jpg', 'img/bg-latte.webp'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
+  // 관련 구절 자료(1.5MB)는 받아 두되, 못 받아도 설치는 되게
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).then(() => c.add('data/xrefs.js').catch(() => {}))));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {

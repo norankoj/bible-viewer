@@ -981,6 +981,21 @@
     [data-design="classic"] .status { bottom: 22px; }
     [data-design="classic"] #biblePane > .selbar { border: 0; border-top: 1px solid var(--line); box-shadow: none; }
   }
+  /* 성경 칸이 좁을 때 (태블릿 세로, 두 개 나란히, 창을 줄였을 때): 머리줄을 두 줄로 (첫 줄 책·장 + 검색, 둘째 줄 번역본) */
+  @media (min-width: 761px) {
+    #biblePane.narrow .page-head { flex-wrap: wrap; row-gap: 8px; }
+    #biblePane.narrow .page-head::after { content: ''; order: 1; flex: 0 0 100%; height: 0; margin-top: -8px; }
+    #biblePane.narrow .search-wrap { flex: 1 1 120px; min-width: 0; }
+    #biblePane.narrow .ver-pick, #biblePane.narrow .page-head .tabs { order: 2; }
+    #biblePane.narrow .page-head .tabs { flex: 1 1 0; overflow-x: auto; scrollbar-width: none; }
+    /* 대조 칸이 너무 좁으면 모바일처럼 절마다 번역본을 위아래로 */
+    #biblePane.stack .par { display: block; }
+    #biblePane.stack .par .heads { display: none; }
+    #biblePane.stack .par .row { display: grid; grid-template-columns: 34px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+    #biblePane.stack .par .row > .vn { grid-row: 1 / span 12; }
+    #biblePane.stack .par .row > :not(.vn)::before { content: attr(data-name); display: block; font: 600 11px/1.4 var(--sans); color: var(--muted); }
+  }
+  @media (max-width: 760px) { .selbar { flex-wrap: wrap; row-gap: 6px; } } /* 모바일: 책갈피·×가 화면 밖으로 넘어가지 않게 두 줄로 */
 </style>
 </head>
 <body>
@@ -1117,7 +1132,7 @@
   <p>커피성경은 <b>커</b>뮤니티 <b>피</b>플을 위한 <b>성경</b>이에요. 가지고 있는 성경·주석·원어 사전을 한곳에 모아, 여러 번역을 나란히 보고 원어까지 함께 묵상할 수 있게 만들었습니다.</p>
   <dl class="about-people"><dt>기획</dt><dd>이성진 목사</dd><dt>개발</dt><dd>노나연</dd><dt>로고 디자인</dt><dd>차주은</dd></dl>
   <p class="about-coffee">커피성경이 말씀 묵상에 도움이 되셨다면,<br><b>커피 한 잔</b> 사주세요!</p>
-  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-11-11 10:44</span></p>
+  <p class="about-note">무료 배포 버전으로, 일부 오류가 있을 수 있습니다.<br>배포 <span id="buildAt">2026-11-11 21:38</span></p>
 </div>
 <div class="pop" id="guideBox" role="dialog" aria-label="사용설명서">
   <div class="guide-head"><b>커피성경 사용설명서</b><span class="guide-acts"><button class="btn sm" data-guide-link title="이 사용설명서를 바로 여는 링크 복사">링크 복사</button><button class="ws-close" data-close aria-label="닫기"></button></span></div>
@@ -1152,8 +1167,8 @@
     <ul>
       <li><b>책 이름</b>을 누르면 책 목록(줄임말과 이름), <b>장</b>을 누르면 그 책의 장 목록이 나와요. 다른 책을 고르면 제목이 먼저 바뀌고, 장을 고르면 이동해요.</li>
       <li>모바일은 화면 전체에 <b>책 | 장 | 절</b> 세 칸이 나와요. 장을 고른 뒤 <b>○장으로 이동</b>을 누르거나 절을 바로 누르면 돼요.</li>
-      <li>제목 양옆 <b>‹ ›</b> 또는 키보드 <kbd>←</kbd> <kbd>→</kbd>로 앞뒤 장, <kbd>↑</kbd> <kbd>↓</kbd>로 앞뒤 절로 움직여요.</li>
-      <li>링크나 검색으로 건너뛴 뒤에는 <b>뒤로 · 앞으로</b>(<kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>→</kbd>)로 돌아가요.</li>
+      <li>제목 양옆 <b>‹ ›</b> 또는 키보드 <kbd>←</kbd> <kbd>→</kbd>로 앞뒤 장, <kbd>↑</kbd> <kbd>↓</kbd>로 앞뒤 절로 움직여요. 모바일·태블릿은 본문을 <b>옆으로 밀어도</b> 앞뒤 장으로 넘어가요.</li>
+      <li>링크나 검색으로 건너뛴 뒤에는 <b>뒤로 · 앞으로</b>(<kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>→</kbd>)로 돌아가요. 휴대폰·브라우저의 <b>뒤로 버튼</b>도 열린 창을 닫거나 이전 위치로 돌아가요.</li>
       <li>주석 속 성경 구절에 마우스를 올리면 본문을 미리 볼 수 있고, 누르면 그 절로 가요. 미리보기는 대조 순서 <b>맨 앞 번역본</b>(원어 성경이면 그다음 번역본)으로 나와요.</li>
       <li>링크가 없던 구절도 미리보기가 돼요: 책 이름 없이 "(2:1)"처럼 적은 <b>같은 책 구절</b>, 만나주석 같은 주석의 "렘 23:29", "마 10:30, 31"(→ 10:30~31) 같은 글자.</li>
       <li><b>끼니</b> 버튼을 누르면 공동체가 함께 묵상하는 <b>오늘의 끼니</b> 창이 떠요. 그날의 <b>묵상·통독</b>을 누르면 그 구절로 가고, <b>‹ ›</b>로 다른 날을 볼 수 있어요.</li>
@@ -1164,7 +1179,7 @@
       <li><b>번역본 N개 ▾</b>를 눌러 보고 싶은 번역본을 체크하면 나란히 대조해요. 목록은 가나다순이에요.</li>
       <li>같은 창 맨 위 <b>대조 순서</b>에서 줄을 끌어서 옮기거나 화살표로 칸 순서를 바꿔요. PC에서는 위쪽 번역본 이름을 끌어서 옮겨도 돼요.</li>
       <li>번역본 이름 옆 <b>×</b>를 누르면 대조에서 빠져요. <b>이름을 누르면</b> 목록에는 둔 채로 칸만 잠깐 끄고 켤 수 있어요(끈 것은 점선 테두리).</li>
-      <li>모바일은 <b>3개까지</b> 대조하고, 절마다 번역본을 위아래로 한 줄씩 보여 줘요.</li>
+      <li>모바일은 <b>3개까지</b> 대조하고, 절마다 번역본을 위아래로 한 줄씩 보여 줘요. PC도 성경 칸이 좁아 칸이 너무 가늘어지면 같은 모양으로 바뀌어요.</li>
       <li>스트롱 번호가 붙은 한국어 성경(베들레헴 개역개정S 등)은 일반 개역개정을 함께 넣어 두면 띄어쓰기를 개역개정에 맞춰 보여 줘요.</li>
     </ul></section>
 <section id="g-versions"><h3>번역본 · 자료 소개</h3>
@@ -1207,7 +1222,7 @@
     <ul>
       <li>절을 누르면 선택돼요. 하이라이트를 없애려면 <b>색 지우기</b>. <kbd>Shift</kbd>+누르기로 범위, <kbd>Ctrl</kbd>(맥은 <kbd>⌘</kbd>)+누르기로 여러 절을 고를 수 있어요.</li>
       <li>선택하면 나오는 막대에서 <b>복사</b>(<kbd>Ctrl</kbd>+<kbd>C</kbd>), <b>하이라이트</b>(노랑·초록·파랑·분홍, 지우기), <b>메모</b>, <b>책갈피</b>를 해요.</li>
-      <li>하이라이트는 글자 줄마다 형광펜처럼 칠해지고, 메모가 있는 절에는 <b>메모</b> 표시가 붙어요.</li>
+      <li>하이라이트는 글자 줄마다 형광펜처럼 칠해지고, 메모가 있는 절에는 <b>메모</b> 표시가 붙어요. 메모를 쓰다가 바깥을 누르면 <b>저장</b>되고, <b>취소</b>나 <kbd>Esc</kbd>는 저장하지 않아요.</li>
       <li>모아 보기는 <b>보관함</b>에서 해요. 책갈피·메모·하이라이트·최근 본 곳은 접혀 있고 이름 옆에 개수가 보여요. 누르면 펼쳐지고, 펼친 묶음은 다음에도 펼쳐져 있어요. 항목을 누르면 그 절로 가요.</li>
       <li>절이 아닌 곳(빈 곳, 자료 칸 등)을 누르면 고른 표시가 풀려요. PC에서는 아래 작업 막대가 평소 반투명이고, 마우스를 올리면 진해져요.</li>
     </ul></section>
@@ -1238,6 +1253,7 @@
       <li><b>구절 주소</b>를 치면 그 구절이 카드로 나오고 바로 복사돼요. <b>요 3:16</b>, <b>요한3:16-18</b>처럼 쓰고, 쉼표로 여러 구절도 돼요(<b>요 1:3, 갈 3:4</b>). 같은 장은 <b>요 3:16, 18</b>처럼 줄여 써도 돼요.</li>
       <li><b>H430</b>, <b>G26</b>처럼 원어 번호로 찾으면 그 번호가 붙은 단어를 강조해요. 원어 번호가 파일에 들어 있는 <b>원전분해</b>, <b>개역개정S</b>, <b>TRa+I</b> 중에서 기준을 고르고(처음 한 번은 원전분해를 정리하느라 몇 초 걸려요), 결과의 <b>위 줄은 기준</b>, <b>아래 줄은 짝</b>(원전분해 ↔ 개역개정S)이에요. 두 파일은 번호를 붙인 곳이 조금씩 달라 같은 번호라도 찾아지는 절이 다를 수 있으니 참고용으로 보세요. 결과 위에는 그 번호가 <b>나오는 절 수</b>와 <b>나오는 단어 수</b>가 함께 나와요(한 절에 두 번 나오면 절은 1개, 단어는 2번).</li>
       <li>원어 번호 검색 결과의 절 이름 옆 <b>원전분해</b>를 누르면 그 절의 원전분해 풀이가 작은 창으로 떠요(찾는 단어는 칠해서). 풀이 속 번호를 누르면 단어 노트가 열리고, 검색 결과는 그대로예요.</li>
+      <li>대조 순서 <b>맨 앞 번역본</b>에서 찾고, 하나도 없으면 다른 번역본에서 찾아 줘요(영어 성경이 맨 앞일 때 한글로 검색하는 경우 등).</li>
       <li>결과에서 번역본과 범위(전체·구약·신약·현재 책)를 바꿀 수 있고, 주석에서도 찾아요(여러 주석을 한꺼번에).</li>
     </ul></section>
 <section id="g-view"><h3>보기 · 내 세팅</h3>
@@ -1316,7 +1332,7 @@ const icon = n => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="curr
 document.querySelectorAll('[data-icon]').forEach(el => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));
 const bibles = {}, comms = {}, dicts = {}, plain = {}, commText = {}, dictText = {}, indexing = {};
 const marks = new Map(); // 하이라이트·메모: "책.장.절", 책갈피: "bm:책.장.절-절"
-let SQL, hits = null, sel = new Set(), hist = [], fwd = [], noteV = 0;
+let SQL, hits = null, sel = new Set(), hist = [], fwd = [], noteV = 0, noteAt = [0, 0];
 
 const prefs = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -1507,7 +1523,10 @@ async function load(files, persist, picked, quiet) {
   respaceTagged();
   const cn = commNames();
   S.versions = S.versions.filter(n => bibles[n]);
-  if (!S.versions.length && allVersions().length) S.versions = [allVersions()[0]];
+  if (!S.versions.length && allVersions().length) { // 처음엔 한국어 성경(개역개정 먼저), 없으면 첫 번역본
+    const ko = allVersions().filter(n => /[가-힣]/.test(bibles[n][START[43][2] + 15] || bibles[n][0] || ''));
+    S.versions = [ko.find(n => /개역개정/.test(nm(n)) && !bibles[n].hasW) || ko.find(n => /개역개정/.test(nm(n))) || ko[0] || allVersions()[0]];
+  }
   sortVersions();
   if (!commFiles[S.comm]) S.comm = cn[0] || '';
   if (!dictFiles[S.dict]) S.dict = korDict() || dictNames()[0] || '';
@@ -1705,8 +1724,17 @@ function renderBible() {
         return `<div class="row${m.cls}${sel.has(v) ? ' on' : ''}" data-v="${v}"><span class="vn">${v}</span>${vs.map((x, i) => `<span${rtlAttr(x, v)} data-name="${esc(nm(x))}"><span class="t">${cellHtml(x, v)}</span>${i ? '' : m.badge}</span>`).join('')}</div>`;
       }).join('') + '</div>' + notice;
   }
-  keepPlace();
+  fitPane(); keepPlace();
 }
+// 성경 칸 폭에 맞추기: 좁으면 머리줄을 두 줄로(.narrow), 대조 칸 하나가 150px 이 안 되면 위아래로(.stack)
+function fitPane() {
+  const pane = $('biblePane'), w = pane.clientWidth; if (!w) return;
+  const was = pane.className;
+  pane.classList.toggle('narrow', w < 660);
+  pane.classList.toggle('stack', shownVers().length > 1 && (w - 90) / shownVers().length < 150);
+  return was !== pane.className;
+}
+new ResizeObserver(() => { if (fitPane()) keepPlace(); }).observe($('biblePane')); // 모양이 바뀌면 절 높이가 달라지므로 읽던 자리로
 
 /* ---------- 읽던 자리 지키기 ----------
    번역본을 더하고 빼거나 자료 칸을 여닫으면 칸 폭이 달라져 절마다 높이가 바뀜 → 스크롤 픽셀값이 아니라
@@ -1867,8 +1895,8 @@ function putMark(m) {
   prefs.set('markDel', markDel); queueMarkSync();
   idb('marks', 'readwrite', s => empty ? s.delete(m.id) : s.put(m)).catch(() => flash('저장하지 못했습니다. 브라우저 저장소가 막혀 있습니다'));
 }
-function setVerse(v, patch) {
-  const id = `${S.b}.${S.c}.${v}`, m = { ...(marks.get(id) || { id, b: S.b, c: S.c, v }), ...patch };
+function setVerse(v, patch, b = S.b, c = S.c) {
+  const id = `${b}.${c}.${v}`, m = { ...(marks.get(id) || { id, b, c, v }), ...patch };
   for (const k of ['color', 'note']) if (!m[k]) delete m[k];
   putMark(m);
 }
@@ -1881,7 +1909,7 @@ function toggleBookmark() {
 }
 
 function openNote(v, anchor) {
-  noteV = v;
+  noteV = v; noteAt = [S.b, S.c]; // 메모 창을 연 장 (닫히기 전에 다른 장으로 넘어가도 이 절에 저장)
   $('noteRef').textContent = `${BOOKS[S.b - 1]} ${S.c}:${v} 메모`;
   $('noteText').value = marks.get(`${S.b}.${S.c}.${v}`)?.note || '';
   $('noteDel').hidden = !$('noteText').value;
@@ -1889,8 +1917,8 @@ function openNote(v, anchor) {
   $('noteText').focus();
 }
 function saveNote() {
-  setVerse(noteV, { note: $('noteText').value.trim() });
-  closePops(); refreshBible();
+  setVerse(noteV, { note: $('noteText').value.trim() }, ...noteAt);
+  closePops('discard'); refreshBible();
 }
 
 /* ---------- 백업 ---------- */
@@ -1898,7 +1926,7 @@ function exportMarks() {
   const data = JSON.stringify({ app: 'bible-viewer', version: 1, marks: [...marks.values()] }, null, 1);
   const a = Object.assign(document.createElement('a'), {
     href: URL.createObjectURL(new Blob([data], { type: 'application/json' })),
-    download: `성경뷰어-메모-${new Date().toISOString().slice(0, 10)}.json`,
+    download: `커피성경-메모-${new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10)}.json`,
   });
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   resetBackup();
@@ -1906,7 +1934,7 @@ function exportMarks() {
 }
 // 외부 파일이므로 형식을 하나하나 확인한 항목만 받아들임
 const validMark = m => m && typeof m.id === 'string' && /^(bm:)?\d+\.\d+\.\d+(-\d+)?$/.test(m.id) &&
-  [m.b, m.c, m.v].every(Number.isInteger) && m.b >= 1 && m.b <= 66 && VERSES[m.b - 1][m.c - 1] >= m.v &&
+  [m.b, m.c, m.v].every(Number.isInteger) && m.b >= 1 && m.b <= 66 && m.v >= 1 && VERSES[m.b - 1][m.c - 1] >= m.v &&
   (m.note === undefined || typeof m.note === 'string') && (m.color === undefined || m.color in COLORS) &&
   (!m.bm || Number.isInteger(m.v2));
 async function importMarks(file) {
@@ -1915,10 +1943,13 @@ async function importMarks(file) {
     if (!Array.isArray(list)) throw new Error('백업 파일 형식이 아닙니다');
     const ok = list.filter(validMark).map(m => ({ id: m.id, b: m.b, c: m.c, v: m.v, v2: m.v2, bm: m.bm || undefined, color: m.color, note: m.note, t: m.t || Date.now() }));
     for (const m of ok) Object.keys(m).forEach(k => m[k] === undefined && delete m[k]);
-    await idb('marks', 'readwrite', s => { ok.forEach(m => s.put(m)); return s; });
-    ok.forEach(m => marks.set(m.id, m));
-    queueMarkSync(); refreshBible();
-    alert(`${ok.length}개를 불러왔습니다${list.length > ok.length ? ` (${list.length - ok.length}개는 형식이 맞지 않아 건너뜀)` : ''}.`);
+    // 이 기기에서 더 나중에 고친 것은 그대로 둠. 지금 없는 것(지웠던 것 포함)은 지금 되살린 것으로 (지운 기록보다 나중이라야 드라이브로 맞출 때 다시 지워지지 않음)
+    const now = Date.now(), use = ok.filter(m => !((marks.get(m.id)?.t || 0) > m.t));
+    for (const m of use) { if (!marks.has(m.id)) m.t = now; delete markDel[m.id]; }
+    await idb('marks', 'readwrite', s => { use.forEach(m => s.put(m)); return s; });
+    use.forEach(m => marks.set(m.id, m));
+    prefs.set('markDel', markDel); queueMarkSync(); refreshBible();
+    alert(`${use.length}개를 불러왔습니다${ok.length > use.length ? ` (${ok.length - use.length}개는 이 기기에서 더 나중에 고쳐서 그대로 둠)` : ''}${list.length > ok.length ? ` (${list.length - ok.length}개는 형식이 맞지 않아 건너뜀)` : ''}.`);
   } catch (err) { alert(`백업을 불러오지 못했습니다: ${err.message}`); }
 }
 
@@ -2047,8 +2078,9 @@ async function syncFiles(folder, mirror) {
     const names = new Set(list.map(f => f.name)); // '참고' 폴더에 있는 것도 드라이브에 있는 것 (참고에서 받은 파일은 지우지 않음)
     const gone = Object.entries(fileInfo).filter(([, i]) => !names.has(i.key)).map(([n]) => n); // 드라이브에 없는 파일 (직접 추가한 것 포함)
     if (gone.length && confirm(`드라이브 '커피성경' 폴더에 없는 파일 ${gone.length}개를 이 기기에서 지울까요?\n\n${gone.map(nm).join(', ')}\n\n(메모·책갈피는 그대로예요. 취소하면 지우지 않고 받기만 해요)`)) {
+      const keys = gone.map(n => fileInfo[n].key); // 받은 기록(driveGot)은 파일 이름으로 적혀 있음
       await removeModules(gone.map(n => `${commFiles[n] ? 'comm' : dictFiles[n] ? 'dict' : 'bible'}:${n}`));
-      for (const n of gone) delete driveGot[n];
+      for (const k of keys) delete driveGot[k];
       prefs.set('driveGot', driveGot); removed = gone.length;
     }
   }
@@ -2084,7 +2116,7 @@ async function syncMarks() {
 function queueMarkSync() {
   if (!driveOn() || !tokenOk()) return;
   clearTimeout(markTimer);
-  markTimer = setTimeout(() => driveBusy || syncMarks().then(() => driveErr(''), err => driveErr(err.message)), 3000);
+  markTimer = setTimeout(() => driveBusy ? queueMarkSync() : syncMarks().then(() => driveErr(''), err => driveErr(err.message)), 3000); // 파일을 받는 중이면 끝난 뒤에
 }
 // asked: 버튼으로 누른 것 (로그인 창을 띄워도 됨). 아니면 로그인이 살아 있을 때만 조용히
 async function driveSync(asked) {
@@ -2193,7 +2225,11 @@ const renderTabBox = () => $('tabBox').innerHTML = '<b class="pk-title">자료</
   [['comm', '주석', commNames()], ['dict', '사전', dictNames()]].filter(g => g[2].length).map(([k, t, ns]) => `<h6>${t}</h6><div class="pk-group">` +
     ns.map(n => `<label><input type="checkbox" value="${k}:${esc(n)}" ${tabHide.includes(`${k}:${n}`) ? '' : 'checked'}>${esc(nm(n))}</label>`).join('') + '</div>').join('');
 const tab = (on, attr, label) => `<button class="tab ${on ? 'on' : ''}" ${attr}>${label}</button>`;
+let commShown = '';
 function renderComm() {
+  // 같은 칸을 탭마다 같이 쓰므로, 다른 탭·다른 자료로 바뀌면 이전 스크롤을 버리고 맨 위부터 (주석은 뒤이어 고른 절로 맞춤)
+  const showing = `${S.tab}:${S.tab === 'comm' ? S.comm : S.tab === 'dict' ? S.dict : ''}`;
+  if (showing !== commShown) { commShown = showing; $('comm').scrollTop = 0; }
   closeUnusedComms(); // 두 개 나란히를 끄거나 주석을 바꾸면 안 보는 주석은 닫음
   const names = commNames();
   const drag = (kind, n) => `draggable="true" data-drag="${kind}:${esc(n)}" title="끌어서 순서 바꾸기"`;
@@ -2209,7 +2245,7 @@ function renderComm() {
     (S.tab === 'xref' ? tab(true, 'data-xref', '관련 구절') : '') + // 관련 구절·보관함은 레일 버튼으로 열 때만 (보는 동안만 탭에)
     (S.tab === 'saved' ? tab(true, 'data-saved', '보관함') : '') +
     (names.length + dictNames().length > 1 ? `<button class="tab spacer ${S.split ? 'on' : ''}" data-split aria-pressed="${S.split}">두 개 나란히</button>` : '');
-  $('commToggle').setAttribute('aria-pressed', !S.hideComm);
+  $('commToggle').setAttribute('aria-pressed', !S.hideComm && !['dict', 'xref', 'saved'].includes(S.tab)); // 사전·관련절·보관함 버튼이 켜져 있으면 그쪽만 (둘이 같이 켜져 보이지 않게)
   // 기존 디자인(PC, 글자 버튼 줄)은 할 일을 이름으로 (자료 숨기기 / 자료 보기), 새 디자인 레일·모바일은 짧게 '자료'
   $('commToggle').querySelector('span').textContent = phone() || !classic() ? '자료' : S.hideComm ? '자료 보기' : '자료 숨기기';
   $('main').classList.toggle('split', S.split);
@@ -2581,7 +2617,7 @@ function search(q) {
   hits = {
     q, Q, bible: null, comm: null, book: 0,
     // 고른 번역본은 다음 검색에도 유지 (원어 번호 검색 때 자동으로 고른 원어 성경은 제외)
-    ver: prev && !prev.Q.strong && bibles[prev.ver] ? prev.ver : '', range: prev?.range || 'all',
+    ver: prev && !prev.Q.strong && bibles[prev.ver] ? prev.ver : '', pinned: !!prev?.pinned && !prev.Q.strong, range: prev?.range || 'all',
     scope: prev?.scope === 'comm' && !Q.strong ? 'comm' : 'bible',
   };
   // 히브리어 번호를 '신약'에서, 헬라어 번호를 '구약'에서 찾으면 늘 0개 → 범위를 전체로
@@ -2617,8 +2653,14 @@ async function runBibleSearch() {
     h.bible = await strongVerses(h.Q.strong, h.ver).catch(() => []);
   } else {
     h.ver ||= firstLocal() || '';
-    plain[h.ver] ||= h.ver ? bibles[h.ver].map(plainVerse) : [];
-    h.bible = plain[h.ver].reduce((a, t, i) => (h.Q.test(t) && a.push(i), a), []);
+    const find = n => (plain[n] ||= bibles[n].map(plainVerse)).reduce((a, t, i) => (h.Q.test(t) && a.push(i), a), []);
+    h.bible = h.ver ? find(h.ver) : [];
+    // 하나도 없으면 다른 번역본에서 (영어 성경이 맨 앞일 때 한글 검색어 등). 대조 중인 것 먼저. 번역본을 직접 고른 검색은 그대로
+    if (!h.bible.length && !h.pinned) for (const n of new Set([...S.versions, ...allVersions()])) {
+      if (n === h.ver || !bibles[n]) continue;
+      const r = find(n);
+      if (r.length) { h.ver = n; h.bible = r; break; }
+    }
   }
   if (hits === h && S.tab === 'search') renderHits();
 }
@@ -2951,7 +2993,12 @@ function placePop(el) {
   el.style.top = Math.max(edge, down ? r.bottom + gap : r.top - gap - h) + 'px';
 }
 addEventListener('resize', () => document.querySelectorAll('.pop.open').forEach(placePop));
-const closePops = () => {
+const closePops = how => {
+  // 메모를 쓰다가 바깥을 눌러 닫히면 저장 (취소·Esc 는 버림)
+  if (how !== 'discard' && $('noteBox').classList.contains('open')) {
+    const t = $('noteText').value.trim();
+    if (t !== (marks.get(`${noteAt[0]}.${noteAt[1]}.${noteV}`)?.note || '')) { $('noteBox').classList.remove('open'); setVerse(noteV, { note: t }, ...noteAt); refreshBible(); flash('메모를 저장했습니다'); }
+  }
   document.querySelectorAll('.pop.open').forEach(p => p.id !== 'tip' && !(p.id === 'guideBox' && guidePage()) && p.classList.remove('open')); // 설명서 한 페이지일 땐 그대로
   if ($('chapBtn').classList.contains('pending')) { $('chapBtn').classList.remove('pending'); $('bookBtn').textContent = BOOKS[S.b - 1]; $('chapBtn').textContent = `${S.c}장`; }
 };
@@ -3283,7 +3330,7 @@ $('nudgeDrive').onclick = async () => {
 };
 $('nudgeLater').onclick = snoozeNudge;
 $('noteSave').onclick = saveNote;
-$('noteCancel').onclick = closePops;
+$('noteCancel').onclick = () => closePops('discard');
 $('noteDel').onclick = () => { $('noteText').value = ''; saveNote(); };
 $('noteText').onkeydown = e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveNote(); };
 document.addEventListener('click', e => e.target.closest?.('select') || closePops()); // 드롭다운을 연 클릭은 닫지 않음
@@ -3496,6 +3543,33 @@ addEventListener('pointerup', () => {
   if (vDrag?.on) { vDragEnd = Date.now(); document.body.classList.remove('v-drag'); syncComm(S.v); if (S.tab === 'xref') renderXref(); }
   vDrag = null;
 });
+// 터치: 본문을 옆으로 밀면 앞뒤 장 (왼쪽으로 밀면 다음 장). 위아래 스크롤·글자 고르기·옆으로 긴 칸은 그대로
+let swipe = null;
+$('bible').addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  swipe = e.touches.length === 1 && !e.target.closest('button, a, select, input') ? { x: t.clientX, y: t.clientY, at: Date.now() } : null;
+}, { passive: true });
+$('bible').addEventListener('touchend', e => {
+  const s = swipe, t = e.changedTouches[0]; swipe = null;
+  if (!s || !S.versions.length || !getSelection().isCollapsed) return;
+  const dx = t.clientX - s.x, dy = t.clientY - s.y;
+  if (Math.abs(dx) < 80 || Math.abs(dy) > Math.abs(dx) / 2 || Date.now() - s.at > 700) return;
+  step(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+// 브라우저·기기의 뒤로 버튼(안드로이드 뒤로, 옆으로 밀어 뒤로): 앱에서 나가는 대신 열린 창 닫기 → 검색 화면 닫기 → 이전 위치로.
+// 더 돌아갈 곳이 없을 때만 원래대로 나감. (기록 맨 위에 '지킴이' 칸 하나를 늘 올려 두고, 뒤로가 눌리면 일을 한 뒤 다시 올림)
+const guardBack = () => { if (!history.state?.cb) history.pushState({ cb: 1 }, ''); };
+addEventListener('pointerdown', guardBack, true); // 처음 화면을 만질 때 (만지기 전에 넣은 기록은 브라우저가 건너뜀)
+addEventListener('popstate', () => {
+  if (history.state?.cb || location.hash.startsWith('#guide')) return; // 사용설명서 링크 이동은 그대로
+  if (document.querySelector('.pop.open:not(#tip)')) closePops();
+  else if (document.body.classList.contains('m-search')) { $('q').blur(); mSearch(false); }
+  else if (hist.length) back();
+  else return; // 할 일이 없으면 한 번 더 누를 때 나감
+  guardBack();
+});
+
 $('selbar').onclick = e => {
   const t = e.target.closest('button'); if (!t) return;
   e.stopPropagation();
@@ -3534,7 +3608,7 @@ $('comm').onchange = e => {
   }
   const o = e.target.dataset.sopt; if (!o || !hits) return;
   hits.book = 0;
-  if (o === 'ver') { hits.ver = e.target.value; hits.bible = null; renderHits(); runBibleSearch(); }
+  if (o === 'ver') { hits.ver = e.target.value; hits.pinned = true; hits.bible = null; renderHits(); runBibleSearch(); }
   else { hits.range = e.target.value; renderHits(); }
 };
 // 구절 카드: 번역본 켜고 끄기 · 복사 · 본문으로 가기
@@ -3642,10 +3716,13 @@ $('q').addEventListener('click', () => mSearch(true));
 $('mSearchX').onclick = () => { $('q').blur(); mSearch(false); };
 $('q').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { search(e.target.value); if (phone()) e.target.blur(); } /* 모바일: 자판을 내려 결과가 다 보이게 */ if (e.key === 'Escape') { e.stopPropagation(); if (document.body.classList.contains('m-search')) { e.target.blur(); return mSearch(false); } /* 좁은 창: 검색어는 두고 본문으로 */ e.target.value = ''; search(''); e.target.blur(); } };
 document.onkeydown = e => {
-  if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops(); if (document.body.classList.contains('m-search')) { $('q').blur(); return mSearch(false); } /* 좁은 창의 검색 화면: 본문으로 */ if (sel.size) { sel.clear(); refreshBible(); } }
+  if (e.key === 'Escape') { if (document.querySelector('.pop.open:not(#tip)')) return closePops('discard'); if (document.body.classList.contains('m-search')) { $('q').blur(); return mSearch(false); } /* 좁은 창의 검색 화면: 본문으로 */ if (sel.size) { sel.clear(); refreshBible(); } }
   if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-  if (e.key === 'ArrowLeft' && e.altKey) return back();
-  if (e.key === 'ArrowRight' && e.altKey) return forward();
+  if (e.key === 'ArrowLeft' && e.altKey) { e.preventDefault(); return back(); }
+  if (e.key === 'ArrowRight' && e.altKey) { e.preventDefault(); return forward(); }
+  // 창(성경 찾기·설정 등)이 열려 있거나 Ctrl·⌘·Shift 와 함께 누른 화살표는 장·절을 넘기지 않음 (단어 노트·각주는 읽는 중이라 그대로)
+  const arrows = !e.ctrlKey && !e.metaKey && !e.shiftKey && !document.querySelector('.pop.open:not(#tip):not(#wordPop):not(#notePop):not(#helpPop)');
+  if (!arrows && e.key.startsWith('Arrow')) return;
   if (e.key === 'ArrowLeft') step(-1);
   if (e.key === 'ArrowRight') step(1);
   // ↓/↑: 다음·이전 절 (장 끝이면 다음 장 첫 절 / 앞 장 마지막 절). 주석·사전 칸 안에서는 원래대로 스크롤
